@@ -136,9 +136,14 @@ export function spielerKarte(name, farbe, icon, punkte, optionen = {}) {
     ? Math.max(9, Math.min(100, 18 + Math.max(0, numerischePunkte) * 11))
     : 18;
   const linkeAnzeige = hatGesamtpunkte ? punkte : optionen.rang;
-  const linksKlasse = String(linkeAnzeige ?? "").trim().startsWith("+")
+  const linkeAnzeigeText = String(linkeAnzeige ?? "").trim();
+  // v215: Haekchen/Kreuz (z. B. bei Laenderumrisse, Stimmt's, Merk's dir! in
+  // der Rundenergebnis-Liste) nutzen dieselbe gruen/rot-Kreis-Komponente wie
+  // die "+1"/"-1"-Punkteanzeige der anderen Spiele - vorher blieb der Kreis
+  // dabei neutral grau, obwohl das Symbol selbst schon richtig/falsch zeigt.
+  const linksKlasse = linkeAnzeigeText.startsWith("+") || linkeAnzeigeText === "✓"
     ? " positiv"
-    : String(linkeAnzeige ?? "").trim().startsWith("-") || String(linkeAnzeige ?? "").trim().startsWith("−")
+    : linkeAnzeigeText.startsWith("-") || linkeAnzeigeText.startsWith("−") || linkeAnzeigeText === "✗"
       ? " negativ"
       : "";
   const linksHtml = nurIdentitaet || linkeAnzeige === undefined
