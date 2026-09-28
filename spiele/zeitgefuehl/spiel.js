@@ -15,7 +15,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 
 const ZIEL_MIN = 5;
@@ -340,6 +340,10 @@ function antwortenDieserRunde(pos) {
   return alleAntworten.filter((a) => a.rundenIndex === pos && aktiveIds.has(a.spielerId));
 }
 
+// v206-Fix: zeigt bewusst KEINE Avatare der noch wartenden Spieler*innen
+// mehr an (anders als sonst ueblich per renderWarteAvatare) - beim
+// "blinden" Zeitschaetzen wuerde das verraten, wann die anderen buzzern,
+// und damit die eigentliche Herausforderung des Spiels aushebeln.
 function aktualisiereBuzzerStatus() {
   if (!el.wurzel) return;
   const antworten = antwortenDieserRunde(rundenIndex);
@@ -349,7 +353,7 @@ function aktualisiereBuzzerStatus() {
   $("zg-buzzer-hinweis").textContent = eigenerBuzzerGedrueckt
     ? "Gebuzzert! Warte auf die anderen …"
     : "Zähl für dich mit und drück im richtigen Moment!";
-  renderWarteAvatare($("zg-buzzer-status"), spielerListe.filter((sp) => !geantwortetIds.has(sp.id)));
+  $("zg-buzzer-status").innerHTML = "";
 }
 
 async function buzzerGedrueckt() {

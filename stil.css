@@ -2579,7 +2579,7 @@
 }
 
 /* ======================================================================
-   Länderumrisse - Umriss-Anzeige, Mehrfachauswahl-Kacheln
+   Länderumrisse - Umriss-Anzeige, Texteingabe
    ====================================================================== */
 .lu-umriss-anzeige {
   display: flex; justify-content: center; align-items: center;
@@ -2587,22 +2587,8 @@
 }
 .lu-svg {
   width: min(220px, 60vw); height: min(220px, 60vw);
-  color: var(--text-dunkel);
+  color: var(--akzent);
 }
 .lu-svg path { fill: currentColor; }
-.lu-optionen {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
-  margin: 14px 0;
-}
-.lu-option-btn {
-  min-height: 58px; margin: 0; padding: 12px 10px;
-  border: 1px solid var(--linie, #e5e0f0); border-radius: 16px;
-  background: var(--flaeche-klar, #fff);
-  color: var(--text-dunkel); font-size: 0.92rem; font-weight: 700; line-height: 1.25;
-  transition: background-color .15s ease, box-shadow .15s ease, transform .05s ease;
-}
-.lu-option-btn:not(:disabled):active { transform: scale(.97); }
-.lu-option-btn.lu-eigene-wahl {
-  border-color: var(--akzent, #ff6b5c); box-shadow: 0 0 0 2px var(--akzent, #ff6b5c);
-}
-.lu-option-btn:disabled { opacity: .6; }
+.lu-antwort-zeile { display: flex; gap: 8px; }
+.lu-antwort-zeile input { flex: 1; }

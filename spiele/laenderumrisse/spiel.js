@@ -2,10 +2,15 @@
 //  Länderumrisse
 // ----------------------------------------------------------------------------
 //  Pro Runde wird die Silhouette eines Landes gezeigt (SVG-Umriss aus
-//  öffentlichen Geodaten, siehe laender.json) - dazu vier Antwort-Kacheln
-//  (der richtige Name + drei zufällig gezogene falsche). Wer richtig tippt,
-//  bekommt einen Punkt; wer am schnellsten richtig getippt hat, bekommt
-//  zusätzlich einen Bonuspunkt. Danach folgt die Auflösung mit allen
+//  öffentlichen Geodaten, siehe laender.json) - die Antwort wird per
+//  Texteingabe getippt (kein Multiple-Choice). Groß-/Kleinschreibung und
+//  Umlaute spielen keine Rolle, und sowohl die deutsche als auch die
+//  englische Schreibweise (plus ein paar gängige Aliase, z. B. "UK" oder
+//  "USA") zählen als richtig - siehe das Feld "antworten" in laender.json
+//  und die Funktion normalisiere() unten, die exakt zur Erzeugung der Datei
+//  passen muss (siehe generate.js im Entwicklungs-Skript). Wer richtig
+//  tippt, bekommt einen Punkt; wer am schnellsten richtig getippt hat,
+//  bekommt zusätzlich einen Bonuspunkt. Danach folgt die Auflösung mit allen
 //  Antworten, und es geht zur nächsten (immer neuen) Silhouette weiter - bis
 //  die eingestellte Rundenzahl erreicht ist. Alle spielspezifischen
 //  Raumfelder beginnen mit "lu"; die Tipp-Antworten liegen getrennt in der
@@ -15,14 +20,13 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 
-const STANDARD_ZEIT_SEKUNDEN = 12;
+const STANDARD_ZEIT_SEKUNDEN = 15;
 const MIN_ZEIT = 5;
-const MAX_ZEIT = 30;
+const MAX_ZEIT = 45;
 const STANDARD_ANZAHL = 10;
-const OPTIONEN_PRO_FRAGE = 4;
 // Wie lange die Rundenergebnis-Anzeige (richtiges Land + wer was getippt hat)
 // zu sehen ist, bevor der Spielleiter automatisch weiterschaltet.
 const RUNDENERGEBNIS_ANZEIGE_MS = 3500;
@@ -40,12 +44,25 @@ async function ladeLaenderDaten() {
   }
 }
 
+// Muss 1:1 zu normalisiere() in generate.js passen, mit der die "antworten"-
+// Listen in laender.json erzeugt wurden - sonst würden richtige Tipps nicht
+// mehr erkannt.
+function normalisiere(text) {
+  return text
+    .toLowerCase()
+    .replace(/ß/g, "ss")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const VORLAGE = `
   <div id="lu-setup" class="bildschirm-karte" hidden>
     <h1>🗺️ Länderumrisse</h1>
-    <p class="hinweis-text">Nur der Umriss ist zu sehen - welches Land ist das? Tippt die richtige
-      Antwort unter vier Möglichkeiten. Richtig bringt einen Punkt, am schnellsten richtig einen
-      Bonuspunkt dazu.</p>
+    <p class="hinweis-text">Nur der Umriss ist zu sehen - welches Land ist das? Tippt den Namen per
+      Texteingabe; Groß-/Kleinschreibung ist egal und sowohl Deutsch als auch Englisch zählt. Richtig
+      bringt einen Punkt, am schnellsten richtig einen Bonuspunkt dazu.</p>
 
     <div id="lu-anzahl-zeile" class="setup-anzahlblock" hidden>
       <div class="setup-anzahl-zeile">
@@ -76,7 +93,10 @@ const VORLAGE = `
     <p class="kategorie">Länderumrisse</p>
     <div id="lu-umriss-anzeige" class="lu-umriss-anzeige"></div>
     <p id="lu-frage-hinweis" class="hinweis-text"></p>
-    <div id="lu-optionen" class="lu-optionen"></div>
+    <p class="lu-antwort-zeile">
+      <input id="lu-antwort-eingabe" type="text" placeholder="Land eingeben …" autocomplete="off">
+      <button id="lu-antwort-absenden" type="button">Absenden</button>
+    </p>
     <div id="lu-frage-status" class="warten-block"></div>
   </div>
 
@@ -107,7 +127,6 @@ let anzahlRunden = 0;
 let zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
 let verwendeteIds = [];
 let aktuellesLandId = null;
-let optionen = [];
 let frageSeit = 0;
 let rundenergebnisSeit = 0;
 
@@ -117,10 +136,10 @@ let eigeneAntwortGesetzt = false;
 // Runde/eines neuen Rundenergebnisses zurückgesetzt (siehe raumDaten()).
 let auswertungAusgeloest = false;
 let rundenergebnisAusgeloest = false;
-// v205-Lehre (Zeitgefühl!): Optionen-Kacheln bzw. Rundenergebnis-Liste nur
-// EINMAL pro Runde per innerHTML aufbauen, nicht bei jedem raumDaten()-Aufruf
-// neu - sonst flackern Buttons/Avatare.
-let optionenGerendert = false;
+// v205-Lehre (Zeitgefühl!): Frage-Karte bzw. Rundenergebnis-Liste nur EINMAL
+// pro Runde per innerHTML aufbauen, nicht bei jedem raumDaten()-Aufruf neu -
+// sonst flackern Eingabefeld/Avatare.
+let frageGerendert = false;
 let rundenergebnisGerendert = false;
 
 let bereitSystem = null;
@@ -128,26 +147,20 @@ let olympiadeAutoStart = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
-function mischeArray(werte) {
-  const kopie = [...werte];
-  for (let i = kopie.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [kopie[i], kopie[j]] = [kopie[j], kopie[i]];
-  }
-  return kopie;
-}
-
 function landFuerId(id) {
   return alleLaender.find((l) => l.id === id) ?? null;
 }
 
-function neueRundeInhalt(bisherigeIds) {
+function findeLandZuText(text) {
+  const normalisiert = normalisiere(text);
+  if (!normalisiert) return null;
+  return alleLaender.find((l) => l.antworten?.includes(normalisiert)) ?? null;
+}
+
+function neueRundeLandId(bisherigeIds) {
   const uebrig = alleLaender.filter((l) => !bisherigeIds.includes(l.id));
   const pool = uebrig.length > 0 ? uebrig : alleLaender;
-  const richtig = pool[Math.floor(Math.random() * pool.length)];
-  const andere = mischeArray(alleLaender.filter((l) => l.id !== richtig.id)).slice(0, OPTIONEN_PRO_FRAGE - 1);
-  const optionenNeu = mischeArray([richtig.id, ...andere.map((l) => l.id)]);
-  return { landId: richtig.id, optionenNeu };
+  return pool[Math.floor(Math.random() * pool.length)].id;
 }
 
 export async function starten(uebergebeneApi) {
@@ -167,7 +180,7 @@ export async function starten(uebergebeneApi) {
     await updateDoc(api.raumRef(), {
       luStatus: "setup", luRundeIndex: 0, luAnzahlRunden: 0,
       luZeitSekunden: STANDARD_ZEIT_SEKUNDEN, luVerwendeteIds: [], luLandId: null,
-      luOptionen: [], luFrageSeit: 0, luRundenergebnisSeit: 0
+      luFrageSeit: 0, luRundenergebnisSeit: 0
     });
   }
 
@@ -205,6 +218,8 @@ function verdrahteBedienelemente() {
   $("lu-zeit").addEventListener("focus", () => { $("lu-zeit").select(); });
 
   $("lu-starten").addEventListener("click", spielStarten);
+  $("lu-antwort-absenden").addEventListener("click", antwortAbsenden);
+  $("lu-antwort-eingabe").addEventListener("keydown", (e) => { if (e.key === "Enter") antwortAbsenden(); });
 }
 
 function starteListener() {
@@ -228,13 +243,12 @@ export function beenden() {
   zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
   verwendeteIds = [];
   aktuellesLandId = null;
-  optionen = [];
   frageSeit = 0;
   rundenergebnisSeit = 0;
   eigeneAntwortGesetzt = false;
   auswertungAusgeloest = false;
   rundenergebnisAusgeloest = false;
-  optionenGerendert = false;
+  frageGerendert = false;
   rundenergebnisGerendert = false;
 }
 
@@ -255,7 +269,6 @@ export function raumDaten(daten) {
   zeitSekunden = daten.luZeitSekunden ?? STANDARD_ZEIT_SEKUNDEN;
   verwendeteIds = daten.luVerwendeteIds ?? [];
   aktuellesLandId = daten.luLandId ?? null;
-  optionen = daten.luOptionen ?? [];
 
   const neueRunde = daten.luRundeIndex ?? 0;
   const neuerFrageSeit = daten.luFrageSeit ?? 0;
@@ -264,7 +277,7 @@ export function raumDaten(daten) {
     frageSeit = neuerFrageSeit;
     eigeneAntwortGesetzt = false;
     auswertungAusgeloest = false;
-    optionenGerendert = false;
+    frageGerendert = false;
   } else {
     rundeIndex = neueRunde;
   }
@@ -285,8 +298,8 @@ export function raumDaten(daten) {
     zeigeSetup();
     $("lu-setup").hidden = false;
   } else if (status === "frage") {
-    if (!optionenGerendert) {
-      optionenGerendert = true;
+    if (!frageGerendert) {
+      frageGerendert = true;
       zeigeFrage();
     } else {
       aktualisiereFrageStatus();
@@ -361,7 +374,7 @@ async function spielStarten() {
   if (!Number.isFinite(zeit) || zeit < MIN_ZEIT) zeit = MIN_ZEIT;
   if (zeit > MAX_ZEIT) zeit = MAX_ZEIT;
 
-  const { landId, optionenNeu } = neueRundeInhalt([]);
+  const landId = neueRundeLandId([]);
 
   $("lu-starten").disabled = true;
   try {
@@ -373,7 +386,6 @@ async function spielStarten() {
       luZeitSekunden: zeit,
       luVerwendeteIds: [landId],
       luLandId: landId,
-      luOptionen: optionenNeu,
       luFrageSeit: Date.now(),
       luRundenergebnisSeit: 0
     });
@@ -396,7 +408,7 @@ export async function vorZurueck() {
     await updateDoc(api.raumRef(), {
       luStatus: null, luRundeIndex: 0, luAnzahlRunden: 0,
       luZeitSekunden: STANDARD_ZEIT_SEKUNDEN, luVerwendeteIds: [], luLandId: null,
-      luOptionen: [], luFrageSeit: 0, luRundenergebnisSeit: 0
+      luFrageSeit: 0, luRundenergebnisSeit: 0
     });
     await api.zurueckZurAuswahl();
   } catch (e) {
@@ -410,17 +422,9 @@ function zeigeFrage() {
     ? `<svg viewBox="0 0 200 200" class="lu-svg" role="img" aria-label="Umriss eines Landes"><path d="${land.pfad}" fill-rule="evenodd"/></svg>`
     : "";
 
-  const eigeneOptionen = $("lu-optionen");
-  eigeneOptionen.innerHTML = "";
-  optionen.forEach((id) => {
-    const l = landFuerId(id);
-    const knopf = document.createElement("button");
-    knopf.type = "button";
-    knopf.className = "lu-option-btn";
-    knopf.textContent = l ? l.name : "?";
-    knopf.addEventListener("click", () => landGetippt(id, knopf));
-    eigeneOptionen.appendChild(knopf);
-  });
+  $("lu-antwort-eingabe").value = "";
+  $("lu-antwort-eingabe").disabled = false;
+  $("lu-antwort-absenden").disabled = false;
   aktualisiereFrageStatus();
 }
 
@@ -434,9 +438,8 @@ function aktualisiereFrageStatus() {
   const antworten = antwortenDieserRunde();
   const geantwortetIds = new Set(antworten.map((a) => a.spielerId));
   eigeneAntwortGesetzt = geantwortetIds.has(api.spielerId);
-  $("lu-optionen").querySelectorAll(".lu-option-btn").forEach((b) => {
-    b.disabled = eigeneAntwortGesetzt;
-  });
+  $("lu-antwort-eingabe").disabled = eigeneAntwortGesetzt;
+  $("lu-antwort-absenden").disabled = eigeneAntwortGesetzt;
   $("lu-frage-hinweis").textContent = eigeneAntwortGesetzt
     ? "Getippt! Warte auf die anderen …"
     : "Welches Land ist das?";
@@ -446,25 +449,31 @@ function aktualisiereFrageStatus() {
   );
 }
 
-async function landGetippt(landId, knopf) {
+async function antwortAbsenden() {
   if (status !== "frage" || eigeneAntwortGesetzt) return;
+  const eingabeFeld = $("lu-antwort-eingabe");
+  const text = eingabeFeld.value.trim();
+  if (!text) return;
+
   eigeneAntwortGesetzt = true;
-  $("lu-optionen").querySelectorAll(".lu-option-btn").forEach((b) => { b.disabled = true; });
-  knopf.classList.add("lu-eigene-wahl");
+  eingabeFeld.disabled = true;
+  $("lu-antwort-absenden").disabled = true;
+  $("lu-frage-hinweis").textContent = "Getippt! Warte auf die anderen …";
   try {
+    const getipptesLand = findeLandZuText(text);
     await setDoc(doc(api.db, "raeume", api.code, "luAntworten", `${api.spielerId}_${rundeIndex}`), {
       spielerId: api.spielerId,
       spielerName: api.spielerName,
       rundeIndex,
-      landId,
-      richtig: landId === aktuellesLandId,
+      antwortText: text,
+      richtig: Boolean(getipptesLand && getipptesLand.id === aktuellesLandId),
       elapsedMs: Date.now() - frageSeit,
       zeitpunkt: serverTimestamp()
     });
   } catch (e) {
     eigeneAntwortGesetzt = false;
-    knopf.classList.remove("lu-eigene-wahl");
-    $("lu-optionen").querySelectorAll(".lu-option-btn").forEach((b) => { b.disabled = false; });
+    eingabeFeld.disabled = false;
+    $("lu-antwort-absenden").disabled = false;
     zeigeDebug("Fehler beim Tippen: " + e.message);
   }
 }
@@ -535,12 +544,11 @@ function zeigeRundenergebnis() {
   liste.innerHTML = "";
   sortiert.forEach((s) => {
     const antwort = antworten.find((a) => a.spielerId === s.id);
-    const getipptesLand = antwort ? landFuerId(antwort.landId) : null;
     let beschreibung;
     if (!antwort) beschreibung = "Nicht rechtzeitig getippt";
-    else if (antwort.richtig && s.id === schnellsteId) beschreibung = `Richtig (${getipptesLand?.name}) - am schnellsten! +2`;
-    else if (antwort.richtig) beschreibung = `Richtig (${getipptesLand?.name}) +1`;
-    else beschreibung = `Getippt: ${getipptesLand ? getipptesLand.name : "?"}`;
+    else if (antwort.richtig && s.id === schnellsteId) beschreibung = `Richtig (${escapeHtml(antwort.antwortText)}) - am schnellsten! +2`;
+    else if (antwort.richtig) beschreibung = `Richtig (${escapeHtml(antwort.antwortText)}) +1`;
+    else beschreibung = `Getippt: ${escapeHtml(antwort.antwortText || "?")}`;
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(
       s.name, s.farbe, s.icon,
@@ -557,13 +565,12 @@ async function naechsterSchrittNachRundenergebnis() {
       await updateDoc(api.raumRef(), { luStatus: "beendet" });
       speichereWertung(api, "laenderumrisse", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
     } else {
-      const { landId, optionenNeu } = neueRundeInhalt(verwendeteIds);
+      const landId = neueRundeLandId(verwendeteIds);
       await updateDoc(api.raumRef(), {
         luStatus: "frage",
         luRundeIndex: rundeIndex + 1,
         luVerwendeteIds: [...verwendeteIds, landId],
         luLandId: landId,
-        luOptionen: optionenNeu,
         luFrageSeit: Date.now(),
         luRundenergebnisSeit: 0
       });
