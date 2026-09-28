@@ -30,6 +30,10 @@ const STANDARD_ANZAHL = 10;
 // Wie lange die Rundenergebnis-Anzeige (richtiges Land + wer was getippt hat)
 // zu sehen ist, bevor der Spielleiter automatisch weiterschaltet.
 const RUNDENERGEBNIS_ANZEIGE_MS = 3500;
+// Buchstaben-Hinweise: der erste (zufällige) Buchstabe des Landesnamens
+// erscheint 15s nach Rundenstart, danach im 8-Sekunden-Takt ein weiterer.
+const ERSTE_AUFDECKUNG_MS = 15000;
+const AUFDECK_ABSTAND_MS = 8000;
 
 let alleLaender = [];
 let ladeFehler = "";
@@ -57,9 +61,44 @@ function normalisiere(text) {
     .trim();
 }
 
+// Nur echte Buchstaben (inkl. Umlaute) gelten als "aufdeckbar" - Leerzeichen,
+// Bindestriche o. Ä. werden immer direkt angezeigt (siehe Blitzquiz-Wortratespiel,
+// von dem dieses Muster übernommen ist).
+function istBuchstabe(zeichen) {
+  return /[a-zA-ZÀ-ÖØ-öø-ÿ]/.test(zeichen);
+}
+
+function buchstabenIndizes(name) {
+  const indizes = [];
+  for (let i = 0; i < name.length; i++) {
+    if (istBuchstabe(name[i])) indizes.push(i);
+  }
+  return indizes;
+}
+
+function mischeArray(werte) {
+  const kopie = [...werte];
+  for (let i = kopie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [kopie[i], kopie[j]] = [kopie[j], kopie[i]];
+  }
+  return kopie;
+}
+
+// Der letzte Buchstabe bleibt immer verdeckt, damit sich das Rätsel nicht von
+// allein auflöst.
+function maxAufdeckAnzahl(name) {
+  return Math.max(0, buchstabenIndizes(name).length - 1);
+}
+
+function gewuenschteAufdeckAnzahl(elapsedMs, maximal) {
+  if (elapsedMs < ERSTE_AUFDECKUNG_MS) return 0;
+  const wert = 1 + Math.floor((elapsedMs - ERSTE_AUFDECKUNG_MS) / AUFDECK_ABSTAND_MS);
+  return Math.min(maximal, wert);
+}
+
 const VORLAGE = `
   <div id="lu-setup" class="bildschirm-karte" hidden>
-    <h1>🗺️ Länderumrisse</h1>
     <p class="hinweis-text">Nur der Umriss ist zu sehen - welches Land ist das? Tippt den Namen per
       Texteingabe; Groß-/Kleinschreibung ist egal und sowohl Deutsch als auch Englisch zählt. Richtig
       bringt einen Punkt, am schnellsten richtig einen Bonuspunkt dazu.</p>
@@ -92,6 +131,7 @@ const VORLAGE = `
   <div id="lu-frage-screen" class="bildschirm-karte" hidden>
     <p class="kategorie">Länderumrisse</p>
     <div id="lu-umriss-anzeige" class="lu-umriss-anzeige"></div>
+    <div id="lu-buchstaben-reihe" class="lu-buchstaben-reihe"></div>
     <p id="lu-frage-hinweis" class="hinweis-text"></p>
     <p class="lu-antwort-zeile">
       <input id="lu-antwort-eingabe" type="text" placeholder="Land eingeben …" autocomplete="off">
@@ -129,6 +169,10 @@ let verwendeteIds = [];
 let aktuellesLandId = null;
 let frageSeit = 0;
 let rundenergebnisSeit = 0;
+let buchstabenReihenfolge = [];
+let aufdeckAnzahl = 0;
+let aufdeckAnzahlGerendert = -1;
+let aufdeckFortschreibenLaeuft = false;
 
 let eigeneAntwortGesetzt = false;
 // Verhindert, dass der Spielleiter denselben automatischen Übergang mehrfach
@@ -163,6 +207,15 @@ function neueRundeLandId(bisherigeIds) {
   return pool[Math.floor(Math.random() * pool.length)].id;
 }
 
+// Als kommagetrennte Zeichenkette statt Array gespeichert - Firestore erlaubt
+// kein Array-im-Array/-Objekt in einem einzelnen Feld hier nicht relevant,
+// aber so bleibt das Format konsistent einfach und leicht zu parsen.
+function neueBuchstabenReihenfolge(landId) {
+  const land = landFuerId(landId);
+  if (!land) return "";
+  return mischeArray(buchstabenIndizes(land.name)).join(",");
+}
+
 export async function starten(uebergebeneApi) {
   api = uebergebeneApi;
   el.wurzel = api.wurzel;
@@ -180,6 +233,7 @@ export async function starten(uebergebeneApi) {
     await updateDoc(api.raumRef(), {
       luStatus: "setup", luRundeIndex: 0, luAnzahlRunden: 0,
       luZeitSekunden: STANDARD_ZEIT_SEKUNDEN, luVerwendeteIds: [], luLandId: null,
+      luBuchstabenReihenfolge: "", luAufdeckAnzahl: 0,
       luFrageSeit: 0, luRundenergebnisSeit: 0
     });
   }
@@ -245,6 +299,10 @@ export function beenden() {
   aktuellesLandId = null;
   frageSeit = 0;
   rundenergebnisSeit = 0;
+  buchstabenReihenfolge = [];
+  aufdeckAnzahl = 0;
+  aufdeckAnzahlGerendert = -1;
+  aufdeckFortschreibenLaeuft = false;
   eigeneAntwortGesetzt = false;
   auswertungAusgeloest = false;
   rundenergebnisAusgeloest = false;
@@ -269,6 +327,10 @@ export function raumDaten(daten) {
   zeitSekunden = daten.luZeitSekunden ?? STANDARD_ZEIT_SEKUNDEN;
   verwendeteIds = daten.luVerwendeteIds ?? [];
   aktuellesLandId = daten.luLandId ?? null;
+  buchstabenReihenfolge = daten.luBuchstabenReihenfolge
+    ? daten.luBuchstabenReihenfolge.split(",").map(Number)
+    : [];
+  aufdeckAnzahl = daten.luAufdeckAnzahl ?? 0;
 
   const neueRunde = daten.luRundeIndex ?? 0;
   const neuerFrageSeit = daten.luFrageSeit ?? 0;
@@ -278,6 +340,7 @@ export function raumDaten(daten) {
     eigeneAntwortGesetzt = false;
     auswertungAusgeloest = false;
     frageGerendert = false;
+    aufdeckAnzahlGerendert = -1;
   } else {
     rundeIndex = neueRunde;
   }
@@ -303,6 +366,7 @@ export function raumDaten(daten) {
       zeigeFrage();
     } else {
       aktualisiereFrageStatus();
+      rendereBuchstabenAnzeige();
     }
     $("lu-frage-screen").hidden = false;
   } else if (status === "rundenergebnis") {
@@ -386,6 +450,8 @@ async function spielStarten() {
       luZeitSekunden: zeit,
       luVerwendeteIds: [landId],
       luLandId: landId,
+      luBuchstabenReihenfolge: neueBuchstabenReihenfolge(landId),
+      luAufdeckAnzahl: 0,
       luFrageSeit: Date.now(),
       luRundenergebnisSeit: 0
     });
@@ -408,6 +474,7 @@ export async function vorZurueck() {
     await updateDoc(api.raumRef(), {
       luStatus: null, luRundeIndex: 0, luAnzahlRunden: 0,
       luZeitSekunden: STANDARD_ZEIT_SEKUNDEN, luVerwendeteIds: [], luLandId: null,
+      luBuchstabenReihenfolge: "", luAufdeckAnzahl: 0,
       luFrageSeit: 0, luRundenergebnisSeit: 0
     });
     await api.zurueckZurAuswahl();
@@ -426,6 +493,37 @@ function zeigeFrage() {
   $("lu-antwort-eingabe").disabled = false;
   $("lu-antwort-absenden").disabled = false;
   aktualisiereFrageStatus();
+  rendereBuchstabenAnzeige();
+}
+
+// Zeigt für jeden Buchstaben des Landesnamens ein Kästchen (Leerzeichen/
+// Bindestriche als Lücke ohne Kästchen) - analog zum Wortrate-Rätsel bei
+// Blitzquiz. Wird nur neu gebaut, wenn sich aufdeckAnzahl tatsächlich
+// geändert hat (v205-Lehre: sonst würde die Reihe bei jedem raumDaten()-
+// Aufruf flackern).
+function rendereBuchstabenAnzeige() {
+  if (!el.wurzel || status !== "frage") return;
+  if (aufdeckAnzahl === aufdeckAnzahlGerendert) return;
+  aufdeckAnzahlGerendert = aufdeckAnzahl;
+
+  const land = landFuerId(aktuellesLandId);
+  const reihe = $("lu-buchstaben-reihe");
+  reihe.innerHTML = "";
+  if (!land) return;
+
+  const aufgedeckt = new Set(buchstabenReihenfolge.slice(0, aufdeckAnzahl));
+  for (let i = 0; i < land.name.length; i++) {
+    const zeichen = land.name[i];
+    const span = document.createElement("span");
+    if (!istBuchstabe(zeichen)) {
+      span.className = "lu-buchstabe-luecke";
+      span.textContent = zeichen;
+    } else {
+      span.className = "lu-buchstabe-kasten" + (aufgedeckt.has(i) ? " lu-aufgedeckt" : "");
+      span.textContent = aufgedeckt.has(i) ? zeichen.toUpperCase() : "";
+    }
+    reihe.appendChild(span);
+  }
 }
 
 function antwortenDieserRunde() {
@@ -493,7 +591,10 @@ function spielTick() {
         ? `Noch ${Math.ceil(rest / 1000)}s, um zu tippen`
         : "Zeit ist um!";
     }
-    if (api.istLeiter) pruefeFrageAuswertung(elapsed);
+    if (api.istLeiter) {
+      pruefeFrageAuswertung(elapsed);
+      pruefeBuchstabenAufdeckung(elapsed);
+    }
   } else if (status === "rundenergebnis") {
     if (api.istLeiter && !rundenergebnisAusgeloest && jetzt - rundenergebnisSeit >= RUNDENERGEBNIS_ANZEIGE_MS) {
       rundenergebnisAusgeloest = true;
@@ -527,6 +628,26 @@ async function pruefeFrageAuswertung(elapsed) {
     auswertungAusgeloest = false;
     zeigeDebug("Fehler bei der Auswertung: " + e.message);
   }
+}
+
+// Nur der Spielleiter-Client schreibt das Aufdecken in den Raum - sonst
+// würden mehrere Geräte gleichzeitig denselben nächsten Schritt aufdecken
+// (siehe gleiches Muster bei Blitzquiz' Wortrate-Rätsel).
+async function pruefeBuchstabenAufdeckung(elapsed) {
+  if (!api.istLeiter || status !== "frage" || aufdeckFortschreibenLaeuft) return;
+  const land = landFuerId(aktuellesLandId);
+  if (!land) return;
+  const maximal = maxAufdeckAnzahl(land.name);
+  const gewuenscht = gewuenschteAufdeckAnzahl(elapsed, maximal);
+  if (gewuenscht <= aufdeckAnzahl) return;
+
+  aufdeckFortschreibenLaeuft = true;
+  try {
+    await updateDoc(api.raumRef(), { luAufdeckAnzahl: gewuenscht });
+  } catch (e) {
+    zeigeDebug("Fehler beim Aufdecken: " + e.message);
+  }
+  aufdeckFortschreibenLaeuft = false;
 }
 
 function zeigeRundenergebnis() {
@@ -571,6 +692,8 @@ async function naechsterSchrittNachRundenergebnis() {
         luRundeIndex: rundeIndex + 1,
         luVerwendeteIds: [...verwendeteIds, landId],
         luLandId: landId,
+        luBuchstabenReihenfolge: neueBuchstabenReihenfolge(landId),
+        luAufdeckAnzahl: 0,
         luFrageSeit: Date.now(),
         luRundenergebnisSeit: 0
       });

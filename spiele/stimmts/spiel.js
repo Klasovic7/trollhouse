@@ -20,7 +20,7 @@ import {
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 
-const STANDARD_ZEIT_SEKUNDEN = 12;
+const STANDARD_ZEIT_SEKUNDEN = 15;
 const MIN_ZEIT = 5;
 const MAX_ZEIT = 30;
 const STANDARD_ANZAHL = 10;
@@ -43,7 +43,6 @@ async function ladeFragenDaten() {
 
 const VORLAGE = `
   <div id="st-setup" class="bildschirm-karte" hidden>
-    <h1>🤔 Stimmt's?</h1>
     <p class="hinweis-text">Eine Behauptung erscheint - stimmt sie, oder ist sie erfunden? Tippt
       "Stimmt" oder "Stimmt nicht". Richtig bringt einen Punkt, am schnellsten richtig einen
       Bonuspunkt dazu.</p>
