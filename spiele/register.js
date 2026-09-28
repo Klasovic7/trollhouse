@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "208";
+const SPIEL_VERSION = "209";
 
 export const SPIELE = [
   {
@@ -110,6 +110,15 @@ export const SPIELE = [
     beschreibung: "Blind mitzählen und zur richtigen Sekunde buzzern",
     minSpieler: 1,
     laden: () => import(`./zeitgefuehl/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "laenderumrisse",
+    name: "Länderumrisse",
+    emoji: "🗺️",
+    farbe: "#0ea5e9",
+    beschreibung: "Nur der Umriss ist zu sehen - welches Land ist das?",
+    minSpieler: 2,
+    laden: () => import(`./laenderumrisse/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "finto",
