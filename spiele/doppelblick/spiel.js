@@ -250,6 +250,9 @@ let rundenKartenB = [];
 let rundenGemeinsam = []; // Flaches Zahlen-Array: die gesuchte Symbol-Id je Runde
 let rundeSeit = 0;
 let gewuenschteAnzahl = 0;
+let anzahlEntwurf = null;
+let kpspEntwurf = null;
+let dbEntwurfTimer = null;
 let teammodus = false;
 let teams = {};
 let ausgewertetAusgeloest = false;
@@ -389,6 +392,7 @@ function verdrahteBedienelemente() {
     const feld = $("db-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeEntwurfLive();
   });
   $("db-anzahl").addEventListener("change", () => anzahlUebernehmen());
   $("db-anzahl").addEventListener("focus", () => { $("db-anzahl").select(); });
@@ -396,6 +400,7 @@ function verdrahteBedienelemente() {
     const feld = $("db-kpsp");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeEntwurfLive();
   });
   $("db-kpsp").addEventListener("change", () => kartenProSpielerUebernehmen());
   $("db-kpsp").addEventListener("focus", () => { $("db-kpsp").select(); });
@@ -407,6 +412,23 @@ function verdrahteBedienelemente() {
   $("db-teams-zufall").addEventListener("click", zufaelligeTeams);
   $("db-starten").addEventListener("click", spielStarten);
   $("db-weiter").addEventListener("click", weiter);
+}
+
+// v214: Schreibt "Anzahl Runden" (Schnelligkeit) bzw. "Karten pro Spieler"
+// (Turm) entprellt live in den Raum, damit Mitspieler*innen im
+// Setup-Bildschirm sofort den tatsaechlichen Stand sehen statt eines
+// stehengebliebenen Default-Werts.
+function schreibeEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(dbEntwurfTimer);
+  dbEntwurfTimer = setTimeout(() => {
+    const patch = {};
+    const anzahlWert = parseInt($("db-anzahl").value, 10);
+    if (Number.isFinite(anzahlWert) && anzahlWert > 0) patch.dbAnzahlEntwurf = anzahlWert;
+    const kpspWert = parseInt($("db-kpsp").value, 10);
+    if (Number.isFinite(kpspWert) && kpspWert > 0) patch.dbKpspEntwurf = kpspWert;
+    if (Object.keys(patch).length > 0) updateDoc(api.raumRef(), patch).catch(() => {});
+  }, 300);
 }
 
 function starteListener() {
@@ -425,7 +447,7 @@ export function beenden() {
   el = {}; raum = {}; spielerListe = []; alleAntworten = [];
   index = -1; anzahlRunden = 0; status = null;
   rundenKartenA = []; rundenKartenB = []; rundenGemeinsam = []; rundeSeit = 0;
-  gewuenschteAnzahl = 0; teammodus = false; teams = {};
+  gewuenschteAnzahl = 0; anzahlEntwurf = null; kpspEntwurf = null; teammodus = false; teams = {};
   ausgewertetAusgeloest = false; eigeneAntwortenLokal = {};
   rotationRunde = -1; rotationenA = []; rotationenB = []; groessenA = []; groessenB = [];
   spielModus = "schnelligkeit"; gewuenschteKartenProSpieler = 0;
@@ -455,6 +477,8 @@ export function raumDaten(daten) {
   status = daten.dbStatus ?? null;
   spielModus = daten.dbModus === "turm" ? "turm" : "schnelligkeit";
   anzahlRunden = daten.dbAnzahlRunden ?? 0;
+  anzahlEntwurf = daten.dbAnzahlEntwurf ?? null;
+  kpspEntwurf = daten.dbKpspEntwurf ?? null;
   rundenKartenA = daten.dbKartenA ?? [];
   rundenKartenB = daten.dbKartenB ?? [];
   rundenGemeinsam = daten.dbGemeinsam ?? [];
@@ -539,17 +563,26 @@ function zeigeSetup() {
     $("db-anzahl").value = String(gewuenschteAnzahl);
     $("db-anzahl-max").textContent = `In der Olympiade festgelegt: ${gewuenschteAnzahl} Runde${gewuenschteAnzahl === 1 ? "" : "n"}.`;
     $("db-anzahl").disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (gewuenschteAnzahl === 0) gewuenschteAnzahl = Math.min(STANDARD_ANZAHL, MAX_RUNDEN);
     $("db-anzahl").value = String(gewuenschteAnzahl);
     $("db-anzahl-max").textContent = `Insgesamt ${MAX_RUNDEN} Runden möglich.`;
-    $("db-anzahl").disabled = !api.istLeiter;
+    $("db-anzahl").disabled = false;
+  } else {
+    gewuenschteAnzahl = anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, MAX_RUNDEN);
+    $("db-anzahl").value = String(gewuenschteAnzahl);
+    $("db-anzahl-max").textContent = `Insgesamt ${MAX_RUNDEN} Runden möglich.`;
+    $("db-anzahl").disabled = true;
   }
   $("db-anzahl-zeile").hidden = istTurm;
 
   const maxKpsp = maxKartenProSpieler();
-  if (gewuenschteKartenProSpieler === 0) gewuenschteKartenProSpieler = Math.min(5, maxKpsp);
-  if (gewuenschteKartenProSpieler > maxKpsp) gewuenschteKartenProSpieler = maxKpsp;
+  if (api.istLeiter) {
+    if (gewuenschteKartenProSpieler === 0) gewuenschteKartenProSpieler = Math.min(5, maxKpsp);
+    if (gewuenschteKartenProSpieler > maxKpsp) gewuenschteKartenProSpieler = maxKpsp;
+  } else {
+    gewuenschteKartenProSpieler = Math.min(kpspEntwurf ?? Math.min(5, maxKpsp), maxKpsp);
+  }
   $("db-kpsp").max = String(maxKpsp);
   $("db-kpsp").value = String(gewuenschteKartenProSpieler);
   $("db-kpsp-zeile").hidden = !istTurm;
@@ -667,7 +700,7 @@ function anzahlUebernehmen() {
 
 async function setzeGrundzustand(dbStatus) {
   await updateDoc(api.raumRef(), {
-    dbStatus, dbModus: spielModus, dbRundenIndex: 0, dbAnzahlRunden: 0,
+    dbStatus, dbModus: spielModus, dbRundenIndex: 0, dbAnzahlRunden: 0, dbAnzahlEntwurf: 0, dbKpspEntwurf: 0,
     dbKartenA: [], dbKartenB: [], dbGemeinsam: [], dbRundeSeit: 0,
     dbTeammodus: false, dbTeams: {},
     dtMitte: null, dtStapel: {}, dtKartenProSpieler: 0, dtSiegerId: null

@@ -160,6 +160,8 @@ let tickId = null;
 let status = null;
 let rundeIndex = -1;
 let anzahlRunden = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let verwendeteIds = [];
 let aktuellesLandId = null;
 let frageSeit = 0;
@@ -226,7 +228,7 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.luStatus) {
     await updateDoc(api.raumRef(), {
-      luStatus: "setup", luRundeIndex: 0, luAnzahlRunden: 0,
+      luStatus: "setup", luRundeIndex: 0, luAnzahlRunden: 0, luAnzahlEntwurf: 0,
       luVerwendeteIds: [], luLandId: null,
       luBuchstabenReihenfolge: "", luAufdeckAnzahl: 0,
       luFrageSeit: 0, luRundenergebnisSeit: 0
@@ -241,6 +243,7 @@ function verdrahteBedienelemente() {
     const feld = $("lu-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeAnzahlEntwurfLive();
   });
   $("lu-anzahl").addEventListener("change", () => {
     const feld = $("lu-anzahl");
@@ -255,6 +258,22 @@ function verdrahteBedienelemente() {
   $("lu-starten").addEventListener("click", spielStarten);
   $("lu-antwort-absenden").addEventListener("click", antwortAbsenden);
   $("lu-antwort-eingabe").addEventListener("keydown", (e) => { if (e.key === "Enter") antwortAbsenden(); });
+}
+
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl Runden"-Wert entprellt
+// live in den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen - vorher wurde der Wert erst beim Klick auf
+// "Spiel starten" geschrieben, bis dahin sahen alle anderen weiterhin den
+// lokalen Default.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("lu-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { luAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
 }
 
 function starteListener() {
@@ -304,6 +323,7 @@ export function raumDaten(daten) {
   if (!daten || !el.wurzel) return;
   status = daten.luStatus ?? null;
   anzahlRunden = daten.luAnzahlRunden ?? 0;
+  anzahlEntwurf = daten.luAnzahlEntwurf ?? null;
   verwendeteIds = daten.luVerwendeteIds ?? [];
   aktuellesLandId = daten.luLandId ?? null;
   buchstabenReihenfolge = daten.luBuchstabenReihenfolge
@@ -376,10 +396,16 @@ function zeigeSetup() {
     $("lu-anzahl-max").textContent =
       `In der Olympiade festgelegt: ${festgelegt} ${festgelegt === 1 ? "Runde" : "Runden"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(Math.min(STANDARD_ANZAHL, maxRunden));
     $("lu-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einem neuen Land.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    // Mitspieler*innen sehen live den Wert, den der Leiter gerade eintippt
+    // (oder den Standard, solange der Leiter noch nichts geaendert hat).
+    anzahlFeld.value = String(anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, maxRunden));
+    $("lu-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einem neuen Land.`;
+    anzahlFeld.disabled = true;
   }
   $("lu-anzahl-zeile").hidden = false;
 
@@ -442,7 +468,7 @@ export async function vorZurueck() {
   try {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
-      luStatus: null, luRundeIndex: 0, luAnzahlRunden: 0,
+      luStatus: null, luRundeIndex: 0, luAnzahlRunden: 0, luAnzahlEntwurf: 0,
       luVerwendeteIds: [], luLandId: null,
       luBuchstabenReihenfolge: "", luAufdeckAnzahl: 0,
       luFrageSeit: 0, luRundenergebnisSeit: 0

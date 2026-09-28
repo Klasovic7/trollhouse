@@ -90,6 +90,8 @@ let tickId = null;
 let status = null;
 let rundenIndex = -1;
 let anzahlRunden = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let zielSekunden = 0;
 let vorbereitungSeit = 0;
 let eigenerBuzzerGedrueckt = false;
@@ -119,7 +121,7 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.zgStatus) {
     await updateDoc(api.raumRef(), {
-      zgStatus: "setup", zgRundenIndex: 0, zgAnzahlRunden: 0,
+      zgStatus: "setup", zgRundenIndex: 0, zgAnzahlRunden: 0, zgAnzahlEntwurf: 0,
       zgZielSekunden: 0, zgVorbereitungSeit: 0
     });
   }
@@ -136,6 +138,7 @@ function verdrahteBedienelemente() {
     const feld = $("zg-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeAnzahlEntwurfLive();
   });
   $("zg-anzahl").addEventListener("change", () => {
     const feld = $("zg-anzahl");
@@ -148,6 +151,20 @@ function verdrahteBedienelemente() {
   $("zg-starten").addEventListener("click", spielStarten);
   $("zg-buzzer").addEventListener("click", buzzerGedrueckt);
   $("zg-weiter").addEventListener("click", weiter);
+}
+
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("zg-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { zgAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
 }
 
 function starteListener() {
@@ -169,6 +186,7 @@ export function beenden() {
   status = null;
   rundenIndex = -1;
   anzahlRunden = 0;
+  anzahlEntwurf = null;
   zielSekunden = 0;
   vorbereitungSeit = 0;
   eigenerBuzzerGedrueckt = false;
@@ -188,6 +206,7 @@ export function raumDaten(daten) {
   if (!daten || !el.wurzel) return;
   status = daten.zgStatus ?? null;
   anzahlRunden = daten.zgAnzahlRunden ?? 0;
+  anzahlEntwurf = daten.zgAnzahlEntwurf ?? null;
 
   const neuerIndex = daten.zgRundenIndex ?? 0;
   const neuesZiel = daten.zgZielSekunden ?? 0;
@@ -245,11 +264,16 @@ function zeigeSetup() {
     $("zg-anzahl-max").textContent =
       `In der Olympiade festgelegt: ${festgelegt} ${festgelegt === 1 ? "Runde" : "Runden"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(STANDARD_ANZAHL);
     $("zg-anzahl-max").textContent =
       `Zielzeiten zwischen ${ZIEL_MIN} und ${ZIEL_MAX} Sekunden, bis zu ${MAX_RUNDEN} Runden.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    $("zg-anzahl-max").textContent =
+      `Zielzeiten zwischen ${ZIEL_MIN} und ${ZIEL_MAX} Sekunden, bis zu ${MAX_RUNDEN} Runden.`;
+    anzahlFeld.disabled = true;
   }
   $("zg-anzahl-zeile").hidden = false;
   $("zg-starten").hidden = !api.istLeiter;
@@ -300,7 +324,7 @@ export async function vorZurueck() {
   try {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
-      zgStatus: null, zgRundenIndex: 0, zgAnzahlRunden: 0,
+      zgStatus: null, zgRundenIndex: 0, zgAnzahlRunden: 0, zgAnzahlEntwurf: 0,
       zgZielSekunden: 0, zgVorbereitungSeit: 0
     });
     await api.zurueckZurAuswahl();

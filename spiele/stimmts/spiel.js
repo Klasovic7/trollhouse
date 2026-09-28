@@ -109,6 +109,9 @@ let status = null;
 let rundeIndex = -1;
 let anzahlRunden = 0;
 let zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
+let anzahlEntwurf = null;
+let zeitEntwurf = null;
+let entwurfTimer = null;
 let verwendeteIndizes = [];
 let aktuellerFrageIndex = null;
 let frageSeit = 0;
@@ -156,8 +159,8 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.stStatus) {
     await updateDoc(api.raumRef(), {
-      stStatus: "setup", stRundeIndex: 0, stAnzahlRunden: 0,
-      stZeitSekunden: STANDARD_ZEIT_SEKUNDEN, stVerwendeteIndizes: [], stFrageIndex: null,
+      stStatus: "setup", stRundeIndex: 0, stAnzahlRunden: 0, stAnzahlEntwurf: 0,
+      stZeitSekunden: STANDARD_ZEIT_SEKUNDEN, stZeitEntwurf: STANDARD_ZEIT_SEKUNDEN, stVerwendeteIndizes: [], stFrageIndex: null,
       stFrageSeit: 0, stRundenergebnisSeit: 0
     });
   }
@@ -170,6 +173,7 @@ function verdrahteBedienelemente() {
     const feld = $("st-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeEntwurfLive();
   });
   $("st-anzahl").addEventListener("change", () => {
     const feld = $("st-anzahl");
@@ -185,6 +189,7 @@ function verdrahteBedienelemente() {
     const feld = $("st-zeit");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeEntwurfLive();
   });
   $("st-zeit").addEventListener("change", () => {
     const feld = $("st-zeit");
@@ -198,6 +203,23 @@ function verdrahteBedienelemente() {
   $("st-starten").addEventListener("click", spielStarten);
   $("st-antwort-ja").addEventListener("click", () => antwortGetippt(true));
   $("st-antwort-nein").addEventListener("click", () => antwortGetippt(false));
+}
+
+// v214: Schreibt "Anzahl Runden" und "Zeit zum Tippen" entprellt live in den
+// Raum, sobald der Leiter tippt, damit Mitspieler*innen im Setup-Bildschirm
+// sofort den tatsaechlichen Stand sehen statt eines stehengebliebenen
+// Default-Werts.
+function schreibeEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(entwurfTimer);
+  entwurfTimer = setTimeout(() => {
+    const patch = {};
+    const anzahlWert = parseInt($("st-anzahl").value, 10);
+    if (Number.isFinite(anzahlWert) && anzahlWert > 0) patch.stAnzahlEntwurf = anzahlWert;
+    const zeitWert = parseInt($("st-zeit").value, 10);
+    if (Number.isFinite(zeitWert) && zeitWert > 0) patch.stZeitEntwurf = zeitWert;
+    if (Object.keys(patch).length > 0) updateDoc(api.raumRef(), patch).catch(() => {});
+  }, 300);
 }
 
 function starteListener() {
@@ -219,6 +241,8 @@ export function beenden() {
   rundeIndex = -1;
   anzahlRunden = 0;
   zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
+  anzahlEntwurf = null;
+  zeitEntwurf = null;
   verwendeteIndizes = [];
   aktuellerFrageIndex = null;
   frageSeit = 0;
@@ -245,6 +269,8 @@ export function raumDaten(daten) {
   status = daten.stStatus ?? null;
   anzahlRunden = daten.stAnzahlRunden ?? 0;
   zeitSekunden = daten.stZeitSekunden ?? STANDARD_ZEIT_SEKUNDEN;
+  anzahlEntwurf = daten.stAnzahlEntwurf ?? null;
+  zeitEntwurf = daten.stZeitEntwurf ?? null;
   verwendeteIndizes = daten.stVerwendeteIndizes ?? [];
   aktuellerFrageIndex = daten.stFrageIndex ?? null;
 
@@ -311,15 +337,23 @@ function zeigeSetup() {
     $("st-anzahl-max").textContent =
       `In der Olympiade festgelegt: ${festgelegt} ${festgelegt === 1 ? "Runde" : "Runden"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(Math.min(STANDARD_ANZAHL, maxRunden));
     $("st-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einer neuen Behauptung.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, maxRunden));
+    $("st-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einer neuen Behauptung.`;
+    anzahlFeld.disabled = true;
   }
   $("st-anzahl-zeile").hidden = false;
 
   const zeitFeld = $("st-zeit");
-  if (!zeitFeld.value) zeitFeld.value = String(STANDARD_ZEIT_SEKUNDEN);
+  if (api.istLeiter) {
+    if (!zeitFeld.value) zeitFeld.value = String(STANDARD_ZEIT_SEKUNDEN);
+  } else {
+    zeitFeld.value = String(zeitEntwurf ?? STANDARD_ZEIT_SEKUNDEN);
+  }
   zeitFeld.disabled = !api.istLeiter;
 
   $("st-starten").hidden = !api.istLeiter || alleFragen.length === 0;
@@ -384,7 +418,7 @@ export async function vorZurueck() {
   try {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
-      stStatus: null, stRundeIndex: 0, stAnzahlRunden: 0,
+      stStatus: null, stRundeIndex: 0, stAnzahlRunden: 0, stAnzahlEntwurf: 0,
       stZeitSekunden: STANDARD_ZEIT_SEKUNDEN, stVerwendeteIndizes: [], stFrageIndex: null,
       stFrageSeit: 0, stRundenergebnisSeit: 0
     });

@@ -78,6 +78,8 @@ let frageVersion = 0;
 let reihenfolge = [];
 let gespielt = []; // Indizes der zuletzt gespielten Fragen (fuer Wiederholungsschutz)
 let anzahlFragen = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let ausgewertetAusgeloest = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
@@ -156,7 +158,7 @@ export async function starten(uebergebeneApi) {
   if (api.istLeiter && !api.raum?.dgStatus) {
     await updateDoc(api.raumRef(), {
       dgStatus: "setup", dgFragenIndex: 0, dgFrageVersion: 0,
-      dgReihenfolge: [], dgAnzahlFragen: 0
+      dgReihenfolge: [], dgAnzahlFragen: 0, dgAnzahlEntwurf: 0
     });
   }
 
@@ -174,6 +176,7 @@ function verdrahteBedienelemente() {
     const feld = $("dg-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeAnzahlEntwurfLive();
   });
   // v197: type="text" (fuer verlaessliches select() bei Fokus, siehe unten)
   // ignoriert das max-Attribut - ohne diese eigene Begrenzung beim Verlassen
@@ -199,6 +202,20 @@ function verdrahteBedienelemente() {
   $("dg-weiter").addEventListener("click", weiter);
 }
 
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("dg-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { dgAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
+}
+
 function starteListener() {
   antwortenUnsub = onSnapshot(collection(api.db, "raeume", api.code, "dgAntworten"), (snap) => {
     alleAntworten = [];
@@ -218,6 +235,7 @@ export function beenden() {
   frageVersion = 0;
   reihenfolge = [];
   anzahlFragen = 0;
+  anzahlEntwurf = null;
   ausgewertetAusgeloest = false;
 }
 
@@ -235,6 +253,7 @@ export function raumDaten(daten) {
   reihenfolge = daten.dgReihenfolge ?? [];
   gespielt = daten.dgGespielt ?? [];
   anzahlFragen = daten.dgAnzahlFragen ?? 0;
+  anzahlEntwurf = daten.dgAnzahlEntwurf ?? null;
 
   const neuerIndex = daten.dgFragenIndex ?? 0;
   const neueVersion = daten.dgFrageVersion ?? 0;
@@ -295,10 +314,14 @@ function zeigeSetup() {
     anzahlFeld.value = String(festgelegt);
     $("dg-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} ${festgelegt === 1 ? "Frage" : "Fragen"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = fragen.length;
     $("dg-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? fragen.length);
+    $("dg-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
+    anzahlFeld.disabled = true;
   }
   $("dg-anzahl-zeile").hidden = false;
   $("dg-starten").hidden = !api.istLeiter;
@@ -371,7 +394,7 @@ export async function vorZurueck() {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
       dgStatus: null, dgFragenIndex: 0, dgFrageVersion: 0,
-      dgReihenfolge: [], dgAnzahlFragen: 0
+      dgReihenfolge: [], dgAnzahlFragen: 0, dgAnzahlEntwurf: 0
     });
     await api.zurueckZurAuswahl();
   } catch (e) {

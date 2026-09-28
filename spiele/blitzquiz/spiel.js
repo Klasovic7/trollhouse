@@ -184,6 +184,8 @@ let gespielt = { wort: [], speed: [], bild: [] };
 // Permutation der (nur Buchstaben-)Indizes der Lösung, in Aufdeck-Reihenfolge.
 let buchstabenReihenfolgen = [];
 let anzahlFragen = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let status = null;
 let frageSeit = 0;
 let aufdeckAnzahl = 0;
@@ -315,6 +317,7 @@ function verdrahteBedienelemente() {
     const feld = $("bz-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+    schreibeAnzahlEntwurfLive();
   });
   $("bz-anzahl").addEventListener("change", () => anzahlUebernehmen());
   $("bz-anzahl").addEventListener("focus", () => { $("bz-anzahl").select(); });
@@ -343,7 +346,7 @@ export function beenden() {
   el = {}; raum = {}; spielerListe = []; alleAntworten = [];
   index = -1; reihenfolge = []; gespielt = { wort: [], speed: [], bild: [] };
   buchstabenReihenfolgen = []; anzahlFragen = 0; status = null;
-  frageSeit = 0; aufdeckAnzahl = 0; gewuenschteAnzahl = 0;
+  frageSeit = 0; aufdeckAnzahl = 0; gewuenschteAnzahl = 0; anzahlEntwurf = null;
   teammodus = false; teams = {};
   ausgewertetAusgeloest = false; aufdeckFortschreibenLaeuft = false;
 }
@@ -380,6 +383,7 @@ export function raumDaten(daten) {
     eintrag ? eintrag.split(",").map(Number) : []
   );
   anzahlFragen = daten.bzAnzahlFragen ?? 0;
+  anzahlEntwurf = daten.bzAnzahlEntwurf ?? null;
   frageSeit = daten.bzFrageSeit ?? 0;
   aufdeckAnzahl = daten.bzAufdeckAnzahl ?? 0;
   teammodus = !!daten.bzTeammodus;
@@ -443,13 +447,20 @@ function zeigeSetup() {
     $("bz-anzahl-max").textContent = `In der Olympiade festgelegt: ${gewuenschteAnzahl} ${gewuenschteAnzahl === 1 ? "Frage" : "Fragen"}.`;
     $("bz-anzahl-zeile").hidden = false;
     $("bz-anzahl").disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (gewuenschteAnzahl === 0) gewuenschteAnzahl = Math.min(STANDARD_ANZAHL, fragen.length);
     $("bz-anzahl").max = String(Math.max(1, fragen.length));
     $("bz-anzahl").value = String(gewuenschteAnzahl);
     $("bz-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
     $("bz-anzahl-zeile").hidden = false;
-    $("bz-anzahl").disabled = !api.istLeiter;
+    $("bz-anzahl").disabled = false;
+  } else {
+    gewuenschteAnzahl = anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, fragen.length);
+    $("bz-anzahl").max = String(Math.max(1, fragen.length));
+    $("bz-anzahl").value = String(gewuenschteAnzahl);
+    $("bz-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
+    $("bz-anzahl-zeile").hidden = false;
+    $("bz-anzahl").disabled = true;
   }
   // v200: in der Olympiade entfaellt der Team-Modus komplett - alle spielen
   // einzeln, damit sich niemand extra dafuer koordinieren muss.
@@ -528,6 +539,20 @@ function rendereTeamListe(team) {
   $("bz-team-wahl-" + team).classList.toggle("zt-team-eigenes", teams[api.spielerId] === team);
 }
 
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("bz-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { bzAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
+}
+
 function anzahlUebernehmen() {
   if (!api.istLeiter) return;
   let wert = parseInt($("bz-anzahl").value, 10);
@@ -539,7 +564,7 @@ function anzahlUebernehmen() {
 
 async function setzeGrundzustand(bzStatus) {
   await updateDoc(api.raumRef(), {
-    bzStatus, bzReihenfolge: [], bzBuchstabenReihenfolgen: [], bzFragenIndex: 0, bzAnzahlFragen: 0,
+    bzStatus, bzReihenfolge: [], bzBuchstabenReihenfolgen: [], bzFragenIndex: 0, bzAnzahlFragen: 0, bzAnzahlEntwurf: 0,
     bzFrageSeit: 0, bzAufdeckAnzahl: 0, bzTeammodus: false, bzTeams: {}
   });
 }

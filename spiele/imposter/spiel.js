@@ -126,6 +126,9 @@ let rundenIndex = -1;
 let wortIndex = -1;
 let imposterIds = [];
 let anzahlImposter = 1;
+let anzahlEntwurf = null;
+let anzahlImposterEntwurf = null;
+let impEntwurfTimer = null;
 let starterId = null;
 let gespielt = []; // Indizes der zuletzt gespielten Woerter (fuer Wiederholungsschutz)
 
@@ -150,8 +153,8 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.impStatus) {
     await updateDoc(api.raumRef(), {
-      impStatus: "setup", impRundenIndex: 0, impAnzahlRunden: 0,
-      impWortIndex: -1, impImposterIds: [], impAnzahlImposter: 1, impStarterId: null
+      impStatus: "setup", impRundenIndex: 0, impAnzahlRunden: 0, impAnzahlEntwurf: 0,
+      impWortIndex: -1, impImposterIds: [], impAnzahlImposter: 1, impAnzahlImposterEntwurf: 0, impStarterId: null
     });
   }
 }
@@ -162,6 +165,7 @@ function verdrahteBedienelemente() {
       const feld = $(id);
       const bereinigt = feld.value.replace(/[^0-9]/g, "");
       if (bereinigt !== feld.value) feld.value = bereinigt;
+      schreibeAnzahlEntwurfLive();
     });
     // Wie bei den anderen Spielen: type="number" ließ sich beim Fokussieren nicht
     // markieren - deshalb ein Textfeld mit numerischer Tastatur.
@@ -178,6 +182,22 @@ function verdrahteBedienelemente() {
   verdrahteKarte();
 }
 
+// v214: Schreibt "Anzahl Runden" und "Anzahl Imposter" entprellt live in den
+// Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den tatsaechlichen
+// Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(impEntwurfTimer);
+  impEntwurfTimer = setTimeout(() => {
+    const patch = {};
+    const wert = parseInt($("imp-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) patch.impAnzahlEntwurf = wert;
+    const wertImp = parseInt($("imp-anzahl-imposter").value, 10);
+    if (Number.isFinite(wertImp) && wertImp > 0) patch.impAnzahlImposterEntwurf = wertImp;
+    if (Object.keys(patch).length > 0) updateDoc(api.raumRef(), patch).catch(() => {});
+  }, 300);
+}
+
 export function beenden() {
   bereitSystem = null;
   el = {};
@@ -189,6 +209,8 @@ export function beenden() {
   imposterIds = [];
   anzahlImposter = 1;
   starterId = null;
+  anzahlEntwurf = null;
+  anzahlImposterEntwurf = null;
 }
 
 export function spieler(liste) {
@@ -210,6 +232,8 @@ export function raumDaten(daten) {
   wortIndex = daten.impWortIndex ?? -1;
   imposterIds = daten.impImposterIds ?? [];
   anzahlImposter = daten.impAnzahlImposter ?? 1;
+  anzahlEntwurf = daten.impAnzahlEntwurf ?? null;
+  anzahlImposterEntwurf = daten.impAnzahlImposterEntwurf ?? null;
   starterId = daten.impStarterId ?? null;
   gespielt = daten.impGespielt ?? [];
 
@@ -241,12 +265,17 @@ function alleVerstecken() {
 
 function zeigeSetup() {
   const anzahlFeld = $("imp-anzahl");
-  if (!anzahlFeld.value) anzahlFeld.value = STANDARD_ANZAHL;
+  const anzahlImposterFeld = $("imp-anzahl-imposter");
+  if (api.istLeiter) {
+    if (!anzahlFeld.value) anzahlFeld.value = STANDARD_ANZAHL;
+    if (!anzahlImposterFeld.value) anzahlImposterFeld.value = STANDARD_ANZAHL_IMPOSTER;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    anzahlImposterFeld.value = String(anzahlImposterEntwurf ?? STANDARD_ANZAHL_IMPOSTER);
+  }
   $("imp-anzahl-zeile").hidden = false;
   anzahlFeld.disabled = !api.istLeiter;
 
-  const anzahlImposterFeld = $("imp-anzahl-imposter");
-  if (!anzahlImposterFeld.value) anzahlImposterFeld.value = STANDARD_ANZAHL_IMPOSTER;
   $("imp-anzahl-imposter-zeile").hidden = false;
   anzahlImposterFeld.disabled = !api.istLeiter;
 
@@ -325,8 +354,8 @@ async function naechsteRundeSchreiben(neueRundenIndex, neueAnzahlRunden, letzter
 export async function vorZurueck() {
   try {
     await updateDoc(api.raumRef(), {
-      impStatus: null, impRundenIndex: 0, impAnzahlRunden: 0,
-      impWortIndex: -1, impImposterIds: [], impAnzahlImposter: 1, impStarterId: null
+      impStatus: null, impRundenIndex: 0, impAnzahlRunden: 0, impAnzahlEntwurf: 0,
+      impWortIndex: -1, impImposterIds: [], impAnzahlImposter: 1, impAnzahlImposterEntwurf: 0, impStarterId: null
     });
     await api.zurueckZurAuswahl();
   } catch (e) {

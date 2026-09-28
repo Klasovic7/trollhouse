@@ -173,6 +173,8 @@ let status = null;
 let ausgewertetAusgeloest = false;
 let dummkopfPhaseBeendet = false;
 let anzahlManuellGesetzt = false;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
@@ -217,7 +219,7 @@ export async function starten(uebergebeneApi) {
     await updateDoc(api.raumRef(), {
       sfStatus: "setup", sfKategorien: [], sfDummkopf: false,
       sfTeammodus: false, sfTeams: {},
-      sfFragenIndex: 0, sfFrageVersion: 0, sfReihenfolge: [], sfAnzahlFragen: 0
+      sfFragenIndex: 0, sfFrageVersion: 0, sfReihenfolge: [], sfAnzahlFragen: 0, sfAnzahlEntwurf: 0
     });
   }
 
@@ -252,6 +254,7 @@ function verdrahteBedienelemente() {
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
     anzahlManuellGesetzt = true;
+    schreibeAnzahlEntwurfLive();
   });
   $("sf-anzahl").addEventListener("change", () => { begrenzeAnzahlFeld(); anzahlManuellGesetzt = true; });
   // v105: als type="number" ließ sich der vorhandene Wert beim Fokussieren nicht
@@ -273,6 +276,20 @@ function verdrahteBedienelemente() {
   $("sf-schaetzung").addEventListener("keydown", (e) => { if (e.key === "Enter") schaetzungAbsenden(); });
   $("sf-andere-frage").addEventListener("click", andereFrage);
   $("sf-weiter").addEventListener("click", weiter);
+}
+
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("sf-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { sfAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
 }
 
 function starteListener() {
@@ -300,6 +317,7 @@ export function beenden() {
   teammodus = false; teams = {};
   alleAntworten = []; alleDummkoepfe = [];
   ausgewertetAusgeloest = false; dummkopfPhaseBeendet = false; anzahlManuellGesetzt = false;
+  anzahlEntwurf = null;
 }
 
 export function spieler(liste) {
@@ -320,6 +338,7 @@ export function raumDaten(daten) {
   raum = daten;
   status = daten.sfStatus ?? null;
   anzahlFragen = daten.sfAnzahlFragen ?? 0;
+  anzahlEntwurf = daten.sfAnzahlEntwurf ?? null;
   reihenfolge = daten.sfReihenfolge ?? [];
   gespielt = daten.sfGespielt ?? [];
   dummkopfModus = !!daten.sfDummkopf;
@@ -591,7 +610,7 @@ function zeigeSetup() {
     anzahlFeld.value = String(festgelegt);
     anzahlFeld.disabled = true;
     $("sf-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} Frage${festgelegt === 1 ? "" : "n"}.`;
-  } else {
+  } else if (api.istLeiter) {
     const bisher = parseInt(anzahlFeld.value, 10);
     const auswahl = anzahlManuellGesetzt && Number.isFinite(bisher)
       ? Math.min(Math.max(1, bisher), obergrenze)
@@ -600,7 +619,14 @@ function zeigeSetup() {
     anzahlFeld.value = String(auswahl);
     $("sf-anzahl-max").textContent =
       `Mit den gewählten Kategorien sind maximal ${obergrenze} möglich.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    const auswahl = Math.min(Math.max(1, anzahlEntwurf ?? obergrenze), obergrenze);
+    anzahlFeld.max = String(obergrenze);
+    anzahlFeld.value = String(auswahl);
+    $("sf-anzahl-max").textContent =
+      `Mit den gewählten Kategorien sind maximal ${obergrenze} möglich.`;
+    anzahlFeld.disabled = true;
   }
 
   $("sf-anzahl-zeile").hidden = false;
@@ -696,7 +722,7 @@ export async function vorZurueck() {
   await raeumeSpieldatenAuf();
   await updateDoc(api.raumRef(), {
     sfStatus: null, sfKategorien: [], sfReihenfolge: [],
-    sfFragenIndex: 0, sfAnzahlFragen: 0, sfFrageVersion: 0,
+    sfFragenIndex: 0, sfAnzahlFragen: 0, sfAnzahlEntwurf: 0, sfFrageVersion: 0,
     sfTeammodus: false, sfTeams: {}
   });
   await api.zurueckZurAuswahl();

@@ -140,6 +140,8 @@ let rundenpunkte = 0;
 let rundeBeendenLaeuft = false;
 let weiterLaeuft = false;
 let anzahlManuellGesetzt = false;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let rundenStartMs = null;
 let timerIntervall = null;
 let timerRundenSchluessel = null;
@@ -290,7 +292,7 @@ export async function starten(uebergebeneApi) {
     await updateDoc(api.raumRef(), {
       ztStatus: "setup", ztTeammodus: false, ztTeams: {},
       ztReihenfolge: [], ztSpielerReihenfolge: [], ztStartTeam: "blau",
-      ztRundenIndex: 0, ztAnzahlRunden: 0, ztAktiveId: null, ztAktivesTeam: null,
+      ztRundenIndex: 0, ztAnzahlRunden: 0, ztAnzahlEntwurf: 0, ztAktiveId: null, ztAktivesTeam: null,
       ztGetroffen: [], ztPunkte: {}, ztTeamPunkte: { blau: 0, rot: 0 },
       ztRundenpunkte: 0, ztRundenStart: null
     });
@@ -318,6 +320,7 @@ function verdrahteBedienelemente() {
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
     anzahlManuellGesetzt = true;
+    schreibeAnzahlEntwurfLive();
   });
   // v197: type="text" ignoriert das max-Attribut - ohne diese eigene
   // Begrenzung beim Verlassen des Feldes liesse sich eine beliebig hohe Zahl
@@ -336,6 +339,20 @@ function verdrahteBedienelemente() {
   $("zt-starten").addEventListener("click", spielStarten);
   $("zt-runde-beenden").addEventListener("click", rundeBeenden);
   $("zt-weiter").addEventListener("click", weiter);
+}
+
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("zt-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { ztAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
 }
 
 export function beenden() {
@@ -368,6 +385,7 @@ export function beenden() {
   rundeBeendenLaeuft = false;
   weiterLaeuft = false;
   anzahlManuellGesetzt = false;
+  anzahlEntwurf = null;
   rundenStartMs = null;
   timerRundenSchluessel = null;
   letzterSignalton = null;
@@ -391,6 +409,7 @@ export function raumDaten(daten) {
   startTeam = normalisiereTeam(daten.ztStartTeam) ?? "blau";
   rundenIndex = daten.ztRundenIndex ?? 0;
   anzahlRunden = daten.ztAnzahlRunden ?? 0;
+  anzahlEntwurf = daten.ztAnzahlEntwurf ?? null;
   aktiveId = daten.ztAktiveId ?? null;
   aktivesTeamId = normalisiereTeam(daten.ztAktivesTeam) ?? null;
   getroffen = bereinigeTreffer(daten.ztGetroffen, 10);
@@ -518,10 +537,14 @@ function zeigeSetup() {
     anzahlFeld.value = String(festgelegt);
     $("zt-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} Begriff${festgelegt === 1 ? "" : "e"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlManuellGesetzt || !anzahlFeld.value) anzahlFeld.value = karten.length;
     $("zt-anzahl-max").textContent = `Insgesamt ${karten.length} Begriffe verfügbar.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? karten.length);
+    $("zt-anzahl-max").textContent = `Insgesamt ${karten.length} Begriffe verfügbar.`;
+    anzahlFeld.disabled = true;
   }
   $("zt-anzahl-zeile").hidden = false;
   $("zt-starten").hidden = !api.istLeiter;
@@ -849,7 +872,7 @@ export async function vorZurueck() {
   try {
     await updateDoc(api.raumRef(), {
       ztStatus: null, ztTeammodus: false, ztTeams: {}, ztReihenfolge: [],
-      ztSpielerReihenfolge: [], ztRundenIndex: 0, ztAnzahlRunden: 0,
+      ztSpielerReihenfolge: [], ztRundenIndex: 0, ztAnzahlRunden: 0, ztAnzahlEntwurf: 0,
       ztAktiveId: null, ztAktivesTeam: null, ztGetroffen: [],
       ztPunkte: {}, ztTeamPunkte: { blau: 0, rot: 0 }, ztRundenpunkte: 0,
       ztRundenStart: null

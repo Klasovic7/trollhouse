@@ -154,6 +154,8 @@ let gespielt = []; // Indizes der zuletzt gespielten Fragen (fuer Wiederholungss
 // jeder Eintrag ist eine Permutation der Hinweis-Indizes dieser Frage.
 let hinweisReihenfolgen = [];
 let anzahlFragen = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let status = null;
 let hinweisIndex = 1;
 let hinweisSeit = 0;
@@ -304,6 +306,8 @@ function verdrahteBedienelemente() {
     const feld = $("wi-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+ 
+    schreibeAnzahlEntwurfLive();
   });
   $("wi-anzahl").addEventListener("change", () => anzahlUebernehmen());
   // v105: als type="number" ließ sich der vorhandene Wert beim Fokussieren nicht
@@ -327,7 +331,7 @@ export function beenden() {
   el = {}; raum = {}; spielerListe = [];
   index = -1; reihenfolge = []; hinweisReihenfolgen = []; anzahlFragen = 0; status = null;
   hinweisIndex = 1; hinweisSeit = 0; gebuzzertVon = null;
-  antwortText = ""; antwortKorrekt = null; falscheVersuche = []; gewuenschteAnzahl = 0;
+  antwortText = ""; antwortKorrekt = null; falscheVersuche = []; gewuenschteAnzahl = 0; anzahlEntwurf = null;
   hinweisFortschreibenLaeuft = false;
   teammodus = false; teams = {};
 }
@@ -357,6 +361,7 @@ export function raumDaten(daten) {
     typeof eintrag === "string" ? eintrag.split(",").map(Number) : (eintrag ?? [])
   );
   anzahlFragen = daten.wiAnzahlFragen ?? 0;
+  anzahlEntwurf = daten.wiAnzahlEntwurf ?? null;
   hinweisIndex = daten.wiHinweisIndex ?? 1;
   hinweisSeit = daten.wiHinweisSeit ?? 0;
   gebuzzertVon = daten.wiGebuzzertVon ?? null;
@@ -427,13 +432,20 @@ function zeigeSetup() {
     $("wi-anzahl-max").textContent = `In der Olympiade festgelegt: ${gewuenschteAnzahl} ${gewuenschteAnzahl === 1 ? "Runde" : "Runden"}.`;
     $("wi-anzahl-zeile").hidden = false;
     $("wi-anzahl").disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (gewuenschteAnzahl === 0) gewuenschteAnzahl = Math.min(STANDARD_ANZAHL, fragen.length);
     $("wi-anzahl").max = String(Math.max(1, fragen.length));
     $("wi-anzahl").value = String(gewuenschteAnzahl);
     $("wi-anzahl-max").textContent = `Insgesamt ${fragen.length} Runden verfügbar.`;
     $("wi-anzahl-zeile").hidden = false;
-    $("wi-anzahl").disabled = !api.istLeiter;
+    $("wi-anzahl").disabled = false;
+  } else {
+    gewuenschteAnzahl = anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, fragen.length);
+    $("wi-anzahl").max = String(Math.max(1, fragen.length));
+    $("wi-anzahl").value = String(gewuenschteAnzahl);
+    $("wi-anzahl-max").textContent = `Insgesamt ${fragen.length} Runden verfügbar.`;
+    $("wi-anzahl-zeile").hidden = false;
+    $("wi-anzahl").disabled = true;
   }
   // v200: in der Olympiade entfaellt der Team-Modus komplett - alle spielen
   // einzeln, damit sich niemand extra dafuer koordinieren muss.
@@ -517,6 +529,20 @@ function rendereTeamListe(team) {
 
 // v104: ersetzt den fruehereren Plus/Minus-Stepper - das Zahlenfeld wird
 // beim Verlassen (change) auf [1, Anzahl verfuegbarer Fragen] begrenzt.
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("wi-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { wiAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
+}
+
 function anzahlUebernehmen() {
   if (!api.istLeiter) return;
   let wert = parseInt($("wi-anzahl").value, 10);
@@ -528,7 +554,7 @@ function anzahlUebernehmen() {
 
 async function setzeGrundzustand(wiStatus) {
   await updateDoc(api.raumRef(), {
-    wiStatus, wiReihenfolge: [], wiHinweisReihenfolgen: [], wiFragenIndex: 0, wiAnzahlFragen: 0,
+    wiStatus, wiReihenfolge: [], wiHinweisReihenfolgen: [], wiFragenIndex: 0, wiAnzahlFragen: 0, wiAnzahlEntwurf: 0,
     wiHinweisIndex: 1, wiHinweisSeit: 0, wiGebuzzertVon: null, wiGebuzzertSeit: 0,
     wiAntwortText: "", wiAntwortKorrekt: null, wiPunkteDieserRunde: 0,
     wiFalscheVersuche: [], wiTeammodus: false, wiTeams: {}, wiRundenDelta: {}

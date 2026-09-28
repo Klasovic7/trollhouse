@@ -150,6 +150,8 @@ let index = -1;
 let reihenfolge = [];
 let gespielt = []; // Indizes der zuletzt gespielten Fragen (fuer Wiederholungsschutz)
 let anzahlFragen = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let status = null;
 let hinweisIndex = 1;
 let hinweisSeit = 0;
@@ -240,6 +242,8 @@ function verdrahteBedienelemente() {
     const feld = $("ww-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+ 
+    schreibeAnzahlEntwurfLive();
   });
   $("ww-anzahl").addEventListener("change", () => anzahlUebernehmen());
   $("ww-anzahl").addEventListener("focus", () => { $("ww-anzahl").select(); });
@@ -261,7 +265,7 @@ export function beenden() {
   el = {}; raum = {}; spielerListe = [];
   index = -1; reihenfolge = []; anzahlFragen = 0; status = null;
   hinweisIndex = 1; hinweisSeit = 0; gebuzzertVon = null;
-  antwortText = ""; antwortKorrekt = null; falscheVersuche = []; gewuenschteAnzahl = 0;
+  antwortText = ""; antwortKorrekt = null; falscheVersuche = []; gewuenschteAnzahl = 0; anzahlEntwurf = null;
   hinweisFortschreibenLaeuft = false;
   teammodus = false; teams = {};
 }
@@ -285,6 +289,7 @@ export function raumDaten(daten) {
   reihenfolge = daten.wwReihenfolge ?? [];
   gespielt = daten.wwGespielt ?? [];
   anzahlFragen = daten.wwAnzahlFragen ?? 0;
+  anzahlEntwurf = daten.wwAnzahlEntwurf ?? null;
   hinweisIndex = daten.wwHinweisIndex ?? 1;
   hinweisSeit = daten.wwHinweisSeit ?? 0;
   gebuzzertVon = daten.wwGebuzzertVon ?? null;
@@ -351,13 +356,20 @@ function zeigeSetup() {
     $("ww-anzahl-max").textContent = `In der Olympiade festgelegt: ${gewuenschteAnzahl} ${gewuenschteAnzahl === 1 ? "Runde" : "Runden"}.`;
     $("ww-anzahl-zeile").hidden = false;
     $("ww-anzahl").disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (gewuenschteAnzahl === 0) gewuenschteAnzahl = Math.min(STANDARD_ANZAHL, fragen.length);
     $("ww-anzahl").max = String(Math.max(1, fragen.length));
     $("ww-anzahl").value = String(gewuenschteAnzahl);
     $("ww-anzahl-max").textContent = `Insgesamt ${fragen.length} Runden verfügbar.`;
     $("ww-anzahl-zeile").hidden = false;
-    $("ww-anzahl").disabled = !api.istLeiter;
+    $("ww-anzahl").disabled = false;
+  } else {
+    gewuenschteAnzahl = anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, fragen.length);
+    $("ww-anzahl").max = String(Math.max(1, fragen.length));
+    $("ww-anzahl").value = String(gewuenschteAnzahl);
+    $("ww-anzahl-max").textContent = `Insgesamt ${fragen.length} Runden verfügbar.`;
+    $("ww-anzahl-zeile").hidden = false;
+    $("ww-anzahl").disabled = true;
   }
   // v200: in der Olympiade entfaellt der Team-Modus komplett - alle spielen
   // einzeln, damit sich niemand extra dafuer koordinieren muss.
@@ -436,6 +448,20 @@ function rendereTeamListe(team) {
   $("ww-team-wahl-" + team).classList.toggle("zt-team-eigenes", teams[api.spielerId] === team);
 }
 
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("ww-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { wwAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
+}
+
 function anzahlUebernehmen() {
   if (!api.istLeiter) return;
   let wert = parseInt($("ww-anzahl").value, 10);
@@ -447,7 +473,7 @@ function anzahlUebernehmen() {
 
 async function setzeGrundzustand(wwStatus) {
   await updateDoc(api.raumRef(), {
-    wwStatus, wwReihenfolge: [], wwFragenIndex: 0, wwAnzahlFragen: 0,
+    wwStatus, wwReihenfolge: [], wwFragenIndex: 0, wwAnzahlFragen: 0, wwAnzahlEntwurf: 0,
     wwHinweisIndex: 1, wwHinweisSeit: 0, wwGebuzzertVon: null, wwGebuzzertSeit: 0,
     wwAntwortText: "", wwAntwortKorrekt: null, wwPunkteDieserRunde: 0,
     wwFalscheVersuche: [], wwTeammodus: false, wwTeams: {}, wwRundenDelta: {}

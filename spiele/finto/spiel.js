@@ -107,6 +107,8 @@ let index = -1;
 let reihenfolge = [];
 let gespielt = []; // Indizes der zuletzt gespielten Fragen (fuer Wiederholungsschutz)
 let anzahlFragen = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let optionen = [];
 let ergebnisAusgeloest = false;
 let auswertungAusgeloest = false;
@@ -149,7 +151,7 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.fiStatus) {
     await updateDoc(api.raumRef(), {
-      fiStatus: "setup", fiFragenIndex: 0, fiReihenfolge: [], fiAnzahlFragen: 0, fiOptionen: []
+      fiStatus: "setup", fiFragenIndex: 0, fiReihenfolge: [], fiAnzahlFragen: 0, fiAnzahlEntwurf: 0, fiOptionen: []
     });
   }
 
@@ -167,6 +169,8 @@ function verdrahteBedienelemente() {
     const feld = $("fi-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+ 
+    schreibeAnzahlEntwurfLive();
   });
   // v197: type="text" ignoriert das max-Attribut - ohne diese eigene
   // Begrenzung beim Verlassen des Feldes liesse sich eine beliebig hohe Zahl
@@ -185,6 +189,20 @@ function verdrahteBedienelemente() {
     if (e.key === "Enter") antwortAbsenden();
   });
   $("fi-weiter").addEventListener("click", weiter);
+}
+
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("fi-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { fiAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
 }
 
 function starteListener() {
@@ -212,6 +230,7 @@ export function beenden() {
   index = -1;
   reihenfolge = [];
   anzahlFragen = 0;
+  anzahlEntwurf = null;
   optionen = [];
   ergebnisAusgeloest = false;
   auswertungAusgeloest = false;
@@ -232,6 +251,7 @@ export function raumDaten(daten) {
   reihenfolge = daten.fiReihenfolge ?? [];
   gespielt = daten.fiGespielt ?? [];
   anzahlFragen = daten.fiAnzahlFragen ?? 0;
+  anzahlEntwurf = daten.fiAnzahlEntwurf ?? null;
   optionen = daten.fiOptionen ?? [];
 
   const neuerIndex = daten.fiFragenIndex ?? 0;
@@ -291,10 +311,14 @@ function zeigeSetup() {
     anzahlFeld.value = String(festgelegt);
     $("fi-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} ${festgelegt === 1 ? "Frage" : "Fragen"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = fragen.length;
     $("fi-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? fragen.length);
+    $("fi-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
+    anzahlFeld.disabled = true;
   }
   $("fi-anzahl-zeile").hidden = false;
   $("fi-starten").hidden = !api.istLeiter;
@@ -363,7 +387,7 @@ export async function vorZurueck() {
   try {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
-      fiStatus: null, fiFragenIndex: 0, fiReihenfolge: [], fiAnzahlFragen: 0, fiOptionen: []
+      fiStatus: null, fiFragenIndex: 0, fiReihenfolge: [], fiAnzahlFragen: 0, fiAnzahlEntwurf: 0, fiOptionen: []
     });
     await api.zurueckZurAuswahl();
   } catch (e) {

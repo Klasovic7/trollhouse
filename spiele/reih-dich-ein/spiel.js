@@ -96,6 +96,8 @@ let spielerListe = [];
 let status = null;
 let kategorienReihenfolge = [];
 let anzahlKategorien = 0;
+let anzahlEntwurf = null;
+let anzahlEntwurfTimer = null;
 let kategorieIndex = 0;
 let begriffeReihenfolge = [];
 let begriffIndex = 0;
@@ -177,7 +179,7 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.rdStatus) {
     await updateDoc(api.raumRef(), {
-      rdStatus: "setup", rdKategorienReihenfolge: [], rdAnzahlKategorien: 0,
+      rdStatus: "setup", rdKategorienReihenfolge: [], rdAnzahlKategorien: 0, rdAnzahlEntwurf: 0,
       rdKategorieIndex: 0, rdBegriffeReihenfolge: [], rdBegriffIndex: 0,
       rdSortierteIds: [], rdSpielerReihenfolge: [], rdZugIndex: 0,
       rdAktiveId: null, rdPunkte: {}, rdErgebnisse: {}, rdLetzteRichtig: null, rdLetzterBegriffId: null,
@@ -201,6 +203,7 @@ function verdrahteBedienelemente() {
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
     anzahlManuellGesetzt = true;
+    schreibeAnzahlEntwurfLive();
   });
   // v197: type="text" ignoriert das max-Attribut - ohne diese eigene
   // Begrenzung beim Verlassen des Feldes liesse sich eine beliebig hohe Zahl
@@ -221,6 +224,20 @@ function verdrahteBedienelemente() {
   $("rd-andere-kategorie").addEventListener("click", andereKategorie);
 }
 
+// v214: Schreibt den vom Leiter eingegebenen "Anzahl"-Wert entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeAnzahlEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(anzahlEntwurfTimer);
+  anzahlEntwurfTimer = setTimeout(() => {
+    const wert = parseInt($("rd-anzahl").value, 10);
+    if (Number.isFinite(wert) && wert > 0) {
+      updateDoc(api.raumRef(), { rdAnzahlEntwurf: wert }).catch(() => {});
+    }
+  }, 300);
+}
+
 export function beenden() {
   bereitSystem = null;
   api = null;
@@ -230,6 +247,7 @@ export function beenden() {
   status = null;
   kategorienReihenfolge = [];
   anzahlKategorien = 0;
+  anzahlEntwurf = null;
   kategorieIndex = 0;
   begriffeReihenfolge = [];
   begriffIndex = 0;
@@ -270,6 +288,7 @@ export function raumDaten(daten) {
   status = daten.rdStatus ?? null;
   kategorienReihenfolge = daten.rdKategorienReihenfolge ?? [];
   anzahlKategorien = daten.rdAnzahlKategorien ?? 0;
+  anzahlEntwurf = daten.rdAnzahlEntwurf ?? null;
   kategorieIndex = daten.rdKategorieIndex ?? 0;
   begriffeReihenfolge = daten.rdBegriffeReihenfolge ?? [];
   begriffIndex = daten.rdBegriffIndex ?? 0;
@@ -330,10 +349,14 @@ function zeigeSetup() {
     anzahlFeld.value = String(festgelegt);
     $("rd-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} Kategorie${festgelegt === 1 ? "" : "n"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlManuellGesetzt || !anzahlFeld.value) anzahlFeld.value = Math.min(3, karten.length);
     $("rd-anzahl-max").textContent = `Insgesamt ${karten.length} Kategorien verfügbar.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? Math.min(3, karten.length));
+    $("rd-anzahl-max").textContent = `Insgesamt ${karten.length} Kategorien verfügbar.`;
+    anzahlFeld.disabled = true;
   }
   $("rd-anzahl-zeile").hidden = false;
   $("rd-starten").hidden = !api.istLeiter;
@@ -755,7 +778,7 @@ function zeigeEndstand() {
 export async function vorZurueck() {
   try {
     await updateDoc(api.raumRef(), {
-      rdStatus: null, rdKategorienReihenfolge: [], rdAnzahlKategorien: 0,
+      rdStatus: null, rdKategorienReihenfolge: [], rdAnzahlKategorien: 0, rdAnzahlEntwurf: 0,
       rdKategorieIndex: 0, rdBegriffeReihenfolge: [], rdBegriffIndex: 0,
       rdSortierteIds: [], rdSpielerReihenfolge: [], rdZugIndex: 0,
       rdAktiveId: null, rdPunkte: {}, rdErgebnisse: {}, rdLetzteRichtig: null, rdLetzterBegriffId: null,

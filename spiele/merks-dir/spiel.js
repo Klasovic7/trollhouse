@@ -146,6 +146,9 @@ let status = null;
 let durchgangIndex = -1;
 let anzahlDurchgaenge = 0;
 let zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
+let anzahlEntwurf = null;
+let zeitEntwurf = null;
+let mdEntwurfTimer = null;
 let reihenfolge = [];
 let gitterReihenfolge = [];
 let ausgeschieden = {}; // { [spielerId]: Stelle, an der ausgeschieden wurde } - fuer den aktuellen Durchgang
@@ -200,8 +203,8 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.mdStatus) {
     await updateDoc(api.raumRef(), {
-      mdStatus: "setup", mdDurchgangIndex: 0, mdAnzahlDurchgaenge: 0,
-      mdZeitSekunden: STANDARD_ZEIT_SEKUNDEN, mdReihenfolge: [], mdGitterReihenfolge: [],
+      mdStatus: "setup", mdDurchgangIndex: 0, mdAnzahlDurchgaenge: 0, mdAnzahlEntwurf: 0,
+      mdZeitSekunden: STANDARD_ZEIT_SEKUNDEN, mdZeitEntwurf: STANDARD_ZEIT_SEKUNDEN, mdReihenfolge: [], mdGitterReihenfolge: [],
       mdMerkenSeit: 0, mdPosition: 0, mdRatenSeit: 0, mdRundenergebnisSeit: 0, mdAusgeschieden: {}
     });
   }
@@ -214,6 +217,8 @@ function verdrahteBedienelemente() {
     const feld = $("md-anzahl");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+ 
+    schreibeEntwurfLive();
   });
   $("md-anzahl").addEventListener("change", () => {
     const feld = $("md-anzahl");
@@ -228,6 +233,8 @@ function verdrahteBedienelemente() {
     const feld = $("md-zeit");
     const bereinigt = feld.value.replace(/[^0-9]/g, "");
     if (bereinigt !== feld.value) feld.value = bereinigt;
+ 
+    schreibeEntwurfLive();
   });
   $("md-zeit").addEventListener("change", () => {
     const feld = $("md-zeit");
@@ -250,6 +257,22 @@ function starteListener() {
   });
 }
 
+// v214: Schreibt "Anzahl Durchgaenge" und "Zeit zum Merken" entprellt live in
+// den Raum, damit Mitspieler*innen im Setup-Bildschirm sofort den
+// tatsaechlichen Stand sehen statt eines stehengebliebenen Default-Werts.
+function schreibeEntwurfLive() {
+  if (!api.istLeiter) return;
+  clearTimeout(mdEntwurfTimer);
+  mdEntwurfTimer = setTimeout(() => {
+    const patch = {};
+    const anzahlWert = parseInt($("md-anzahl").value, 10);
+    if (Number.isFinite(anzahlWert) && anzahlWert > 0) patch.mdAnzahlEntwurf = anzahlWert;
+    const zeitWert = parseInt($("md-zeit").value, 10);
+    if (Number.isFinite(zeitWert) && zeitWert > 0) patch.mdZeitEntwurf = zeitWert;
+    if (Object.keys(patch).length > 0) updateDoc(api.raumRef(), patch).catch(() => {});
+  }, 300);
+}
+
 export function beenden() {
   bereitSystem = null;
   if (antwortenUnsub) { antwortenUnsub(); antwortenUnsub = null; }
@@ -261,6 +284,8 @@ export function beenden() {
   durchgangIndex = -1;
   anzahlDurchgaenge = 0;
   zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
+  anzahlEntwurf = null;
+  zeitEntwurf = null;
   reihenfolge = [];
   gitterReihenfolge = [];
   ausgeschieden = {};
@@ -296,6 +321,8 @@ export function raumDaten(daten) {
   status = daten.mdStatus ?? null;
   anzahlDurchgaenge = daten.mdAnzahlDurchgaenge ?? 0;
   zeitSekunden = daten.mdZeitSekunden ?? STANDARD_ZEIT_SEKUNDEN;
+  anzahlEntwurf = daten.mdAnzahlEntwurf ?? null;
+  zeitEntwurf = daten.mdZeitEntwurf ?? null;
   reihenfolge = daten.mdReihenfolge ?? [];
   gitterReihenfolge = daten.mdGitterReihenfolge ?? [];
   ausgeschieden = daten.mdAusgeschieden ?? {};
@@ -379,16 +406,25 @@ function zeigeSetup() {
     $("md-anzahl-max").textContent =
       `In der Olympiade festgelegt: ${festgelegt} ${festgelegt === 1 ? "Durchgang" : "Durchgänge"}.`;
     anzahlFeld.disabled = true;
-  } else {
+  } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(STANDARD_ANZAHL);
     $("md-anzahl-max").textContent =
       `Jeder Durchgang mischt 20 neue Emojis, bis zu ${MAX_ANZAHL} Durchgänge.`;
-    anzahlFeld.disabled = !api.istLeiter;
+    anzahlFeld.disabled = false;
+  } else {
+    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    $("md-anzahl-max").textContent =
+      `Jeder Durchgang mischt 20 neue Emojis, bis zu ${MAX_ANZAHL} Durchgänge.`;
+    anzahlFeld.disabled = true;
   }
   $("md-anzahl-zeile").hidden = false;
 
   const zeitFeld = $("md-zeit");
-  if (!zeitFeld.value) zeitFeld.value = String(STANDARD_ZEIT_SEKUNDEN);
+  if (api.istLeiter) {
+    if (!zeitFeld.value) zeitFeld.value = String(STANDARD_ZEIT_SEKUNDEN);
+  } else {
+    zeitFeld.value = String(zeitEntwurf ?? STANDARD_ZEIT_SEKUNDEN);
+  }
   zeitFeld.disabled = !api.istLeiter;
 
   $("md-starten").hidden = !api.istLeiter;
@@ -451,8 +487,8 @@ export async function vorZurueck() {
   try {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
-      mdStatus: null, mdDurchgangIndex: 0, mdAnzahlDurchgaenge: 0,
-      mdZeitSekunden: STANDARD_ZEIT_SEKUNDEN, mdReihenfolge: [], mdGitterReihenfolge: [],
+      mdStatus: null, mdDurchgangIndex: 0, mdAnzahlDurchgaenge: 0, mdAnzahlEntwurf: 0,
+      mdZeitSekunden: STANDARD_ZEIT_SEKUNDEN, mdZeitEntwurf: STANDARD_ZEIT_SEKUNDEN, mdReihenfolge: [], mdGitterReihenfolge: [],
       mdMerkenSeit: 0, mdPosition: 0, mdRatenSeit: 0, mdRundenergebnisSeit: 0, mdAusgeschieden: {}
     });
     await api.zurueckZurAuswahl();
