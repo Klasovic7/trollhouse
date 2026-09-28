@@ -23,17 +23,20 @@ import {
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 
-const STANDARD_ZEIT_SEKUNDEN = 15;
-const MIN_ZEIT = 5;
-const MAX_ZEIT = 45;
 const STANDARD_ANZAHL = 10;
 // Wie lange die Rundenergebnis-Anzeige (richtiges Land + wer was getippt hat)
 // zu sehen ist, bevor der Spielleiter automatisch weiterschaltet.
 const RUNDENERGEBNIS_ANZEIGE_MS = 3500;
-// Buchstaben-Hinweise: der erste (zufällige) Buchstabe des Landesnamens
-// erscheint 15s nach Rundenstart, danach im 8-Sekunden-Takt ein weiterer.
+// Die Runden-Zeit ist fest an die Buchstaben-Hinweise gekoppelt (nicht mehr
+// einstellbar): 15s nach Rundenstart erscheint der erste (zufällige)
+// Buchstabe des Landesnamens, nach weiteren 10s ein zweiter - danach bleiben
+// allen noch einmal 10s zum Tippen, ohne dass ein dritter Buchstabe
+// erscheint. Macht in Summe 35s Rundenzeit.
 const ERSTE_AUFDECKUNG_MS = 15000;
-const AUFDECK_ABSTAND_MS = 8000;
+const AUFDECK_ABSTAND_MS = 10000;
+const MAX_AUFDECKUNGEN = 2;
+const ZEIT_NACH_LETZTER_AUFDECKUNG_MS = 10000;
+const GESAMT_ZEIT_MS = ERSTE_AUFDECKUNG_MS + (MAX_AUFDECKUNGEN - 1) * AUFDECK_ABSTAND_MS + ZEIT_NACH_LETZTER_AUFDECKUNG_MS;
 
 let alleLaender = [];
 let ladeFehler = "";
@@ -85,10 +88,11 @@ function mischeArray(werte) {
   return kopie;
 }
 
-// Der letzte Buchstabe bleibt immer verdeckt, damit sich das Rätsel nicht von
-// allein auflöst.
+// Höchstens MAX_AUFDECKUNGEN (2) Buchstaben werden aufgedeckt - und nie mehr,
+// als das Wort überhaupt hat (bei sehr kurzen Namen bleibt mindestens einer
+// verdeckt, damit sich das Rätsel nicht von allein auflöst).
 function maxAufdeckAnzahl(name) {
-  return Math.max(0, buchstabenIndizes(name).length - 1);
+  return Math.min(MAX_AUFDECKUNGEN, Math.max(0, buchstabenIndizes(name).length - 1));
 }
 
 function gewuenschteAufdeckAnzahl(elapsedMs, maximal) {
@@ -100,8 +104,9 @@ function gewuenschteAufdeckAnzahl(elapsedMs, maximal) {
 const VORLAGE = `
   <div id="lu-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Nur der Umriss ist zu sehen - welches Land ist das? Tippt den Namen per
-      Texteingabe; Groß-/Kleinschreibung ist egal und sowohl Deutsch als auch Englisch zählt. Richtig
-      bringt einen Punkt, am schnellsten richtig einen Bonuspunkt dazu.</p>
+      Texteingabe; Groß-/Kleinschreibung ist egal und sowohl Deutsch als auch Englisch zählt. Nach
+      15 Sekunden erscheint ein Buchstabe, nach weiteren 10 Sekunden ein zweiter - dann bleiben noch
+      10 Sekunden zum Tippen. Richtig bringt einen Punkt, am schnellsten richtig einen Bonuspunkt dazu.</p>
 
     <div id="lu-anzahl-zeile" class="setup-anzahlblock" hidden>
       <div class="setup-anzahl-zeile">
@@ -111,15 +116,6 @@ const VORLAGE = `
         </span>
       </div>
       <p id="lu-anzahl-max" class="hinweis-text"></p>
-    </div>
-
-    <div class="setup-anzahlblock">
-      <div class="setup-anzahl-zeile">
-        <span>Zeit zum Tippen (Sekunden)</span>
-        <span class="anzahl-picker">
-          <input id="lu-zeit" type="text" inputmode="numeric" pattern="[0-9]*" min="5" class="anzahl-eingabe">
-        </span>
-      </div>
     </div>
 
     <p id="lu-setup-fehler" class="fehler-text"></p>
@@ -164,7 +160,6 @@ let tickId = null;
 let status = null;
 let rundeIndex = -1;
 let anzahlRunden = 0;
-let zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
 let verwendeteIds = [];
 let aktuellesLandId = null;
 let frageSeit = 0;
@@ -232,7 +227,7 @@ export async function starten(uebergebeneApi) {
   if (api.istLeiter && !api.raum?.luStatus) {
     await updateDoc(api.raumRef(), {
       luStatus: "setup", luRundeIndex: 0, luAnzahlRunden: 0,
-      luZeitSekunden: STANDARD_ZEIT_SEKUNDEN, luVerwendeteIds: [], luLandId: null,
+      luVerwendeteIds: [], luLandId: null,
       luBuchstabenReihenfolge: "", luAufdeckAnzahl: 0,
       luFrageSeit: 0, luRundenergebnisSeit: 0
     });
@@ -257,20 +252,6 @@ function verdrahteBedienelemente() {
   });
   $("lu-anzahl").addEventListener("focus", () => { $("lu-anzahl").select(); });
 
-  $("lu-zeit").addEventListener("input", () => {
-    const feld = $("lu-zeit");
-    const bereinigt = feld.value.replace(/[^0-9]/g, "");
-    if (bereinigt !== feld.value) feld.value = bereinigt;
-  });
-  $("lu-zeit").addEventListener("change", () => {
-    const feld = $("lu-zeit");
-    let wert = parseInt(feld.value, 10);
-    if (!Number.isFinite(wert) || wert < MIN_ZEIT) wert = MIN_ZEIT;
-    if (wert > MAX_ZEIT) wert = MAX_ZEIT;
-    feld.value = String(wert);
-  });
-  $("lu-zeit").addEventListener("focus", () => { $("lu-zeit").select(); });
-
   $("lu-starten").addEventListener("click", spielStarten);
   $("lu-antwort-absenden").addEventListener("click", antwortAbsenden);
   $("lu-antwort-eingabe").addEventListener("keydown", (e) => { if (e.key === "Enter") antwortAbsenden(); });
@@ -294,7 +275,6 @@ export function beenden() {
   status = null;
   rundeIndex = -1;
   anzahlRunden = 0;
-  zeitSekunden = STANDARD_ZEIT_SEKUNDEN;
   verwendeteIds = [];
   aktuellesLandId = null;
   frageSeit = 0;
@@ -324,7 +304,6 @@ export function raumDaten(daten) {
   if (!daten || !el.wurzel) return;
   status = daten.luStatus ?? null;
   anzahlRunden = daten.luAnzahlRunden ?? 0;
-  zeitSekunden = daten.luZeitSekunden ?? STANDARD_ZEIT_SEKUNDEN;
   verwendeteIds = daten.luVerwendeteIds ?? [];
   aktuellesLandId = daten.luLandId ?? null;
   buchstabenReihenfolge = daten.luBuchstabenReihenfolge
@@ -404,10 +383,6 @@ function zeigeSetup() {
   }
   $("lu-anzahl-zeile").hidden = false;
 
-  const zeitFeld = $("lu-zeit");
-  if (!zeitFeld.value) zeitFeld.value = String(STANDARD_ZEIT_SEKUNDEN);
-  zeitFeld.disabled = !api.istLeiter;
-
   $("lu-starten").hidden = !api.istLeiter || alleLaender.length === 0;
   $("lu-setup-warten").hidden = api.istLeiter;
   bereitSystem?.render();
@@ -434,10 +409,6 @@ async function spielStarten() {
   if (!Number.isFinite(anzahl) || anzahl < 1) anzahl = 1;
   if (anzahl > maxRunden) anzahl = maxRunden;
 
-  let zeit = parseInt($("lu-zeit").value, 10);
-  if (!Number.isFinite(zeit) || zeit < MIN_ZEIT) zeit = MIN_ZEIT;
-  if (zeit > MAX_ZEIT) zeit = MAX_ZEIT;
-
   const landId = neueRundeLandId([]);
 
   $("lu-starten").disabled = true;
@@ -447,7 +418,6 @@ async function spielStarten() {
       luStatus: "frage",
       luRundeIndex: 0,
       luAnzahlRunden: anzahl,
-      luZeitSekunden: zeit,
       luVerwendeteIds: [landId],
       luLandId: landId,
       luBuchstabenReihenfolge: neueBuchstabenReihenfolge(landId),
@@ -473,7 +443,7 @@ export async function vorZurueck() {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
       luStatus: null, luRundeIndex: 0, luAnzahlRunden: 0,
-      luZeitSekunden: STANDARD_ZEIT_SEKUNDEN, luVerwendeteIds: [], luLandId: null,
+      luVerwendeteIds: [], luLandId: null,
       luBuchstabenReihenfolge: "", luAufdeckAnzahl: 0,
       luFrageSeit: 0, luRundenergebnisSeit: 0
     });
@@ -585,7 +555,7 @@ function spielTick() {
 
   if (status === "frage") {
     const elapsed = jetzt - frageSeit;
-    const rest = Math.max(0, zeitSekunden * 1000 - elapsed);
+    const rest = Math.max(0, GESAMT_ZEIT_MS - elapsed);
     if (!eigeneAntwortGesetzt) {
       $("lu-frage-hinweis").textContent = rest > 0
         ? `Noch ${Math.ceil(rest / 1000)}s, um zu tippen`
@@ -608,7 +578,7 @@ async function pruefeFrageAuswertung(elapsed) {
   const antworten = antwortenDieserRunde();
   const geantwortetIds = new Set(antworten.map((a) => a.spielerId));
   const fehlend = spielerListe.filter((sp) => !geantwortetIds.has(sp.id));
-  const zeitAbgelaufen = elapsed >= zeitSekunden * 1000;
+  const zeitAbgelaufen = elapsed >= GESAMT_ZEIT_MS;
   if (fehlend.length > 0 && !zeitAbgelaufen) return;
 
   auswertungAusgeloest = true;
