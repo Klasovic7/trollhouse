@@ -2592,3 +2592,27 @@
 .lu-svg path { fill: currentColor; }
 .lu-antwort-zeile { display: flex; gap: 8px; }
 .lu-antwort-zeile input { flex: 1; }
+
+/* ======================================================================
+   Stimmt's? - Behauptung, Stimmt/Stimmt-nicht-Tasten
+   ====================================================================== */
+.st-aussage {
+  font-size: 1.15rem; font-weight: 700; line-height: 1.4;
+  margin: 6px 0 16px;
+}
+.st-antwort-tasten {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin: 14px 0;
+}
+.st-antwort-btn {
+  min-height: 58px; margin: 0; padding: 12px 10px;
+  border: 1px solid var(--linie, #e5e0f0); border-radius: 16px;
+  background: var(--flaeche-klar, #fff);
+  color: var(--text-dunkel); font-size: 1rem; font-weight: 800;
+  transition: background-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+.st-antwort-btn:not(:disabled):active { transform: scale(.97); }
+.st-antwort-btn.st-eigene-wahl {
+  border-color: var(--akzent, #ff6b5c); box-shadow: 0 0 0 2px var(--akzent, #ff6b5c);
+}
+.st-antwort-btn:disabled { opacity: .6; }

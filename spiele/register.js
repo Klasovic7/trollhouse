@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "210";
+const SPIEL_VERSION = "211";
 
 export const SPIELE = [
   {
@@ -110,6 +110,15 @@ export const SPIELE = [
     beschreibung: "Blind mitzählen und zur richtigen Sekunde buzzern",
     minSpieler: 1,
     laden: () => import(`./zeitgefuehl/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "stimmts",
+    name: "Stimmt's?",
+    emoji: "🤔",
+    farbe: "#a78bfa",
+    beschreibung: "Wahr oder erfunden? Tippt so schnell wie möglich richtig",
+    minSpieler: 2,
+    laden: () => import(`./stimmts/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "laenderumrisse",
