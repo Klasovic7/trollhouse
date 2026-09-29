@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "216";
+const SPIEL_VERSION = "217";
 
 export const SPIELE = [
   {
@@ -146,6 +146,15 @@ export const SPIELE = [
     beschreibung: "Einer kennt das Geheimwort nicht - deckt eure Karte auf und findet ihn",
     minSpieler: 3,
     laden: () => import(`./imposter/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "fussball-auktion",
+    name: "Fußball-Auktion",
+    emoji: "⚽",
+    farbe: "#22c55e",
+    beschreibung: "Ersteigere Spielerkarten und gewinne mit der besten Kombination",
+    minSpieler: 2,
+    laden: () => import(`./fussball-auktion/spiel.js?v=${SPIEL_VERSION}`)
   }
 ];
 

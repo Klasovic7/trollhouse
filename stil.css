@@ -2643,3 +2643,56 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, .85);
 }
 .st-antwort-btn:disabled { opacity: .6; }
+
+
+/* ---------- Fußball-Auktion (v216: erstes einfaches Karten-Layout, Design folgt später) ---------- */
+.fa-karten-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.fa-karte {
+  border: 1px solid rgba(0, 0, 0, .15);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, .04);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fa-karte-kopf { display: flex; flex-direction: column; }
+.fa-karte-name { font-size: 1.02em; }
+.fa-karte-nation { font-size: .82em; opacity: .7; }
+.fa-karte-faehigkeiten {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+.fa-faehigkeit {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .05);
+  font-size: .85em;
+}
+.fa-faehigkeit-aktiv {
+  background: var(--spieler-farbe, #22c55e);
+  color: #fff;
+  font-weight: 600;
+}
+.fa-faehigkeit-kuerzel { opacity: .8; }
+.fa-karte-gesamt { font-size: .85em; font-weight: 600; opacity: .85; }
+.fa-gebot-zeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fa-gebot-eingabe {
+  width: 80px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, .2);
+  text-align: right;
+}
+.fa-karte-ergebnis { opacity: .95; }
+.fa-auktion-gewinner { margin-top: 4px; }
+.fa-karte-waehlbar { cursor: pointer; }
+.fa-karte-spielen-btn { align-self: flex-start; }
