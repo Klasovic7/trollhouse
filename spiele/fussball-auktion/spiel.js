@@ -437,7 +437,15 @@ async function pruefeAuktionsPhase() {
     const geboteProSpieler = {};
     abgeschickt.forEach((g) => { geboteProSpieler[g.spielerId] = g.gebote ?? {}; });
 
-    const { sieger, kostenProSpieler } = loeseGebotsrundeAuf(auktionKarten, geboteProSpieler);
+    // Verbleibende Kapazität bis zur 5-Karten-Grenze - wichtig, damit ein
+    // Spieler nicht in EINER Runde mehrere Karten gewinnt und dadurch über
+    // das Limit kommt (siehe Kommentar in logik.js/loeseGebotsrundeAuf).
+    const kapazitaetProSpieler = {};
+    bieter.forEach((s) => {
+      kapazitaetProSpieler[s.id] = MAX_KARTEN_PRO_SPIELER - (s.faKarten?.length ?? 0);
+    });
+
+    const { sieger, kostenProSpieler } = loeseGebotsrundeAuf(auktionKarten, geboteProSpieler, kapazitaetProSpieler);
 
     // Gewonnene Karten je Spieler sammeln, damit pro Spieler EIN updateDoc reicht.
     const kartenProGewinner = {};

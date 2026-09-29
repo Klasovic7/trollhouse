@@ -36,16 +36,41 @@ export function pruefeGebote(gebote, kartenIds, muenzen) {
 // Löst eine Gebotsrunde auf: für jede Karte gewinnt das höchste Gebot, bei
 // Gleichstand entscheidet zufaelligFn() (Standard: Math.random) - austauschbar,
 // damit sich diese Funktion deterministisch testen lässt.
-// geboteProSpieler: { spielerId: { kartenId: betrag, ... }, ... }
-// Rückgabe: { sieger: { kartenId: spielerId | null }, kostenProSpieler: { spielerId: betrag } }
-export function loeseGebotsrundeAuf(kartenIds, geboteProSpieler, zufaelligFn = Math.random) {
+//
+// v217-Fix: berücksichtigt jetzt die 5-Karten-Obergrenze INNERHALB einer
+// einzelnen Gebotsrunde. Vorher konnte ein Spieler, der z. B. schon 4 Karten
+// hatte, in derselben Runde mehrere weitere Karten gewinnen und damit über 5
+// Karten kommen - das widerspricht der Regel und dem vom Nutzer bestätigten
+// Verhalten, dass sich am Ende die 5*Spielerzahl aufgedeckten Karten exakt
+// auf 5 Karten pro Spieler aufteilen. Um das zu garantieren, wird zuerst die
+// am stärksten umkämpfte Karte (höchstes Gebot) vergeben, danach die nächste
+// usw.; ein Spieler, der seine Kapazität in dieser Runde bereits ausgeschöpft
+// hat, scheidet für die restlichen Karten DIESER Runde aus (nicht erst ab der
+// nächsten Runde).
+// geboteProSpieler:      { spielerId: { kartenId: betrag, ... }, ... }
+// kapazitaetProSpieler:  { spielerId: verbleibende Kartenanzahl bis zum Limit }
+// Rückgabe: { sieger: { kartenId: spielerId }, kostenProSpieler: { spielerId: betrag } }
+export function loeseGebotsrundeAuf(kartenIds, geboteProSpieler, kapazitaetProSpieler, zufaelligFn = Math.random) {
   const sieger = {};
   const kostenProSpieler = {};
+  const verbleibend = { ...kapazitaetProSpieler };
 
-  for (const kartenId of kartenIds) {
+  // Höchstes Gebot je Karte ermitteln, um die Bearbeitungsreihenfolge
+  // festzulegen (umkämpfteste Karte zuerst) - dadurch bekommt bei knapper
+  // werdender Kapazität nicht zufällig die zuletzt bearbeitete Karte den
+  // Nachteil, sondern konsistent die mit dem niedrigsten Höchstgebot.
+  const reihenfolge = [...kartenIds].sort((a, b) => {
+    const hoechstesA = Math.max(0, ...Object.values(geboteProSpieler).map((g) => g[a] ?? 0));
+    const hoechstesB = Math.max(0, ...Object.values(geboteProSpieler).map((g) => g[b] ?? 0));
+    return hoechstesB - hoechstesA;
+  });
+
+  for (const kartenId of reihenfolge) {
     const gebote = Object.entries(geboteProSpieler)
       .map(([spielerId, g]) => ({ spielerId, betrag: g[kartenId] ?? 0 }))
-      .filter((g) => g.betrag > 0 || true); // auch 0-Gebote zählen mit (siehe Spielregel)
+      .filter((g) => (verbleibend[g.spielerId] ?? 0) > 0);
+    if (gebote.length === 0) continue; // niemand hat noch Kapazität übrig - Karte bleibt unvergeben
+
     const hoechstesGebot = Math.max(...gebote.map((g) => g.betrag));
     const bestbieter = gebote.filter((g) => g.betrag === hoechstesGebot);
     const gewinner = bestbieter.length === 1
@@ -53,6 +78,7 @@ export function loeseGebotsrundeAuf(kartenIds, geboteProSpieler, zufaelligFn = M
       : bestbieter[Math.floor(zufaelligFn() * bestbieter.length)];
     sieger[kartenId] = gewinner.spielerId;
     kostenProSpieler[gewinner.spielerId] = (kostenProSpieler[gewinner.spielerId] ?? 0) + gewinner.betrag;
+    verbleibend[gewinner.spielerId] -= 1;
   }
 
   return { sieger, kostenProSpieler };
