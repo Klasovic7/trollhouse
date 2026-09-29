@@ -1,0 +1,522 @@
+[
+  {
+    "id": "de-1",
+    "name": "Jonas Weber",
+    "nation": "Deutschland",
+    "faehigkeiten": {
+      "SCH": 3,
+      "PAS": 3,
+      "TEC": 3,
+      "VER": 3,
+      "GES": 5,
+      "SPI": 3
+    }
+  },
+  {
+    "id": "de-2",
+    "name": "Finn Bauer",
+    "nation": "Deutschland",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 2,
+      "TEC": 6,
+      "VER": 9,
+      "GES": 6,
+      "SPI": 5
+    }
+  },
+  {
+    "id": "de-3",
+    "name": "Lukas Hoffmann",
+    "nation": "Deutschland",
+    "faehigkeiten": {
+      "SCH": 7,
+      "PAS": 10,
+      "TEC": 7,
+      "VER": 3,
+      "GES": 4,
+      "SPI": 4
+    }
+  },
+  {
+    "id": "de-4",
+    "name": "Elias Schmidt",
+    "nation": "Deutschland",
+    "faehigkeiten": {
+      "SCH": 9,
+      "PAS": 8,
+      "TEC": 7,
+      "VER": 3,
+      "GES": 4,
+      "SPI": 6
+    }
+  },
+  {
+    "id": "de-5",
+    "name": "Noah Krüger",
+    "nation": "Deutschland",
+    "faehigkeiten": {
+      "SCH": 10,
+      "PAS": 2,
+      "TEC": 10,
+      "VER": 6,
+      "GES": 7,
+      "SPI": 9
+    }
+  },
+  {
+    "id": "it-1",
+    "name": "Marco Rossi",
+    "nation": "Italien",
+    "faehigkeiten": {
+      "SCH": 1,
+      "PAS": 1,
+      "TEC": 1,
+      "VER": 5,
+      "GES": 4,
+      "SPI": 3
+    }
+  },
+  {
+    "id": "it-2",
+    "name": "Luca Bianchi",
+    "nation": "Italien",
+    "faehigkeiten": {
+      "SCH": 5,
+      "PAS": 3,
+      "TEC": 5,
+      "VER": 5,
+      "GES": 3,
+      "SPI": 4
+    }
+  },
+  {
+    "id": "it-3",
+    "name": "Matteo Ferrari",
+    "nation": "Italien",
+    "faehigkeiten": {
+      "SCH": 2,
+      "PAS": 7,
+      "TEC": 8,
+      "VER": 7,
+      "GES": 5,
+      "SPI": 8
+    }
+  },
+  {
+    "id": "it-4",
+    "name": "Davide Romano",
+    "nation": "Italien",
+    "faehigkeiten": {
+      "SCH": 6,
+      "PAS": 7,
+      "TEC": 3,
+      "VER": 7,
+      "GES": 6,
+      "SPI": 9
+    }
+  },
+  {
+    "id": "it-5",
+    "name": "Leonardo Conti",
+    "nation": "Italien",
+    "faehigkeiten": {
+      "SCH": 10,
+      "PAS": 4,
+      "TEC": 10,
+      "VER": 7,
+      "GES": 9,
+      "SPI": 5
+    }
+  },
+  {
+    "id": "fr-1",
+    "name": "Julien Moreau",
+    "nation": "Frankreich",
+    "faehigkeiten": {
+      "SCH": 2,
+      "PAS": 5,
+      "TEC": 2,
+      "VER": 4,
+      "GES": 4,
+      "SPI": 1
+    }
+  },
+  {
+    "id": "fr-2",
+    "name": "Hugo Lefevre",
+    "nation": "Frankreich",
+    "faehigkeiten": {
+      "SCH": 7,
+      "PAS": 4,
+      "TEC": 7,
+      "VER": 6,
+      "GES": 4,
+      "SPI": 5
+    }
+  },
+  {
+    "id": "fr-3",
+    "name": "Thomas Girard",
+    "nation": "Frankreich",
+    "faehigkeiten": {
+      "SCH": 7,
+      "PAS": 8,
+      "TEC": 5,
+      "VER": 3,
+      "GES": 6,
+      "SPI": 6
+    }
+  },
+  {
+    "id": "fr-4",
+    "name": "Nicolas Petit",
+    "nation": "Frankreich",
+    "faehigkeiten": {
+      "SCH": 7,
+      "PAS": 9,
+      "TEC": 4,
+      "VER": 10,
+      "GES": 6,
+      "SPI": 6
+    }
+  },
+  {
+    "id": "fr-5",
+    "name": "Antoine Bernard",
+    "nation": "Frankreich",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 7,
+      "TEC": 9,
+      "VER": 7,
+      "GES": 8,
+      "SPI": 9
+    }
+  },
+  {
+    "id": "en-1",
+    "name": "Jack Turner",
+    "nation": "England",
+    "faehigkeiten": {
+      "SCH": 5,
+      "PAS": 3,
+      "TEC": 4,
+      "VER": 4,
+      "GES": 4,
+      "SPI": 1
+    }
+  },
+  {
+    "id": "en-2",
+    "name": "Oliver Hughes",
+    "nation": "England",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 4,
+      "TEC": 5,
+      "VER": 3,
+      "GES": 3,
+      "SPI": 6
+    }
+  },
+  {
+    "id": "en-3",
+    "name": "Charlie Bennett",
+    "nation": "England",
+    "faehigkeiten": {
+      "SCH": 7,
+      "PAS": 7,
+      "TEC": 6,
+      "VER": 4,
+      "GES": 10,
+      "SPI": 2
+    }
+  },
+  {
+    "id": "en-4",
+    "name": "George Fisher",
+    "nation": "England",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 7,
+      "TEC": 5,
+      "VER": 8,
+      "GES": 10,
+      "SPI": 8
+    }
+  },
+  {
+    "id": "en-5",
+    "name": "Thomas Reid",
+    "nation": "England",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 10,
+      "TEC": 9,
+      "VER": 7,
+      "GES": 9,
+      "SPI": 7
+    }
+  },
+  {
+    "id": "es-1",
+    "name": "Diego Fernández",
+    "nation": "Spanien",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 3,
+      "TEC": 1,
+      "VER": 4,
+      "GES": 6,
+      "SPI": 3
+    }
+  },
+  {
+    "id": "es-2",
+    "name": "Pablo Molina",
+    "nation": "Spanien",
+    "faehigkeiten": {
+      "SCH": 5,
+      "PAS": 4,
+      "TEC": 7,
+      "VER": 4,
+      "GES": 5,
+      "SPI": 6
+    }
+  },
+  {
+    "id": "es-3",
+    "name": "Álvaro Ortiz",
+    "nation": "Spanien",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 8,
+      "TEC": 6,
+      "VER": 8,
+      "GES": 5,
+      "SPI": 3
+    }
+  },
+  {
+    "id": "es-4",
+    "name": "Sergio Delgado",
+    "nation": "Spanien",
+    "faehigkeiten": {
+      "SCH": 10,
+      "PAS": 4,
+      "TEC": 9,
+      "VER": 8,
+      "GES": 8,
+      "SPI": 3
+    }
+  },
+  {
+    "id": "es-5",
+    "name": "Iker Santos",
+    "nation": "Spanien",
+    "faehigkeiten": {
+      "SCH": 7,
+      "PAS": 8,
+      "TEC": 6,
+      "VER": 10,
+      "GES": 6,
+      "SPI": 7
+    }
+  },
+  {
+    "id": "jp-1",
+    "name": "Haruto Sato",
+    "nation": "Japan",
+    "faehigkeiten": {
+      "SCH": 2,
+      "PAS": 3,
+      "TEC": 1,
+      "VER": 5,
+      "GES": 5,
+      "SPI": 2
+    }
+  },
+  {
+    "id": "jp-2",
+    "name": "Ren Tanaka",
+    "nation": "Japan",
+    "faehigkeiten": {
+      "SCH": 3,
+      "PAS": 5,
+      "TEC": 7,
+      "VER": 3,
+      "GES": 8,
+      "SPI": 2
+    }
+  },
+  {
+    "id": "jp-3",
+    "name": "Sota Yamamoto",
+    "nation": "Japan",
+    "faehigkeiten": {
+      "SCH": 8,
+      "PAS": 7,
+      "TEC": 4,
+      "VER": 4,
+      "GES": 5,
+      "SPI": 6
+    }
+  },
+  {
+    "id": "jp-4",
+    "name": "Kaito Suzuki",
+    "nation": "Japan",
+    "faehigkeiten": {
+      "SCH": 10,
+      "PAS": 7,
+      "TEC": 5,
+      "VER": 4,
+      "GES": 7,
+      "SPI": 9
+    }
+  },
+  {
+    "id": "jp-5",
+    "name": "Yuto Ito",
+    "nation": "Japan",
+    "faehigkeiten": {
+      "SCH": 10,
+      "PAS": 7,
+      "TEC": 6,
+      "VER": 6,
+      "GES": 8,
+      "SPI": 9
+    }
+  },
+  {
+    "id": "br-1",
+    "name": "Gabriel Silva",
+    "nation": "Brasilien",
+    "faehigkeiten": {
+      "SCH": 5,
+      "PAS": 6,
+      "TEC": 3,
+      "VER": 1,
+      "GES": 5,
+      "SPI": 1
+    }
+  },
+  {
+    "id": "br-2",
+    "name": "Lucas Souza",
+    "nation": "Brasilien",
+    "faehigkeiten": {
+      "SCH": 9,
+      "PAS": 4,
+      "TEC": 4,
+      "VER": 4,
+      "GES": 7,
+      "SPI": 4
+    }
+  },
+  {
+    "id": "br-3",
+    "name": "Rafael Costa",
+    "nation": "Brasilien",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 5,
+      "TEC": 5,
+      "VER": 7,
+      "GES": 9,
+      "SPI": 6
+    }
+  },
+  {
+    "id": "br-4",
+    "name": "Thiago Almeida",
+    "nation": "Brasilien",
+    "faehigkeiten": {
+      "SCH": 7,
+      "PAS": 10,
+      "TEC": 6,
+      "VER": 7,
+      "GES": 4,
+      "SPI": 7
+    }
+  },
+  {
+    "id": "br-5",
+    "name": "Bruno Carvalho",
+    "nation": "Brasilien",
+    "faehigkeiten": {
+      "SCH": 5,
+      "PAS": 10,
+      "TEC": 6,
+      "VER": 10,
+      "GES": 7,
+      "SPI": 8
+    }
+  },
+  {
+    "id": "ng-1",
+    "name": "Chidi Okafor",
+    "nation": "Nigeria",
+    "faehigkeiten": {
+      "SCH": 5,
+      "PAS": 3,
+      "TEC": 3,
+      "VER": 3,
+      "GES": 3,
+      "SPI": 4
+    }
+  },
+  {
+    "id": "ng-2",
+    "name": "Emeka Nwosu",
+    "nation": "Nigeria",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 4,
+      "TEC": 3,
+      "VER": 7,
+      "GES": 6,
+      "SPI": 3
+    }
+  },
+  {
+    "id": "ng-3",
+    "name": "Tunde Balogun",
+    "nation": "Nigeria",
+    "faehigkeiten": {
+      "SCH": 3,
+      "PAS": 7,
+      "TEC": 4,
+      "VER": 9,
+      "GES": 9,
+      "SPI": 5
+    }
+  },
+  {
+    "id": "ng-4",
+    "name": "Ifeanyi Eze",
+    "nation": "Nigeria",
+    "faehigkeiten": {
+      "SCH": 4,
+      "PAS": 4,
+      "TEC": 10,
+      "VER": 8,
+      "GES": 7,
+      "SPI": 10
+    }
+  },
+  {
+    "id": "ng-5",
+    "name": "Kelechi Adeyemi",
+    "nation": "Nigeria",
+    "faehigkeiten": {
+      "SCH": 10,
+      "PAS": 4,
+      "TEC": 10,
+      "VER": 10,
+      "GES": 9,
+      "SPI": 7
+    }
+  }
+]
