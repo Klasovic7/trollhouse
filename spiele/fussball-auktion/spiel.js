@@ -476,17 +476,39 @@ function zeigeAuktionErgebnis() {
   $("fa-auktion-erg-runde").textContent = String(auktionRunde);
   const liste = $("fa-auktion-erg-liste");
   liste.innerHTML = "";
+
+  // Alle Gebote dieser (bereits ausgewerteten) Runde - für die "wer hat was
+  // geboten"-Übersicht. Bleibt nach der Auswertung unverändert in alleGebote
+  // stehen (wird erst beim nächsten Spielstart gelöscht).
+  const geboteDieserRunde = alleGebote.filter((g) => g.runde === auktionRunde);
+
   auktionKarten.forEach((kartenId) => {
     const k = karte(kartenId);
     if (!k) return;
     const eintrag = auktionErgebnis?.[kartenId];
-    const gewinner = eintrag ? spielerListe.find((s) => s.id === eintrag.spielerId) : null;
+    const gewinnerId = eintrag?.spielerId ?? null;
+
+    const geboteFuerKarte = geboteDieserRunde
+      .map((g) => ({ spielerId: g.spielerId, betrag: g.gebote?.[kartenId] ?? 0 }))
+      .sort((a, b) => b.betrag - a.betrag);
+
+    const geboteHtml = geboteFuerKarte.map((g) => {
+      const s = spielerListe.find((x) => x.id === g.spielerId);
+      if (!s) return "";
+      const istGewinner = g.spielerId === gewinnerId;
+      return `<div class="fa-gebot-eintrag${istGewinner ? " fa-gebot-gewinner" : ""}">` +
+        avatarHtml(s.icon, "fa-gebot-avatar") +
+        `<span class="fa-gebot-name">${escapeHtml(s.name)}</span>` +
+        `<strong class="fa-gebot-betrag">${g.betrag} 🪙</strong>` +
+      `</div>`;
+    }).join("");
+
     const div = document.createElement("div");
     div.className = "fa-karte fa-karte-ergebnis";
     div.innerHTML = kartenKachelHtml(k, { zeigeGesamt: false }) +
-      (gewinner
-        ? `<div class="fa-auktion-gewinner">${spielerKarte(gewinner.name, gewinner.farbe, gewinner.icon, `${eintrag.betrag} 🪙`, { punkteLinks: false })}</div>`
-        : `<div class="fa-auktion-gewinner"><em>Niemand hat mitgeboten</em></div>`);
+      (geboteFuerKarte.length
+        ? `<div class="fa-gebote-liste">${geboteHtml}</div>`
+        : `<div class="fa-gebote-liste"><em>Niemand hat mitgeboten</em></div>`);
     liste.appendChild(div);
   });
 
