@@ -485,8 +485,6 @@ function zeigeAuktionErgebnis() {
   auktionKarten.forEach((kartenId) => {
     const k = karte(kartenId);
     if (!k) return;
-    const eintrag = auktionErgebnis?.[kartenId];
-    const gewinnerId = eintrag?.spielerId ?? null;
 
     const geboteFuerKarte = geboteDieserRunde
       .map((g) => ({ spielerId: g.spielerId, betrag: g.gebote?.[kartenId] ?? 0 }))
@@ -495,11 +493,10 @@ function zeigeAuktionErgebnis() {
     const geboteHtml = geboteFuerKarte.map((g) => {
       const s = spielerListe.find((x) => x.id === g.spielerId);
       if (!s) return "";
-      const istGewinner = g.spielerId === gewinnerId;
-      return `<div class="fa-gebot-eintrag${istGewinner ? " fa-gebot-gewinner" : ""}">` +
+      return `<div class="fa-gebot-eintrag" style="--spieler-farbe:${escapeHtml(s.farbe ?? "#22c55e")}">` +
         avatarHtml(s.icon, "fa-gebot-avatar") +
         `<span class="fa-gebot-name">${escapeHtml(s.name)}</span>` +
-        `<strong class="fa-gebot-betrag">${g.betrag} 🪙</strong>` +
+        `<strong class="fa-gebot-betrag">${g.betrag} <span class="fa-goldmuenze" aria-hidden="true"></span></strong>` +
       `</div>`;
     }).join("");
 
