@@ -28,6 +28,7 @@ import {
   kartenSumme, pruefeGebote, loeseGebotsrundeAuf, berechneRundenpunkte,
   zufaelligeRundenKategorien, mische
 } from "./logik.js";
+import { nationDesign, PORTRAET_BILDER } from "./design.js";
 
 const VORLAGE = `
   <div id="fa-setup" class="bildschirm-karte" hidden>
@@ -328,21 +329,55 @@ export async function vorZurueck() {
 // ============================================================================
 //  Auktionsphase
 // ============================================================================
+function kartenPortraitHtml(k, akzent) {
+  const bild = PORTRAET_BILDER[k.id];
+  if (bild) {
+    return `<img class="fa-karte-portrait" src="${escapeHtml(bild)}" alt="${escapeHtml(k.name)}">`;
+  }
+  // Platzhalter-Silhouette (Kopf + Schultern) für alle Karten ohne echtes Bild.
+  return (
+    `<svg class="fa-karte-platzhalter" viewBox="0 0 86 106" fill="none" aria-hidden="true">` +
+      `<circle cx="43" cy="30" r="22" fill="${akzent}" fill-opacity=".22"/>` +
+      `<path d="M6 104c2-30 16-46 37-46s35 16 37 46" stroke="${akzent}" stroke-opacity=".28" stroke-width="11" fill="none" stroke-linecap="round"/>` +
+    `</svg>`
+  );
+}
+
 function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = {}) {
-  const faehigkeitenHtml = KATEGORIEN.map((kat) => {
+  const { top, mid, bottom, akzent, flagge } = nationDesign(k.nation);
+  const [vorname, ...rest] = k.name.split(" ");
+  const nachname = rest.join(" ") || vorname;
+
+  const chipsHtml = KATEGORIEN.map((kat) => {
     const hervorgehoben = markierteKategorien.includes(kat);
-    return `<span class="fa-faehigkeit${hervorgehoben ? " fa-faehigkeit-aktiv" : ""}">` +
-      `<span class="fa-faehigkeit-kuerzel">${kat}</span>` +
-      `<span class="fa-faehigkeit-wert">${k.faehigkeiten[kat]}</span>` +
+    return `<span class="fa-karte-chip${hervorgehoben ? " fa-karte-chip-aktiv" : ""}">` +
+      `<span class="fa-karte-chip-kuerzel">${kat}</span>` +
+      `<span class="fa-karte-chip-wert">${k.faehigkeiten[kat]}</span>` +
     `</span>`;
   }).join("");
+
+  const ratingHtml = zeigeGesamt
+    ? `<div class="fa-karte-rating"><span>${kartenSumme(k)}</span></div>`
+    : "";
+
   return (
-    `<div class="fa-karte-kopf">` +
-      `<strong class="fa-karte-name">${escapeHtml(k.name)}</strong>` +
-      `<span class="fa-karte-nation">${escapeHtml(k.nation)}</span>` +
-    `</div>` +
-    `<div class="fa-karte-faehigkeiten">${faehigkeitenHtml}</div>` +
-    (zeigeGesamt ? `<div class="fa-karte-gesamt">Gesamt: ${kartenSumme(k)}</div>` : "")
+    `<div class="fa-karte-art" style="--n-top:${top};--n-mid:${mid};--n-bottom:${bottom};--n-akzent:${akzent};" title="${escapeHtml(flagge)} ${escapeHtml(k.nation)}">` +
+      `<div class="fa-karte-bg fa-karte-bg-top"></div>` +
+      `<div class="fa-karte-bg fa-karte-bg-mid"></div>` +
+      `<div class="fa-karte-bg fa-karte-bg-bottom"></div>` +
+      `<div class="fa-karte-carbon"></div>` +
+      kartenPortraitHtml(k, akzent) +
+      `<div class="fa-karte-namebox">` +
+        `<span class="fa-vorname">${escapeHtml(vorname)}</span>` +
+        `<span class="fa-nachname">${escapeHtml(nachname)}</span>` +
+      `</div>` +
+      ratingHtml +
+      `<div class="fa-karte-statwrap">` +
+        `<div class="fa-karte-statbg"></div>` +
+        `<div class="fa-karte-statovl"></div>` +
+        `<div class="fa-karte-statgrid">${chipsHtml}</div>` +
+      `</div>` +
+    `</div>`
   );
 }
 

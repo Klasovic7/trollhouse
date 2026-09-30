@@ -2645,7 +2645,7 @@
 .st-antwort-btn:disabled { opacity: .6; }
 
 
-/* ---------- Fußball-Auktion (v216: erstes einfaches Karten-Layout, Design folgt später) ---------- */
+/* ---------- Fußball-Auktion (v219: Kartendesign "Split x Neon Carbon") ---------- */
 .fa-karten-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -2653,37 +2653,89 @@
   margin: 12px 0;
 }
 .fa-karte {
-  border: 1px solid rgba(0, 0, 0, .15);
-  border-radius: 10px;
-  padding: 10px;
-  background: rgba(255, 255, 255, .04);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-.fa-karte-kopf { display: flex; flex-direction: column; }
-.fa-karte-name { font-size: 1.02em; }
-.fa-karte-nation { font-size: .82em; opacity: .7; }
-.fa-karte-faehigkeiten {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-}
-.fa-faehigkeit {
-  display: flex;
-  justify-content: space-between;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, .05);
-  font-size: .85em;
-}
-.fa-faehigkeit-aktiv {
-  background: var(--spieler-farbe, #22c55e);
+.fa-karte-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4.3;
+  border-radius: 12px;
+  overflow: hidden;
+  container-type: inline-size;
   color: #fff;
-  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .35);
 }
-.fa-faehigkeit-kuerzel { opacity: .8; }
-.fa-karte-gesamt { font-size: .85em; font-weight: 600; opacity: .85; }
+.fa-karte-bg { position: absolute; inset: 0; }
+.fa-karte-bg-top {
+  background: linear-gradient(135deg, var(--n-top) 0%, color-mix(in srgb, var(--n-top) 65%, black) 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 38%, 0 63%);
+}
+.fa-karte-bg-mid {
+  background: var(--n-mid);
+  clip-path: polygon(0 60%, 100% 35%, 100% 43%, 0 68%);
+}
+.fa-karte-bg-bottom {
+  background: linear-gradient(135deg, var(--n-bottom) 0%, color-mix(in srgb, var(--n-bottom) 55%, black) 100%);
+  clip-path: polygon(0 65%, 100% 40%, 100% 100%, 0 100%);
+}
+.fa-karte-carbon {
+  position: absolute; inset: 0; z-index: 1;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .035) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .035) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .045) 0 1px, transparent 1px 3px);
+}
+.fa-karte-portrait {
+  position: absolute; z-index: 2; bottom: 22%; right: -6%; height: 76%; width: auto;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .4));
+}
+.fa-karte-platzhalter {
+  position: absolute; z-index: 2; bottom: 20%; right: -2%; width: 60%; height: auto;
+}
+.fa-karte-namebox {
+  position: absolute; z-index: 3; top: 4%; left: 5%; max-width: 62%; line-height: 1.06;
+}
+.fa-vorname {
+  display: block; font-size: 7.4cqw; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; opacity: .85; text-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+.fa-nachname {
+  display: block; font-size: 11.5cqw; font-weight: 800; letter-spacing: .01em; text-transform: uppercase;
+  text-shadow: 0 0 6px var(--n-akzent), 0 0 14px color-mix(in srgb, var(--n-akzent) 45%, transparent);
+}
+.fa-karte-rating {
+  position: absolute; z-index: 3; top: 4%; right: 5%; width: 23%; aspect-ratio: 1; border-radius: 50%;
+  background: rgba(0, 0, 0, .55); border: 2px solid var(--n-akzent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--n-akzent) 55%, transparent);
+  display: flex; align-items: center; justify-content: center;
+}
+.fa-karte-rating span {
+  font-size: 8.6cqw; font-weight: 800; color: transparent; -webkit-text-stroke: 1.1px var(--n-akzent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--n-akzent) 65%, transparent); line-height: 1;
+}
+.fa-karte-statwrap { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 30%; overflow: hidden; }
+.fa-karte-statbg {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, var(--n-top) 0 33.3%, var(--n-mid) 33.3% 66.6%, var(--n-bottom) 66.6% 100%);
+}
+.fa-karte-statovl { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .38) 0%, rgba(0, 0, 0, .82) 100%); }
+.fa-karte-statgrid {
+  position: relative; height: 100%; box-sizing: border-box;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.4cqw; padding: 3cqw;
+}
+.fa-karte-chip {
+  display: flex; justify-content: space-between; align-items: center; gap: 3px;
+  background: rgba(255, 255, 255, .14); border-radius: 1.8cqw; padding: 0 2.4cqw;
+  font-size: 4.4cqw; font-weight: 700;
+}
+.fa-karte-chip-kuerzel { opacity: .78; font-size: 3.6cqw; }
+.fa-karte-chip-wert { font-size: 5cqw; }
+.fa-karte-chip-aktiv {
+  background: color-mix(in srgb, var(--n-akzent) 30%, rgba(255, 255, 255, .14));
+  box-shadow: inset 0 0 0 1px var(--n-akzent);
+}
 .fa-gebot-zeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fa-gebot-eingabe {
   width: 80px;
