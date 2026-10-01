@@ -210,9 +210,9 @@
     "gesamt": 44
   },
   {
-    "id": "en-1",
-    "name": "Jack Turner",
-    "nation": "England",
+    "id": "ar-1",
+    "name": "Mateo Acosta",
+    "nation": "Argentinien",
     "faehigkeiten": {
       "SCH": 5,
       "PAS": 3,
@@ -224,9 +224,9 @@
     "gesamt": 21
   },
   {
-    "id": "en-2",
-    "name": "Oliver Hughes",
-    "nation": "England",
+    "id": "ar-2",
+    "name": "Santiago Correa",
+    "nation": "Argentinien",
     "faehigkeiten": {
       "SCH": 4,
       "PAS": 4,
@@ -238,9 +238,9 @@
     "gesamt": 25
   },
   {
-    "id": "en-3",
-    "name": "Charlie Bennett",
-    "nation": "England",
+    "id": "ar-3",
+    "name": "Franco Giménez",
+    "nation": "Argentinien",
     "faehigkeiten": {
       "SCH": 7,
       "PAS": 7,
@@ -252,9 +252,9 @@
     "gesamt": 36
   },
   {
-    "id": "en-4",
-    "name": "George Fisher",
-    "nation": "England",
+    "id": "ar-4",
+    "name": "Nicolás Pereyra",
+    "nation": "Argentinien",
     "faehigkeiten": {
       "SCH": 4,
       "PAS": 7,
@@ -266,9 +266,9 @@
     "gesamt": 42
   },
   {
-    "id": "en-5",
-    "name": "Thomas Reid",
-    "nation": "England",
+    "id": "ar-5",
+    "name": "Agustín Ibáñez",
+    "nation": "Argentinien",
     "faehigkeiten": {
       "SCH": 4,
       "PAS": 10,

@@ -373,7 +373,7 @@ function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = 
       `</div>` +
       ratingHtml +
       `<div class="fa-karte-statwrap">` +
-        `<svg class="fa-karte-statbg" viewBox="${flagViewBox}" preserveAspectRatio="xMidYMid slice">${flagSvg}</svg>` +
+        `<svg class="fa-karte-statbg" width="100%" height="100%" viewBox="${flagViewBox}" preserveAspectRatio="xMidYMid slice">${flagSvg}</svg>` +
         `<div class="fa-karte-statovl"></div>` +
         `<div class="fa-karte-statgrid">${chipsHtml}</div>` +
       `</div>` +
@@ -542,7 +542,7 @@ function zeigeAuktionErgebnis() {
 
     const div = document.createElement("div");
     div.className = "fa-karte fa-karte-ergebnis";
-    div.innerHTML = kartenKachelHtml(k, { zeigeGesamt: false }) +
+    div.innerHTML = kartenKachelHtml(k) +
       `<div class="fa-gebote-ueberschrift">Gebote auf diese Karte</div>` +
       (geboteFuerKarte.length
         ? `<div class="fa-gebote-liste">${geboteHtml}</div>`
