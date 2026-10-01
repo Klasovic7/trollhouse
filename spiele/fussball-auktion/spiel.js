@@ -28,11 +28,10 @@ import {
   kartenSumme, pruefeGebote, loeseGebotsrundeAuf, berechneRundenpunkte,
   zufaelligeRundenKategorien, mische
 } from "./logik.js";
-import { nationDesign, PORTRAET_BILDER } from "./design.js";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ } from "./design.js";
 
 const VORLAGE = `
   <div id="fa-setup" class="bildschirm-karte" hidden>
-    <h1>⚽ Fußball-Auktion</h1>
     <p class="hinweis-text">
       Jeder startet mit ${STARTMUENZEN} Münzen. In 5 Gebotsrunden werden verdeckt Gebote auf
       Fußballkarten abgegeben (maximal ${MAX_KARTEN_PRO_SPIELER} Karten pro Spieler). Danach spielt
@@ -332,7 +331,9 @@ export async function vorZurueck() {
 function kartenPortraitHtml(k, akzent) {
   const bild = PORTRAET_BILDER[k.id];
   if (bild) {
-    return `<img class="fa-karte-portrait" src="${escapeHtml(bild)}" alt="${escapeHtml(k.name)}">`;
+    const versatz = PORTRAET_VERSATZ[k.id];
+    const style = versatz ? ` style="right: calc(2% + ${versatz}%)"` : "";
+    return `<img class="fa-karte-portrait" src="${escapeHtml(bild)}" alt="${escapeHtml(k.name)}"${style}>`;
   }
   // Platzhalter-Silhouette (Kopf + Schultern) für alle Karten ohne echtes Bild.
   return (

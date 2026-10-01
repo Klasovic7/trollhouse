@@ -156,9 +156,19 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=226",
-  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=226",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=226",
-  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=226",
-  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=226"
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=228",
+  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=228",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=228",
+  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=228",
+  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=228"
+};
+
+// Manche Porträts sind (je nach Bildausschnitt) von Natur aus breiter als
+// andere und ragen dadurch mit dem Kopf zu weit nach rechts in Richtung des
+// Flaggen-Badges hinein. Pro Karten-ID lässt sich hier zusätzlich zur
+// Standardposition (siehe .fa-karte-portrait in stil.css) ein zusätzlicher
+// Versatz nach links angeben, in Prozentpunkten der Kartenbreite.
+export const PORTRAET_VERSATZ = {
+  "it-2": 7,
+  "it-3": 9
 };
