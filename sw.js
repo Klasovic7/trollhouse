@@ -4,7 +4,7 @@
 // Nur dann wirft der Browser den alten Zwischenspeicher weg und alle Spieler
 // bekommen zuverlässig die neue Version. Das ist der einzige Handgriff, den man
 // nach dem Bearbeiten von Dateien nicht vergessen darf.
-const CACHE_NAME = "trollhouse-v225";
+const CACHE_NAME = "trollhouse-v226";
 
 const DATEIEN = [
   "./",
@@ -47,7 +47,11 @@ const DATEIEN = [
   "spiele/fussball-auktion/logik.js",
   "spiele/fussball-auktion/design.js",
   "spiele/fussball-auktion/karten.json",
-  "bilder/fussball-auktion/spieler-it-1.png?v=225",
+  "bilder/fussball-auktion/spieler-it-1.png?v=226",
+  "bilder/fussball-auktion/spieler-it-2.png?v=226",
+  "bilder/fussball-auktion/spieler-it-3.png?v=226",
+  "bilder/fussball-auktion/spieler-it-4.png?v=226",
+  "bilder/fussball-auktion/spieler-it-5.png?v=226",
   "spiele/doppelblick/spiel.js",
   "spiele/blitzquiz/spiel.js",
   "spiele/blitzquiz/fragen.json",
