@@ -71,7 +71,7 @@
   },
   {
     "id": "it-1",
-    "name": "Marco Rossi",
+    "name": "Kevino Hofaccio",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 1,
@@ -85,7 +85,7 @@
   },
   {
     "id": "it-2",
-    "name": "Luca Bianchi",
+    "name": "Naderi Moccia",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 5,
@@ -99,7 +99,7 @@
   },
   {
     "id": "it-3",
-    "name": "Matteo Ferrari",
+    "name": "Nicola Trulli",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 2,
@@ -113,7 +113,7 @@
   },
   {
     "id": "it-4",
-    "name": "Davide Romano",
+    "name": "Sinano Martini",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 6,
@@ -127,7 +127,7 @@
   },
   {
     "id": "it-5",
-    "name": "Leonardo Conti",
+    "name": "Luca Spezzotto",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 10,
