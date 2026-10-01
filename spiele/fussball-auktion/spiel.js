@@ -48,7 +48,7 @@ const VORLAGE = `
 
   <div id="fa-auktion-screen" class="bildschirm-karte" hidden>
     <h2>Gebotsrunde <span id="fa-auktion-runde"></span>/${ANZAHL_GEBOTSRUNDEN}</h2>
-    <p class="hinweis-text">Münzen: <strong id="fa-eigene-muenzen"></strong></p>
+    <p class="hinweis-text">Münzen: <strong id="fa-eigene-muenzen"></strong> · Karten: <strong id="fa-eigene-kartenanzahl"></strong>/${MAX_KARTEN_PRO_SPIELER}</p>
     <p id="fa-auktion-inaktiv-hinweis" class="hinweis-text" hidden>Du hast bereits ${MAX_KARTEN_PRO_SPIELER} Karten - in dieser Runde bietest du nicht mit.</p>
     <div id="fa-auktion-karten" class="fa-karten-grid"></div>
     <p id="fa-auktion-fehler" class="fehler-text"></p>
@@ -58,7 +58,7 @@ const VORLAGE = `
 
   <div id="fa-auktion-ergebnis-screen" class="bildschirm-karte" hidden>
     <h2>Ergebnis Gebotsrunde <span id="fa-auktion-erg-runde"></span>/${ANZAHL_GEBOTSRUNDEN}</h2>
-    <div id="fa-auktion-erg-liste"></div>
+    <div id="fa-auktion-erg-liste" class="fa-karten-grid fa-karten-grid-ergebnis"></div>
     <p><button id="fa-auktion-weiter" class="btn-primaer" hidden></button></p>
     <p id="fa-auktion-erg-warten" hidden><em>Der Spielleiter macht gleich weiter …</em></p>
   </div>
@@ -344,7 +344,7 @@ function kartenPortraitHtml(k, akzent) {
 }
 
 function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = {}) {
-  const { top, mid, bottom, akzent, flagge } = nationDesign(k.nation);
+  const { top, mid, bottom, akzent, flagge, flagSvg, flagViewBox } = nationDesign(k.nation);
   const [vorname, ...rest] = k.name.split(" ");
   const nachname = rest.join(" ") || vorname;
 
@@ -373,7 +373,7 @@ function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = 
       `</div>` +
       ratingHtml +
       `<div class="fa-karte-statwrap">` +
-        `<div class="fa-karte-statbg"></div>` +
+        `<svg class="fa-karte-statbg" viewBox="${flagViewBox}" preserveAspectRatio="xMidYMid slice">${flagSvg}</svg>` +
         `<div class="fa-karte-statovl"></div>` +
         `<div class="fa-karte-statgrid">${chipsHtml}</div>` +
       `</div>` +
@@ -386,6 +386,7 @@ function zeigeAuktion() {
   if (!eigener) return;
   $("fa-auktion-runde").textContent = String(auktionRunde);
   $("fa-eigene-muenzen").textContent = String(eigener.faMuenzen ?? STARTMUENZEN);
+  $("fa-eigene-kartenanzahl").textContent = String(eigener.faKarten?.length ?? 0);
 
   const aktiv = istAktiverBieter(eigener);
   $("fa-auktion-inaktiv-hinweis").hidden = aktiv;
@@ -525,19 +526,24 @@ function zeigeAuktionErgebnis() {
       .map((g) => ({ spielerId: g.spielerId, betrag: g.gebote?.[kartenId] ?? 0 }))
       .sort((a, b) => b.betrag - a.betrag);
 
+    const gewinnerId = raum.faAuktionErgebnis?.[kartenId]?.spielerId;
+
     const geboteHtml = geboteFuerKarte.map((g) => {
       const s = spielerListe.find((x) => x.id === g.spielerId);
       if (!s) return "";
-      return `<div class="fa-gebot-eintrag" style="--spieler-farbe:${escapeHtml(s.farbe ?? "#22c55e")}">` +
+      const hatGewonnen = g.spielerId === gewinnerId;
+      return `<div class="fa-gebot-eintrag${hatGewonnen ? " fa-gebot-gewinner" : ""}" style="--spieler-farbe:${escapeHtml(s.farbe ?? "#22c55e")}">` +
         avatarHtml(s.icon, "fa-gebot-avatar") +
         `<span class="fa-gebot-name">${escapeHtml(s.name)}</span>` +
         `<strong class="fa-gebot-betrag">${g.betrag} <span class="fa-goldmuenze" aria-hidden="true"></span></strong>` +
+        (hatGewonnen ? `<span class="fa-gebot-sieger-abzeichen" title="Hat die Karte bekommen">🏆</span>` : "") +
       `</div>`;
     }).join("");
 
     const div = document.createElement("div");
     div.className = "fa-karte fa-karte-ergebnis";
     div.innerHTML = kartenKachelHtml(k, { zeigeGesamt: false }) +
+      `<div class="fa-gebote-ueberschrift">Gebote auf diese Karte</div>` +
       (geboteFuerKarte.length
         ? `<div class="fa-gebote-liste">${geboteHtml}</div>`
         : `<div class="fa-gebote-liste"><em>Niemand hat mitgeboten</em></div>`);
