@@ -33,9 +33,52 @@ export function pruefeGebote(gebote, kartenIds, muenzen) {
   return null;
 }
 
+// Bestimmt die Bearbeitungsreihenfolge einer Menge von Karten (umkämpfteste
+// zuerst, d. h. höchstes abgegebenes Gebot zuerst) - extrahiert aus
+// loeseGebotsrundeAuf, damit spiel.js Karten auch EINZELN (mit Pausen für ein
+// Stechen) nacheinander auflösen kann, statt wie bisher alle auf einmal.
+export function kartenBearbeitungsreihenfolge(kartenIds, geboteProSpieler) {
+  return [...kartenIds].sort((a, b) => {
+    const hoechstesA = Math.max(0, ...Object.values(geboteProSpieler).map((g) => g[a] ?? 0));
+    const hoechstesB = Math.max(0, ...Object.values(geboteProSpieler).map((g) => g[b] ?? 0));
+    return hoechstesB - hoechstesA;
+  });
+}
+
+// Löst GENAU EINE Karte auf (kein Zufall mehr bei Gleichstand - siehe unten):
+//  - "niemand":       kein aktiver Bieter mit Kapazität, ODER das höchste
+//                      Gebot ist 0 (Sonderfall vom Nutzer bestätigt: ein
+//                      Gleichstand bei 0 Münzen bedeutet, dass niemand
+//                      geboten hat - die Karte bleibt unvergeben).
+//  - "gewinner":       genau ein Spieler hat das höchste Gebot - bekommt die
+//                      Karte direkt.
+//  - "unentschieden":  mindestens zwei Spieler teilen sich das höchste Gebot
+//                      (> 0) - hier muss spiel.js ein Stechen starten statt
+//                      (wie früher) einfach zufällig zu entscheiden.
+export function aufloesenEineKarte(kartenId, geboteProSpieler, kapazitaetProSpieler) {
+  const gebote = Object.entries(geboteProSpieler)
+    .map(([spielerId, g]) => ({ spielerId, betrag: g[kartenId] ?? 0 }))
+    .filter((g) => (kapazitaetProSpieler[g.spielerId] ?? 0) > 0);
+  if (gebote.length === 0) return { typ: "niemand" };
+
+  const hoechstesGebot = Math.max(...gebote.map((g) => g.betrag));
+  if (hoechstesGebot === 0) return { typ: "niemand" };
+
+  const bestbieter = gebote.filter((g) => g.betrag === hoechstesGebot);
+  if (bestbieter.length === 1) {
+    return { typ: "gewinner", spielerId: bestbieter[0].spielerId, betrag: hoechstesGebot };
+  }
+  return { typ: "unentschieden", spielerIds: bestbieter.map((g) => g.spielerId), betrag: hoechstesGebot };
+}
+
 // Löst eine Gebotsrunde auf: für jede Karte gewinnt das höchste Gebot, bei
 // Gleichstand entscheidet zufaelligFn() (Standard: Math.random) - austauschbar,
 // damit sich diese Funktion deterministisch testen lässt.
+//
+// Hinweis (v231): seit Einführung des Stechens (siehe aufloesenEineKarte
+// oben und spiel.js/loeseAuktionsrundeAuf) wird diese Funktion vom Spiel
+// selbst NICHT mehr verwendet - sie bleibt für bestehende Tests/Aufrufer
+// erhalten, löst Gleichstände aber weiterhin per Zufall auf.
 //
 // v217-Fix: berücksichtigt jetzt die 5-Karten-Obergrenze INNERHALB einer
 // einzelnen Gebotsrunde. Vorher konnte ein Spieler, der z. B. schon 4 Karten

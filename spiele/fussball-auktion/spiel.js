@@ -18,16 +18,21 @@
 // ============================================================================
 import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
-  serverTimestamp, increment, arrayUnion
+  serverTimestamp, increment, arrayUnion, runTransaction
 } from "../../kern/firebase.js";
 import { escapeHtml, spielerKarte, avatarHtml, renderWarteAvatare, initBereitSystem, zeigeDebug } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import {
   KATEGORIEN, KATEGORIE_NAMEN, STARTMUENZEN, MAX_KARTEN_PRO_SPIELER,
   ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN,
-  kartenSumme, pruefeGebote, loeseGebotsrundeAuf, berechneRundenpunkte,
+  kartenSumme, pruefeGebote, berechneRundenpunkte,
+  kartenBearbeitungsreihenfolge, aufloesenEineKarte,
   zufaelligeRundenKategorien, mische
 } from "./logik.js";
+
+// Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
+// Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
+const STECHEN_DAUER_MS = 10000;
 import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ } from "./design.js";
 
 const VORLAGE = `
@@ -46,7 +51,7 @@ const VORLAGE = `
   </div>
 
   <div id="fa-auktion-screen" class="bildschirm-karte" hidden>
-    <h2>Gebotsrunde <span id="fa-auktion-runde"></span>/${ANZAHL_GEBOTSRUNDEN}</h2>
+    <h2 id="fa-auktion-titel"></h2>
     <p class="hinweis-text">Münzen: <strong id="fa-eigene-muenzen"></strong> · Karten: <strong id="fa-eigene-kartenanzahl"></strong>/${MAX_KARTEN_PRO_SPIELER}</p>
     <p id="fa-auktion-inaktiv-hinweis" class="hinweis-text" hidden>Du hast bereits ${MAX_KARTEN_PRO_SPIELER} Karten - in dieser Runde bietest du nicht mit.</p>
     <div id="fa-auktion-karten" class="fa-karten-grid"></div>
@@ -55,8 +60,26 @@ const VORLAGE = `
     <div id="fa-auktion-status" class="warten-block"></div>
   </div>
 
+  <div id="fa-stechen-screen" class="bildschirm-karte" hidden>
+    <h2>🔥 Stechen!</h2>
+    <p class="hinweis-text">Gleichstand bei dieser Karte - wer zuerst erhöht, liegt vorn. Läuft der
+      Timer ohne neues Gebot ab, entscheidet das Los unter den aktuell Führenden.</p>
+    <div id="fa-stechen-karte" class="fa-karten-grid"></div>
+    <p class="wi-countdown" id="fa-stechen-countdown"></p>
+    <div id="fa-stechen-gebote-liste" class="fa-gebote-liste"></div>
+    <div id="fa-stechen-erhoehen-bereich" hidden>
+      <p class="fa-gebot-zeile">
+        <span>Dein Gebot</span>
+        <input id="fa-stechen-eingabe" type="number" step="1" inputmode="numeric" class="fa-gebot-eingabe">
+      </p>
+      <p><button id="fa-stechen-erhoehen-btn" class="btn-primaer">Erhöhen</button></p>
+      <p id="fa-stechen-fehler" class="fehler-text"></p>
+    </div>
+    <p id="fa-stechen-zuschauer-hinweis" class="hinweis-text" hidden><em>Du bist bei diesem Stechen nicht dabei.</em></p>
+  </div>
+
   <div id="fa-auktion-ergebnis-screen" class="bildschirm-karte" hidden>
-    <h2>Ergebnis Gebotsrunde <span id="fa-auktion-erg-runde"></span>/${ANZAHL_GEBOTSRUNDEN}</h2>
+    <h2 id="fa-auktion-erg-titel"></h2>
     <div id="fa-auktion-erg-liste" class="fa-karten-grid fa-karten-grid-ergebnis"></div>
     <p><button id="fa-auktion-weiter" class="btn-primaer" hidden></button></p>
     <p id="fa-auktion-erg-warten" hidden><em>Der Spielleiter macht gleich weiter …</em></p>
@@ -110,6 +133,14 @@ let geboteAbgeschickt = false;
 let auktionAufloesungAusgeloest = false;
 let rundeAufloesungAusgeloest = false;
 
+// Stechen (Tiebreak) - siehe loeseAuktionsrundeAuf/pruefeStechenAblauf weiter unten.
+let stechenKarte = null;
+let stechenSpieler = [];
+let stechenGebote = {};
+let stechenAblaufZeit = null;
+let stechenAufloesungAusgeloest = false;
+let timerId = null;
+
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
 function karte(id) {
@@ -148,6 +179,8 @@ export async function starten(uebergebeneApi) {
   if (api.istLeiter && !api.raum?.faStatus) {
     await updateDoc(api.raumRef(), { faStatus: "setup" });
   }
+
+  timerId = setInterval(() => { aktualisiereStechenCountdown(); pruefeStechenAblauf(); }, 300);
 }
 
 function verdrahteBedienelemente() {
@@ -155,6 +188,10 @@ function verdrahteBedienelemente() {
   $("fa-gebote-bestaetigen").addEventListener("click", geboteBestaetigen);
   $("fa-auktion-weiter").addEventListener("click", auktionWeiter);
   $("fa-runde-weiter").addEventListener("click", rundeWeiter);
+  $("fa-stechen-erhoehen-btn").addEventListener("click", () => {
+    const wert = parseInt($("fa-stechen-eingabe").value, 10);
+    stechenGebotErhoehen(wert);
+  });
 }
 
 function starteListener() {
@@ -174,6 +211,7 @@ export function beenden() {
   bereitSystem = null;
   if (geboteUnsub) { geboteUnsub(); geboteUnsub = null; }
   if (spielzuegeUnsub) { spielzuegeUnsub(); spielzuegeUnsub = null; }
+  if (timerId) { clearInterval(timerId); timerId = null; }
   el = {};
   raum = {};
   alleGebote = []; alleSpielzuege = [];
@@ -181,6 +219,8 @@ export function beenden() {
   rundenIndex = 0; rundenKategorien = []; rundenErgebnis = null;
   eigeneGebote = {}; geboteAbgeschickt = false;
   auktionAufloesungAusgeloest = false; rundeAufloesungAusgeloest = false;
+  stechenKarte = null; stechenSpieler = []; stechenGebote = {}; stechenAblaufZeit = null;
+  stechenAufloesungAusgeloest = false;
 }
 
 export function spieler(liste) {
@@ -188,6 +228,7 @@ export function spieler(liste) {
   if (!el.wurzel) return;
   if (status === "setup") zeigeSetup();
   if (status === "auktion_gebot") { zeigeAuktion(); pruefeAuktionsPhase(); }
+  if (status === "auktion_stechen") { zeigeStechen(); }
   if (status === "auktion_ergebnis") zeigeAuktionErgebnis();
   if (status === "runde_spielen") { zeigeRunde(); pruefeRundenPhase(); }
   if (status === "runde_ergebnis") zeigeRundenErgebnis();
@@ -220,8 +261,19 @@ export function raumDaten(daten) {
   rundenKategorien = daten.faRundenKategorien ?? [];
   rundenErgebnis = daten.faRundenErgebnis ?? null;
 
+  const neueStechenKarte = daten.faStechenKarte ?? null;
+  if (neueStechenKarte !== stechenKarte) {
+    stechenKarte = neueStechenKarte;
+    stechenAufloesungAusgeloest = false;
+    if ($("fa-stechen-eingabe")) delete $("fa-stechen-eingabe").dataset.beruehrt;
+  }
+  stechenSpieler = daten.faStechenSpieler ?? [];
+  stechenGebote = daten.faStechenGebote ?? {};
+  stechenAblaufZeit = daten.faStechenAblaufZeit ?? null;
+
   api.fortschritt(
-    status === "auktion_gebot" || status === "auktion_ergebnis" ? `Gebotsrunde ${auktionRunde}/${ANZAHL_GEBOTSRUNDEN}` :
+    status === "auktion_gebot" || status === "auktion_stechen" || status === "auktion_ergebnis"
+      ? (auktionRunde > ANZAHL_GEBOTSRUNDEN ? "Bonusrunde" : `Gebotsrunde ${auktionRunde}/${ANZAHL_GEBOTSRUNDEN}`) :
     status === "runde_spielen" || status === "runde_ergebnis" ? `Spielrunde ${rundenIndex + 1}/${ANZAHL_SPIELRUNDEN}` :
     ""
   );
@@ -234,6 +286,9 @@ export function raumDaten(daten) {
     zeigeAuktion();
     $("fa-auktion-screen").hidden = false;
     pruefeAuktionsPhase();
+  } else if (status === "auktion_stechen") {
+    zeigeStechen();
+    $("fa-stechen-screen").hidden = false;
   } else if (status === "auktion_ergebnis") {
     zeigeAuktionErgebnis();
     $("fa-auktion-ergebnis-screen").hidden = false;
@@ -251,7 +306,7 @@ export function raumDaten(daten) {
 }
 
 function alleVerstecken() {
-  ["fa-setup", "fa-auktion-screen", "fa-auktion-ergebnis-screen", "fa-runde-screen",
+  ["fa-setup", "fa-auktion-screen", "fa-stechen-screen", "fa-auktion-ergebnis-screen", "fa-runde-screen",
    "fa-runde-ergebnis-screen", "fa-endstand-screen"].forEach((id) => { $(id).hidden = true; });
 }
 
@@ -296,6 +351,9 @@ async function spielStarten() {
       faAuktionRunde: 1,
       faAuktionKarten: reihenfolge.slice(0, anzahl),
       faAuktionErgebnis: null,
+      faUnvergebeneKarten: [],
+      faAuktionOffeneKarten: [], faAuktionKapazitaet: {}, faAuktionGeboteSnapshot: {}, faAuktionZwischenergebnis: {},
+      faStechenKarte: null, faStechenSpieler: [], faStechenGebote: {}, faStechenAblaufZeit: null,
       faRundenIndex: 0,
       faRundenKategorien: [],
       faRundenErgebnis: null
@@ -320,7 +378,10 @@ export async function vorZurueck() {
   ));
   await updateDoc(api.raumRef(), {
     faStatus: null, faKartenReihenfolge: [], faAuktionRunde: 0, faAuktionKarten: [],
-    faAuktionErgebnis: null, faRundenIndex: 0, faRundenKategorien: [], faRundenErgebnis: null
+    faAuktionErgebnis: null, faUnvergebeneKarten: [],
+    faAuktionOffeneKarten: [], faAuktionKapazitaet: {}, faAuktionGeboteSnapshot: {}, faAuktionZwischenergebnis: {},
+    faStechenKarte: null, faStechenSpieler: [], faStechenGebote: {}, faStechenAblaufZeit: null,
+    faRundenIndex: 0, faRundenKategorien: [], faRundenErgebnis: null
   });
   await api.zurueckZurAuswahl();
 }
@@ -389,7 +450,9 @@ function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = 
 function zeigeAuktion() {
   const eigener = eigenerSpieler();
   if (!eigener) return;
-  $("fa-auktion-runde").textContent = String(auktionRunde);
+  $("fa-auktion-titel").textContent = auktionRunde > ANZAHL_GEBOTSRUNDEN
+    ? "Bonusrunde - unvergebene Karten"
+    : `Gebotsrunde ${auktionRunde}/${ANZAHL_GEBOTSRUNDEN}`;
   $("fa-eigene-muenzen").textContent = String(eigener.faMuenzen ?? STARTMUENZEN);
   $("fa-eigene-kartenanzahl").textContent = String(eigener.faKarten?.length ?? 0);
 
@@ -475,46 +538,226 @@ async function pruefeAuktionsPhase() {
 
   auktionAufloesungAusgeloest = true;
   try {
-    const geboteProSpieler = {};
-    abgeschickt.forEach((g) => { geboteProSpieler[g.spielerId] = g.gebote ?? {}; });
-
-    // Verbleibende Kapazität bis zur 5-Karten-Grenze - wichtig, damit ein
-    // Spieler nicht in EINER Runde mehrere Karten gewinnt und dadurch über
-    // das Limit kommt (siehe Kommentar in logik.js/loeseGebotsrundeAuf).
-    const kapazitaetProSpieler = {};
-    bieter.forEach((s) => {
-      kapazitaetProSpieler[s.id] = MAX_KARTEN_PRO_SPIELER - (s.faKarten?.length ?? 0);
-    });
-
-    const { sieger, kostenProSpieler } = loeseGebotsrundeAuf(auktionKarten, geboteProSpieler, kapazitaetProSpieler);
-
-    // Gewonnene Karten je Spieler sammeln, damit pro Spieler EIN updateDoc reicht.
-    const kartenProGewinner = {};
-    for (const [kartenId, spielerId] of Object.entries(sieger)) {
-      if (!kartenProGewinner[spielerId]) kartenProGewinner[spielerId] = [];
-      kartenProGewinner[spielerId].push(kartenId);
-    }
-    await Promise.all(Object.entries(kartenProGewinner).map(([spielerId, kartenIds]) =>
-      updateDoc(api.spielerRef(spielerId), {
-        faKarten: arrayUnion(...kartenIds),
-        faMuenzen: increment(-(kostenProSpieler[spielerId] ?? 0))
-      })
-    ));
-
-    const ergebnisAnzeige = {};
-    for (const [kartenId, spielerId] of Object.entries(sieger)) {
-      ergebnisAnzeige[kartenId] = { spielerId, betrag: geboteProSpieler[spielerId]?.[kartenId] ?? 0 };
-    }
-
-    await updateDoc(api.raumRef(), { faStatus: "auktion_ergebnis", faAuktionErgebnis: ergebnisAnzeige });
+    await loeseAuktionsrundeAuf(bieter, abgeschickt);
   } catch (e) {
-    auktionAufloesungAusgeloest = false;
     zeigeDebug("Fehler bei der Gebotsauswertung: " + e.message);
+  }
+  // auktionAufloesungAusgeloest bleibt bewusst true, bis die Runde komplett
+  // fertig ist (auch über ein laufendes Stechen hinweg) - erst ein Wechsel
+  // von faAuktionRunde (siehe raumDaten) setzt die Sperre wieder zurück.
+  // Das verhindert, dass ein weiterer Snapshot währenddessen dieselbe Runde
+  // ein zweites Mal anstößt.
+}
+
+// Setzt eine fertig abgegebene Gebotsrunde in Gang: ermittelt Bearbeitungs-
+// reihenfolge (umkämpfteste Karte zuerst, siehe logik.js) und arbeitet sie
+// Karte für Karte ab. Bei einem klaren Gewinner oder "niemand geboten" geht
+// es sofort mit der nächsten Karte weiter; bei einem Gleichstand > 0 Münzen
+// wird ein Stechen gestartet und die Funktion kehrt zurück - die Fortsetzung
+// übernimmt dann pruefeStechenAblauf(), sobald das Stechen entschieden ist.
+async function loeseAuktionsrundeAuf(bieter, abgeschickt) {
+  const geboteProSpieler = {};
+  abgeschickt.forEach((g) => { geboteProSpieler[g.spielerId] = g.gebote ?? {}; });
+
+  // Verbleibende Kapazität bis zur 5-Karten-Grenze - wichtig, damit ein
+  // Spieler nicht in EINER Runde mehrere Karten gewinnt und dadurch über das
+  // Limit kommt (siehe Kommentar in logik.js/aufloesenEineKarte).
+  const kapazitaet = {};
+  bieter.forEach((s) => { kapazitaet[s.id] = MAX_KARTEN_PRO_SPIELER - (s.faKarten?.length ?? 0); });
+
+  const reihenfolge = kartenBearbeitungsreihenfolge(auktionKarten, geboteProSpieler);
+
+  await updateDoc(api.raumRef(), {
+    faAuktionGeboteSnapshot: geboteProSpieler,
+    faAuktionZwischenergebnis: {}
+  });
+
+  await bearbeiteOffeneKarten(reihenfolge, geboteProSpieler, kapazitaet, {});
+}
+
+// Arbeitet die übergebene Kartenliste sequenziell ab. geboteProSpieler/
+// kapazitaet/zwischenergebnis werden als normale JS-Werte durchgereicht (kein
+// Re-Read aus dem Raum-Dokument nötig), SOLANGE kein Stechen dazwischenkommt -
+// bei einem Stechen kehrt die Funktion zurück und wird erst über
+// pruefeStechenAblauf() mit frisch eingelesenem Zustand fortgesetzt, weil
+// dort echte Zeit vergeht (Spieler können erhöhen).
+async function bearbeiteOffeneKarten(offeneKarten, geboteProSpieler, kapazitaet, zwischenergebnis) {
+  if (offeneKarten.length === 0) {
+    await beendeAuktionsRunde(zwischenergebnis);
+    return;
+  }
+
+  const [kartenId, ...rest] = offeneKarten;
+  const ergebnis = aufloesenEineKarte(kartenId, geboteProSpieler, kapazitaet);
+
+  if (ergebnis.typ === "niemand") {
+    await updateDoc(api.raumRef(), { faUnvergebeneKarten: arrayUnion(kartenId) });
+    await bearbeiteOffeneKarten(rest, geboteProSpieler, kapazitaet, zwischenergebnis);
+  } else if (ergebnis.typ === "gewinner") {
+    await vergebeKarte(kartenId, ergebnis.spielerId, ergebnis.betrag);
+    kapazitaet[ergebnis.spielerId] -= 1;
+    zwischenergebnis[kartenId] = { spielerId: ergebnis.spielerId, betrag: ergebnis.betrag };
+    await updateDoc(api.raumRef(), {
+      faAuktionZwischenergebnis: zwischenergebnis,
+      faAuktionOffeneKarten: rest
+    });
+    await bearbeiteOffeneKarten(rest, geboteProSpieler, kapazitaet, zwischenergebnis);
+  } else {
+    // Unentschieden (Gleichstand > 0 Münzen) - Stechen starten und pausieren.
+    await updateDoc(api.raumRef(), {
+      faStatus: "auktion_stechen",
+      faAuktionOffeneKarten: rest,
+      faAuktionZwischenergebnis: zwischenergebnis,
+      faAuktionKapazitaet: kapazitaet,
+      faStechenKarte: kartenId,
+      faStechenSpieler: ergebnis.spielerIds,
+      faStechenGebote: Object.fromEntries(ergebnis.spielerIds.map((id) => [id, ergebnis.betrag])),
+      faStechenAblaufZeit: Date.now() + STECHEN_DAUER_MS
+    });
   }
 }
 
+async function vergebeKarte(kartenId, spielerId, betrag) {
+  await updateDoc(api.spielerRef(spielerId), {
+    faKarten: arrayUnion(kartenId),
+    faMuenzen: increment(-betrag)
+  });
+}
+
+async function beendeAuktionsRunde(zwischenergebnis) {
+  await updateDoc(api.raumRef(), {
+    faStatus: "auktion_ergebnis",
+    faAuktionErgebnis: zwischenergebnis,
+    faAuktionOffeneKarten: [],
+    faStechenKarte: null, faStechenSpieler: [], faStechenGebote: {}, faStechenAblaufZeit: null
+  });
+}
+
+// Vom Leiter periodisch aufgerufen (siehe timerId in starten()): sobald die
+// 10-Sekunden-Frist eines laufenden Stechens abgelaufen ist, OHNE dass in der
+// Zwischenzeit neu erhöht wurde (das hätte faStechenAblaufZeit verschoben),
+// entscheidet das Los unter den Spielern, die aktuell das höchste Gebot
+// halten (meist alle ursprünglich Gleichauf-Liegenden - sobald aber jemand
+// allein erhöht hat und niemand mehr nachzieht, gewinnt er/sie direkt, weil
+// dann nur noch eine Person das Höchstgebot hält).
+async function pruefeStechenAblauf() {
+  if (!api?.istLeiter || status !== "auktion_stechen" || stechenAufloesungAusgeloest) return;
+  if (!raum.faStechenAblaufZeit || Date.now() < raum.faStechenAblaufZeit) return;
+
+  stechenAufloesungAusgeloest = true;
+  try {
+    const gebote = raum.faStechenGebote ?? {};
+    const werte = Object.values(gebote);
+    const hoechstesGebot = werte.length ? Math.max(...werte) : 0;
+    const fuehrende = Object.entries(gebote).filter(([, betrag]) => betrag === hoechstesGebot).map(([id]) => id);
+    const gewinnerId = fuehrende.length === 1
+      ? fuehrende[0]
+      : fuehrende[Math.floor(Math.random() * fuehrende.length)];
+
+    const kartenId = raum.faStechenKarte;
+    const kapazitaet = { ...(raum.faAuktionKapazitaet ?? {}) };
+    const zwischenergebnis = { ...(raum.faAuktionZwischenergebnis ?? {}) };
+    const geboteProSpieler = raum.faAuktionGeboteSnapshot ?? {};
+    const offeneKarten = raum.faAuktionOffeneKarten ?? [];
+
+    await vergebeKarte(kartenId, gewinnerId, hoechstesGebot);
+    kapazitaet[gewinnerId] = (kapazitaet[gewinnerId] ?? 1) - 1;
+    zwischenergebnis[kartenId] = { spielerId: gewinnerId, betrag: hoechstesGebot };
+
+    await bearbeiteOffeneKarten(offeneKarten, geboteProSpieler, kapazitaet, zwischenergebnis);
+  } catch (e) {
+    zeigeDebug("Fehler bei der Stechen-Auflösung: " + e.message);
+  }
+  stechenAufloesungAusgeloest = false;
+}
+
+function aktualisiereStechenCountdown() {
+  if (!el.wurzel) return;
+  if (status !== "auktion_stechen" || !stechenAblaufZeit) { $("fa-stechen-countdown").textContent = ""; return; }
+  const rest = Math.max(0, stechenAblaufZeit - Date.now());
+  $("fa-stechen-countdown").textContent = `Noch ${Math.ceil(rest / 1000)}s zum Erhöhen`;
+}
+
+function zeigeStechen() {
+  const k = karte(stechenKarte);
+  if (!k) return;
+
+  $("fa-stechen-karte").innerHTML = `<div class="fa-karte">${kartenKachelHtml(k)}</div>`;
+
+  const hoechstesGebot = Math.max(0, ...Object.values(stechenGebote));
+  const liste = $("fa-stechen-gebote-liste");
+  liste.innerHTML = stechenSpieler.map((spielerId) => {
+    const s = spielerListe.find((x) => x.id === spielerId);
+    if (!s) return "";
+    const betrag = stechenGebote[spielerId] ?? 0;
+    const fuehrt = betrag === hoechstesGebot;
+    return `<div class="fa-gebot-eintrag${fuehrt ? " fa-gebot-gewinner" : ""}" style="--spieler-farbe:${escapeHtml(s.farbe ?? "#22c55e")}">` +
+      avatarHtml(s.icon, "fa-gebot-avatar") +
+      `<span class="fa-gebot-name">${escapeHtml(s.name)}</span>` +
+      `<strong class="fa-gebot-betrag">${betrag} <span class="fa-goldmuenze" aria-hidden="true"></span></strong>` +
+    `</div>`;
+  }).join("");
+
+  const binIchDabei = stechenSpieler.includes(api.spielerId);
+  $("fa-stechen-erhoehen-bereich").hidden = !binIchDabei;
+  $("fa-stechen-zuschauer-hinweis").hidden = binIchDabei;
+
+  if (binIchDabei) {
+    const eigener = eigenerSpieler();
+    const eingabe = $("fa-stechen-eingabe");
+    eingabe.min = String(hoechstesGebot + 1);
+    eingabe.max = String(eigener?.faMuenzen ?? hoechstesGebot + 1);
+    if (!eingabe.dataset.beruehrt) eingabe.value = String(hoechstesGebot + 1);
+    $("fa-stechen-erhoehen-btn").disabled = (eigener?.faMuenzen ?? 0) <= hoechstesGebot;
+  }
+}
+
+async function stechenGebotErhoehen(neuerBetrag) {
+  const eigener = eigenerSpieler();
+  $("fa-stechen-fehler").textContent = "";
+  if (!eigener || status !== "auktion_stechen" || !stechenSpieler.includes(api.spielerId)) return;
+  if (!Number.isInteger(neuerBetrag) || neuerBetrag <= 0) {
+    $("fa-stechen-fehler").textContent = "Bitte eine gültige Zahl eingeben.";
+    return;
+  }
+  if (neuerBetrag > (eigener.faMuenzen ?? 0)) {
+    $("fa-stechen-fehler").textContent = `Du hast nur noch ${eigener.faMuenzen ?? 0} Münzen.`;
+    return;
+  }
+
+  $("fa-stechen-eingabe").dataset.beruehrt = "1";
+  $("fa-stechen-erhoehen-btn").disabled = true;
+  try {
+    await runTransaction(api.db, async (tx) => {
+      const snap = await tx.get(api.raumRef());
+      const daten = snap.data();
+      if (!daten || daten.faStatus !== "auktion_stechen" || daten.faStechenKarte !== stechenKarte) {
+        throw new Error("__ZU_SPAET__");
+      }
+      const aktuelleGebote = daten.faStechenGebote ?? {};
+      const aktuellesHoechstgebot = Object.values(aktuelleGebote).length
+        ? Math.max(...Object.values(aktuelleGebote))
+        : 0;
+      if (neuerBetrag <= aktuellesHoechstgebot) throw new Error("__ZU_NIEDRIG__");
+      tx.update(api.raumRef(), {
+        faStechenGebote: { ...aktuelleGebote, [api.spielerId]: neuerBetrag },
+        faStechenAblaufZeit: Date.now() + STECHEN_DAUER_MS
+      });
+    });
+  } catch (e) {
+    if (e.message === "__ZU_NIEDRIG__") {
+      $("fa-stechen-fehler").textContent = "Jemand hat gerade schon höher geboten - bitte neu versuchen.";
+    } else if (e.message !== "__ZU_SPAET__") {
+      zeigeDebug("Fehler beim Erhöhen: " + e.message);
+    }
+  }
+  $("fa-stechen-erhoehen-btn").disabled = false;
+}
+
 function zeigeAuktionErgebnis() {
-  $("fa-auktion-erg-runde").textContent = String(auktionRunde);
+  $("fa-auktion-erg-titel").textContent = auktionRunde > ANZAHL_GEBOTSRUNDEN
+    ? "Ergebnis Bonusrunde"
+    : `Ergebnis Gebotsrunde ${auktionRunde}/${ANZAHL_GEBOTSRUNDEN}`;
   const liste = $("fa-auktion-erg-liste");
   liste.innerHTML = "";
 
@@ -532,15 +775,20 @@ function zeigeAuktionErgebnis() {
       .sort((a, b) => b.betrag - a.betrag);
 
     const gewinnerId = raum.faAuktionErgebnis?.[kartenId]?.spielerId;
+    const gewinnerBetrag = raum.faAuktionErgebnis?.[kartenId]?.betrag;
 
     const geboteHtml = geboteFuerKarte.map((g) => {
       const s = spielerListe.find((x) => x.id === g.spielerId);
       if (!s) return "";
       const hatGewonnen = g.spielerId === gewinnerId;
+      // Bei einem Stechen liegt der tatsächliche (ggf. höher erhöhte)
+      // Siegerbetrag in faAuktionErgebnis, nicht mehr im ursprünglich
+      // abgegebenen Gebot - fürs Siegerfeld den finalen Betrag anzeigen.
+      const angezeigterBetrag = hatGewonnen && gewinnerBetrag != null ? gewinnerBetrag : g.betrag;
       return `<div class="fa-gebot-eintrag${hatGewonnen ? " fa-gebot-gewinner" : ""}" style="--spieler-farbe:${escapeHtml(s.farbe ?? "#22c55e")}">` +
         avatarHtml(s.icon, "fa-gebot-avatar") +
         `<span class="fa-gebot-name">${escapeHtml(s.name)}</span>` +
-        `<strong class="fa-gebot-betrag">${g.betrag} <span class="fa-goldmuenze" aria-hidden="true"></span></strong>` +
+        `<strong class="fa-gebot-betrag">${angezeigterBetrag} <span class="fa-goldmuenze" aria-hidden="true"></span></strong>` +
         (hatGewonnen ? `<span class="fa-gebot-sieger-abzeichen" title="Hat die Karte bekommen">🏆</span>` : "") +
       `</div>`;
     }).join("");
@@ -555,9 +803,17 @@ function zeigeAuktionErgebnis() {
     liste.appendChild(div);
   });
 
-  const letzteRunde = auktionRunde >= ANZAHL_GEBOTSRUNDEN;
+  const unvergebene = raum.faUnvergebeneKarten ?? [];
+  let weiterText;
+  if (auktionRunde < ANZAHL_GEBOTSRUNDEN) {
+    weiterText = "Nächste Gebotsrunde";
+  } else if (auktionRunde === ANZAHL_GEBOTSRUNDEN && unvergebene.length > 0) {
+    weiterText = `Bonusrunde (${unvergebene.length} unvergebene ${unvergebene.length === 1 ? "Karte" : "Karten"})`;
+  } else {
+    weiterText = "Zur Spielphase";
+  }
   $("fa-auktion-weiter").hidden = !api.istLeiter;
-  $("fa-auktion-weiter").textContent = letzteRunde ? "Zur Spielphase" : "Nächste Gebotsrunde";
+  $("fa-auktion-weiter").textContent = weiterText;
   $("fa-auktion-erg-warten").hidden = api.istLeiter;
 }
 
@@ -566,14 +822,9 @@ async function auktionWeiter() {
   try {
     const reihenfolge = raum.faKartenReihenfolge ?? [];
     const anzahlSpieler = spielerListe.length;
-    if (auktionRunde >= ANZAHL_GEBOTSRUNDEN) {
-      await updateDoc(api.raumRef(), {
-        faStatus: "runde_spielen",
-        faRundenIndex: 0,
-        faRundenKategorien: zufaelligeRundenKategorien(),
-        faRundenErgebnis: null
-      });
-    } else {
+    const unvergebene = raum.faUnvergebeneKarten ?? [];
+
+    if (auktionRunde < ANZAHL_GEBOTSRUNDEN) {
       const naechsteRunde = auktionRunde + 1;
       const start = (naechsteRunde - 1) * anzahlSpieler;
       await updateDoc(api.raumRef(), {
@@ -581,6 +832,23 @@ async function auktionWeiter() {
         faAuktionRunde: naechsteRunde,
         faAuktionKarten: reihenfolge.slice(start, start + anzahlSpieler),
         faAuktionErgebnis: null
+      });
+    } else if (auktionRunde === ANZAHL_GEBOTSRUNDEN && unvergebene.length > 0) {
+      // Bonusrunde: alle bisher unvergebenen Karten (kein Gebot ODER
+      // Gleichstand bei 0 Münzen) noch einmal zur Versteigerung freigeben.
+      await updateDoc(api.raumRef(), {
+        faStatus: "auktion_gebot",
+        faAuktionRunde: ANZAHL_GEBOTSRUNDEN + 1,
+        faAuktionKarten: unvergebene,
+        faUnvergebeneKarten: [],
+        faAuktionErgebnis: null
+      });
+    } else {
+      await updateDoc(api.raumRef(), {
+        faStatus: "runde_spielen",
+        faRundenIndex: 0,
+        faRundenKategorien: zufaelligeRundenKategorien(),
+        faRundenErgebnis: null
       });
     }
   } catch (e) {

@@ -156,16 +156,16 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=230",
-  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=230",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=230",
-  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=230",
-  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=230",
-  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=230",
-  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=230",
-  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=230",
-  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=230",
-  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=230"
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=231",
+  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=231",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=231",
+  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=231",
+  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=231",
+  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=231",
+  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=231",
+  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=231",
+  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=231",
+  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=231"
 };
 
 // Manche Porträts sind (je nach Bildausschnitt) von Natur aus breiter als
