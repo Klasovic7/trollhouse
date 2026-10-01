@@ -360,6 +360,10 @@ function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = 
     ? `<div class="fa-karte-rating"><span>${kartenSumme(k)}</span></div>`
     : "";
 
+  const flaggenBadgeHtml = zeigeGesamt
+    ? `<div class="fa-karte-flaggenbadge"><svg width="100%" height="100%" viewBox="${flagViewBox}" preserveAspectRatio="xMidYMid meet">${flagSvg}</svg></div>`
+    : "";
+
   return (
     `<div class="fa-karte-art" style="--n-top:${top};--n-mid:${mid};--n-bottom:${bottom};--n-akzent:${akzent};" title="${escapeHtml(flagge)} ${escapeHtml(k.nation)}">` +
       `<div class="fa-karte-bg fa-karte-bg-top"></div>` +
@@ -372,8 +376,8 @@ function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = 
         `<span class="fa-nachname">${escapeHtml(nachname)}</span>` +
       `</div>` +
       ratingHtml +
+      flaggenBadgeHtml +
       `<div class="fa-karte-statwrap">` +
-        `<svg class="fa-karte-statbg" width="100%" height="100%" viewBox="${flagViewBox}" preserveAspectRatio="xMidYMid slice">${flagSvg}</svg>` +
         `<div class="fa-karte-statovl"></div>` +
         `<div class="fa-karte-statgrid">${chipsHtml}</div>` +
       `</div>` +
