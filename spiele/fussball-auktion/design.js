@@ -25,7 +25,7 @@
 const AUSSEN_VIEWBOX = "0 0 30 12";
 
 function wrapFlag(breite, hoehe, inhalt) {
-  const zielHoehe = 9; // 75% von 12 -> sichtbar kleiner als randlos voll
+  const zielHoehe = 10.8; // 90% von 12 - jetzt als randloses Badge auf der Karte, volleres Bild
   const skala = zielHoehe / hoehe;
   const skalierteBreite = breite * skala;
   const x = (30 - skalierteBreite) / 2;
@@ -156,5 +156,5 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=224"
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=225"
 };
