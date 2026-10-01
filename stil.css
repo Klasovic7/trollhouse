@@ -2719,19 +2719,19 @@
   text-shadow: 0 0 3px color-mix(in srgb, var(--n-akzent) 70%, transparent); line-height: 1;
 }
 .fa-karte-flaggenbadge {
-  position: absolute; z-index: 3; top: calc(4% + 18% + 2.5%); right: 5%; width: 18%;
+  position: absolute; z-index: 3; top: calc(4% + 18% + 2.5%); right: 3%; width: 24%;
   aspect-ratio: 2.5 / 1; border-radius: 3px; overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .5), 0 2px 5px rgba(0, 0, 0, .45);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .45);
 }
 .fa-karte-flaggenbadge svg { display: block; width: 100%; height: 100%; }
-.fa-karte-statwrap { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 23%; overflow: hidden; }
+.fa-karte-statwrap { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 20%; overflow: hidden; }
 .fa-karte-statovl {
   position: absolute; inset: 0;
   background: linear-gradient(180deg, color-mix(in srgb, var(--n-bottom) 40%, #161a20) 0%, rgba(8, 9, 12, .94) 100%);
 }
 .fa-karte-statgrid {
   position: relative; height: 100%; box-sizing: border-box;
-  display: grid; grid-template-columns: repeat(3, 1fr); row-gap: 1.6cqw; column-gap: 1cqw;
+  display: grid; grid-template-columns: repeat(3, 1fr); row-gap: 0.6cqw; column-gap: 1cqw;
   padding: 1.6cqw 0; align-items: center; justify-items: center;
 }
 .fa-karte-chip {
