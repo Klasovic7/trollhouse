@@ -166,8 +166,8 @@ export const PORTRAET_BILDER = {
   "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=236",
   "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=236",
   "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=236",
-  "ar-1": "bilder/fussball-auktion/spieler-ar-1.png?v=236",
-  "ar-2": "bilder/fussball-auktion/spieler-ar-2.png?v=236",
+  "ar-1": "bilder/fussball-auktion/spieler-ar-1.png?v=240",
+  "ar-2": "bilder/fussball-auktion/spieler-ar-2.png?v=240",
   "ar-3": "bilder/fussball-auktion/spieler-ar-3.png?v=236",
   "ar-4": "bilder/fussball-auktion/spieler-ar-4.png?v=236",
   "ar-5": "bilder/fussball-auktion/spieler-ar-5.png?v=236",
@@ -179,7 +179,7 @@ export const PORTRAET_BILDER = {
   "ng-1": "bilder/fussball-auktion/spieler-ng-1.png?v=239",
   "ng-2": "bilder/fussball-auktion/spieler-ng-2.png?v=239",
   "ng-3": "bilder/fussball-auktion/spieler-ng-3.png?v=239",
-  "ng-4": "bilder/fussball-auktion/spieler-ng-4.png?v=239",
+  "ng-4": "bilder/fussball-auktion/spieler-ng-4.png?v=240",
   "ng-5": "bilder/fussball-auktion/spieler-ng-5.png?v=239"
 };
 
@@ -196,9 +196,11 @@ export const PORTRAET_VERSATZ = {
   "jp-3": 21,
   "jp-4": 19,
   "jp-5": 14,
-  "ar-1": -5,
+  "fr-1": 16,
   "fr-2": 12,
   "fr-3": 21,
+  "fr-4": 15,
+  "fr-5": 15,
   "ng-1": 18,
   "ng-3": 3,
   "ng-4": 16
@@ -215,6 +217,8 @@ export const PORTRAET_VERSATZ = {
 export const PORTRAET_GROESSE = {
   "jp-2": { hoehe: 56, unten: 21 },
   "jp-3": { hoehe: 68 },
+  "ar-1": { hoehe: 51, unten: 26 },
+  "ar-2": { hoehe: 51, unten: 26 },
   "ar-3": { hoehe: 54, unten: 23 },
   "ar-5": { hoehe: 54, unten: 21 },
   "it-3": { hoehe: 52, unten: 25 },
