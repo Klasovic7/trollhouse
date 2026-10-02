@@ -156,26 +156,26 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=235",
-  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=235",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=235",
-  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=235",
-  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=235",
-  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=235",
-  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=235",
-  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=235",
-  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=235",
-  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=235",
-  "ar-1": "bilder/fussball-auktion/spieler-ar-1.png?v=235",
-  "ar-2": "bilder/fussball-auktion/spieler-ar-2.png?v=235",
-  "ar-3": "bilder/fussball-auktion/spieler-ar-3.png?v=235",
-  "ar-4": "bilder/fussball-auktion/spieler-ar-4.png?v=235",
-  "ar-5": "bilder/fussball-auktion/spieler-ar-5.png?v=235",
-  "fr-1": "bilder/fussball-auktion/spieler-fr-1.png?v=235",
-  "fr-2": "bilder/fussball-auktion/spieler-fr-2.png?v=235",
-  "fr-3": "bilder/fussball-auktion/spieler-fr-3.png?v=235",
-  "fr-4": "bilder/fussball-auktion/spieler-fr-4.png?v=235",
-  "fr-5": "bilder/fussball-auktion/spieler-fr-5.png?v=235"
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=236",
+  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=236",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=236",
+  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=236",
+  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=236",
+  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=236",
+  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=236",
+  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=236",
+  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=236",
+  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=236",
+  "ar-1": "bilder/fussball-auktion/spieler-ar-1.png?v=236",
+  "ar-2": "bilder/fussball-auktion/spieler-ar-2.png?v=236",
+  "ar-3": "bilder/fussball-auktion/spieler-ar-3.png?v=236",
+  "ar-4": "bilder/fussball-auktion/spieler-ar-4.png?v=236",
+  "ar-5": "bilder/fussball-auktion/spieler-ar-5.png?v=236",
+  "fr-1": "bilder/fussball-auktion/spieler-fr-1.png?v=236",
+  "fr-2": "bilder/fussball-auktion/spieler-fr-2.png?v=236",
+  "fr-3": "bilder/fussball-auktion/spieler-fr-3.png?v=236",
+  "fr-4": "bilder/fussball-auktion/spieler-fr-4.png?v=236",
+  "fr-5": "bilder/fussball-auktion/spieler-fr-5.png?v=236"
 };
 
 // Manche Porträts sind (je nach Bildausschnitt) von Natur aus breiter als
@@ -185,9 +185,9 @@ export const PORTRAET_BILDER = {
 // Versatz nach links angeben, in Prozentpunkten der Kartenbreite.
 export const PORTRAET_VERSATZ = {
   "it-2": 10,
-  "it-3": 9,
-  "jp-2": -5,
-  "jp-3": 14,
+  "it-3": 19,
+  "it-4": 9,
+  "jp-3": 23,
   "jp-4": 10,
   "jp-5": 14,
   "ar-1": -5,
@@ -195,11 +195,16 @@ export const PORTRAET_VERSATZ = {
   "fr-3": 10
 };
 
-// Manche Porträt-Ausschnitte sind von Natur aus deutlich schmaler/hochkanter
-// als die Standardfotos (Seitenverhältnis Breite:Höhe ~0.56 statt ~1.05),
-// z.B. wenn das Originalfoto eng um die Person zugeschnitten ist. Bei fixer
-// Höhe (siehe .fa-karte-portrait in stil.css) wirken diese Porträts dadurch
-// automatisch viel schmaler/kleiner. Pro Karten-ID lässt sich hier die Höhe
-// (in Prozentpunkten relativ zur Standardhöhe aus stil.css) sowie optional
-// der Bottom-Versatz (in Prozentpunkten der Kartenhöhe) anpassen.
-export const PORTRAET_GROESSE = {};
+// Porträts mit einem sehr BREITEN Bildausschnitt (Seitenverhältnis > 1.2,
+// z.B. Oberkörper mit verschränkten Armen) werden bei fixer Standardhöhe
+// (siehe .fa-karte-portrait in stil.css) breiter als die Karte selbst und
+// werden dadurch links und/oder rechts abgeschnitten (z.B. Ellbogen). Pro
+// Karten-ID lässt sich hier die Höhe etwas REDUZIEREN (in Prozentpunkten
+// relativ zur Standardhöhe aus stil.css), damit das ganze Bild in die Karte
+// passt, plus ein passender Bottom-Versatz, damit der Kopf trotzdem auf
+// Höhe des Flaggen-Badges bleibt.
+export const PORTRAET_GROESSE = {
+  "jp-2": { hoehe: 56, unten: 21 },
+  "ar-3": { hoehe: 54, unten: 23 },
+  "ar-5": { hoehe: 53, unten: 24 }
+};
