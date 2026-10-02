@@ -85,7 +85,7 @@
   },
   {
     "id": "it-2",
-    "name": "Naderi Moccia",
+    "name": "Luca Spezzotto",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 5,
@@ -99,7 +99,7 @@
   },
   {
     "id": "it-3",
-    "name": "Nicola Trulli",
+    "name": "Naderi Moccia",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 2,
@@ -113,7 +113,7 @@
   },
   {
     "id": "it-4",
-    "name": "Sinano Martini",
+    "name": "Nicola Trulli",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 6,
@@ -127,7 +127,7 @@
   },
   {
     "id": "it-5",
-    "name": "Luca Spezzotto",
+    "name": "Sinano Martini",
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 10,
@@ -141,7 +141,7 @@
   },
   {
     "id": "fr-1",
-    "name": "Kévin Houfard",
+    "name": "Nadir Mouchel",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 2,
@@ -169,7 +169,7 @@
   },
   {
     "id": "fr-3",
-    "name": "Nicolas Trollet",
+    "name": "Kévin Houfard",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 7,
@@ -197,7 +197,7 @@
   },
   {
     "id": "fr-5",
-    "name": "Nadir Mouchel",
+    "name": "Nicolas Trollet",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 4,
