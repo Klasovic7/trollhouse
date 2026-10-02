@@ -156,21 +156,21 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=233",
-  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=233",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=233",
-  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=233",
-  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=233",
-  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=233",
-  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=233",
-  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=233",
-  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=233",
-  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=233",
-  "ar-1": "bilder/fussball-auktion/spieler-ar-1.png?v=233",
-  "ar-2": "bilder/fussball-auktion/spieler-ar-2.png?v=233",
-  "ar-3": "bilder/fussball-auktion/spieler-ar-3.png?v=233",
-  "ar-4": "bilder/fussball-auktion/spieler-ar-4.png?v=233",
-  "ar-5": "bilder/fussball-auktion/spieler-ar-5.png?v=233"
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=234",
+  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=234",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=234",
+  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=234",
+  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=234",
+  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=234",
+  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=234",
+  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=234",
+  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=234",
+  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=234",
+  "ar-1": "bilder/fussball-auktion/spieler-ar-1.png?v=234",
+  "ar-2": "bilder/fussball-auktion/spieler-ar-2.png?v=234",
+  "ar-3": "bilder/fussball-auktion/spieler-ar-3.png?v=234",
+  "ar-4": "bilder/fussball-auktion/spieler-ar-4.png?v=234",
+  "ar-5": "bilder/fussball-auktion/spieler-ar-5.png?v=234"
 };
 
 // Manche Porträts sind (je nach Bildausschnitt) von Natur aus breiter als
@@ -179,10 +179,13 @@ export const PORTRAET_BILDER = {
 // Standardposition (siehe .fa-karte-portrait in stil.css) ein zusätzlicher
 // Versatz nach links angeben, in Prozentpunkten der Kartenbreite.
 export const PORTRAET_VERSATZ = {
-  "it-2": 7,
+  "it-2": 10,
   "it-3": 9,
+  "jp-2": -5,
   "jp-3": 14,
-  "jp-5": 14
+  "jp-4": 10,
+  "jp-5": 14,
+  "ar-1": -5
 };
 
 // Manche Porträt-Ausschnitte sind von Natur aus deutlich schmaler/hochkanter
@@ -192,8 +195,4 @@ export const PORTRAET_VERSATZ = {
 // automatisch viel schmaler/kleiner. Pro Karten-ID lässt sich hier die Höhe
 // (in Prozentpunkten relativ zur Standardhöhe aus stil.css) sowie optional
 // der Bottom-Versatz (in Prozentpunkten der Kartenhöhe) anpassen.
-export const PORTRAET_GROESSE = {
-  "jp-3": { hoehe: 104, unten: 7 },
-  "jp-5": { hoehe: 104, unten: 7 },
-  "ar-4": { hoehe: 90, unten: 9 }
-};
+export const PORTRAET_GROESSE = {};
