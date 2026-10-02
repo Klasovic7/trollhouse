@@ -156,16 +156,21 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=232",
-  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=232",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=232",
-  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=232",
-  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=232",
-  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=232",
-  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=232",
-  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=232",
-  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=232",
-  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=232"
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=233",
+  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=233",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=233",
+  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=233",
+  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=233",
+  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=233",
+  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=233",
+  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=233",
+  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=233",
+  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=233",
+  "ar-1": "bilder/fussball-auktion/spieler-ar-1.png?v=233",
+  "ar-2": "bilder/fussball-auktion/spieler-ar-2.png?v=233",
+  "ar-3": "bilder/fussball-auktion/spieler-ar-3.png?v=233",
+  "ar-4": "bilder/fussball-auktion/spieler-ar-4.png?v=233",
+  "ar-5": "bilder/fussball-auktion/spieler-ar-5.png?v=233"
 };
 
 // Manche Porträts sind (je nach Bildausschnitt) von Natur aus breiter als
@@ -189,5 +194,6 @@ export const PORTRAET_VERSATZ = {
 // der Bottom-Versatz (in Prozentpunkten der Kartenhöhe) anpassen.
 export const PORTRAET_GROESSE = {
   "jp-3": { hoehe: 104, unten: 7 },
-  "jp-5": { hoehe: 104, unten: 7 }
+  "jp-5": { hoehe: 104, unten: 7 },
+  "ar-4": { hoehe: 90, unten: 9 }
 };
