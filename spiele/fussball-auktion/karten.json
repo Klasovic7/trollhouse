@@ -1,7 +1,7 @@
 [
   {
     "id": "de-1",
-    "name": "Jonas Weber",
+    "name": "Niklas Troll",
     "nation": "Deutschland",
     "faehigkeiten": {
       "SCH": 3,
@@ -15,7 +15,7 @@
   },
   {
     "id": "de-2",
-    "name": "Finn Bauer",
+    "name": "Luka Spessart",
     "nation": "Deutschland",
     "faehigkeiten": {
       "SCH": 4,
@@ -29,7 +29,7 @@
   },
   {
     "id": "de-3",
-    "name": "Lukas Hoffmann",
+    "name": "Kevin Hofacker",
     "nation": "Deutschland",
     "faehigkeiten": {
       "SCH": 7,
@@ -43,7 +43,7 @@
   },
   {
     "id": "de-4",
-    "name": "Elias Schmidt",
+    "name": "Norbert Muckel",
     "nation": "Deutschland",
     "faehigkeiten": {
       "SCH": 9,
@@ -57,7 +57,7 @@
   },
   {
     "id": "de-5",
-    "name": "Noah Krüger",
+    "name": "Simon Martin",
     "nation": "Deutschland",
     "faehigkeiten": {
       "SCH": 10,

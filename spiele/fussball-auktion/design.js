@@ -156,6 +156,11 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
+  "de-1": "bilder/fussball-auktion/spieler-de-1.png?v=243",
+  "de-2": "bilder/fussball-auktion/spieler-de-2.png?v=243",
+  "de-3": "bilder/fussball-auktion/spieler-de-3.png?v=243",
+  "de-4": "bilder/fussball-auktion/spieler-de-4.png?v=243",
+  "de-5": "bilder/fussball-auktion/spieler-de-5.png?v=243",
   "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=237",
   "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=237",
   "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=237",
@@ -204,7 +209,12 @@ export const PORTRAET_VERSATZ = {
   "ng-1": 18,
   "ng-3": 3,
   "ng-4": 16,
-  "ar-4": 17
+  "ar-4": 17,
+  "de-1": 15,
+  "de-2": 13,
+  "de-3": 15,
+  "de-4": 17,
+  "de-5": 8,
 };
 
 // Porträts mit einem sehr BREITEN Bildausschnitt (Seitenverhältnis > 1.2,
@@ -226,5 +236,6 @@ export const PORTRAET_GROESSE = {
   "it-3": { hoehe: 54, unten: 20 },
   "ng-2": { hoehe: 58 },
   "ng-5": { hoehe: 61, unten: 16 },
-  "jp-5": { unten: 22 }
+  "jp-5": { unten: 22 },
+  "de-5": { hoehe: 54, unten: 20 }
 };
