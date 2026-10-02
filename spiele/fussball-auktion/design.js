@@ -83,7 +83,7 @@ function argentinischeSonne() {
 
 export const NATION_DESIGN = {
   Deutschland: {
-    top: "#1a1a1a", mid: "#dd0000", bottom: "#1a1a1a", akzent: "#ffd700", flagge: "🇩🇪",
+    top: "#1a1a1a", mid: "#dd0000", bottom: "#ffce00", akzent: "#ffd700", flagge: "🇩🇪",
     flagViewBox: AUSSEN_VIEWBOX,
     flagSvg: wrapFlag(5, 3,
       '<rect width="5" height="1" y="0" fill="#1a1a1a"/><rect width="5" height="1" y="1" fill="#dd0000"/><rect width="5" height="1" y="2" fill="#ffce00"/>'
@@ -160,10 +160,10 @@ export const PORTRAET_BILDER = {
   "de-2": "bilder/fussball-auktion/spieler-de-2.png?v=243",
   "de-3": "bilder/fussball-auktion/spieler-de-3.png?v=243",
   "de-4": "bilder/fussball-auktion/spieler-de-4.png?v=243",
-  "de-5": "bilder/fussball-auktion/spieler-de-5.png?v=243",
+  "de-5": "bilder/fussball-auktion/spieler-de-5.png?v=244",
   "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=237",
   "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=237",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=237",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=244",
   "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=237",
   "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=237",
   "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=236",
@@ -214,7 +214,8 @@ export const PORTRAET_VERSATZ = {
   "de-2": 13,
   "de-3": 15,
   "de-4": 17,
-  "de-5": 8,
+  "de-5": 2,
+  "it-3": 14,
 };
 
 // Porträts mit einem sehr BREITEN Bildausschnitt (Seitenverhältnis > 1.2,
@@ -233,9 +234,8 @@ export const PORTRAET_GROESSE = {
   "ar-4": { hoehe: 70, unten: 8 },
   "ar-3": { hoehe: 54, unten: 20 },
   "ar-5": { hoehe: 54, unten: 19 },
-  "it-3": { hoehe: 54, unten: 20 },
   "ng-2": { hoehe: 58 },
   "ng-5": { hoehe: 61, unten: 16 },
   "jp-5": { unten: 22 },
-  "de-5": { hoehe: 54, unten: 20 }
+  "de-5": { hoehe: 62, unten: 12 }
 };
