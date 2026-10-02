@@ -156,11 +156,11 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=236",
-  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=236",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=236",
-  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=236",
-  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=236",
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=237",
+  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=237",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=237",
+  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=237",
+  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=237",
   "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=236",
   "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=236",
   "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=236",
@@ -184,9 +184,10 @@ export const PORTRAET_BILDER = {
 // Standardposition (siehe .fa-karte-portrait in stil.css) ein zusätzlicher
 // Versatz nach links angeben, in Prozentpunkten der Kartenbreite.
 export const PORTRAET_VERSATZ = {
-  "it-2": 10,
-  "it-3": 19,
-  "it-4": 9,
+  "it-1": 14,
+  "it-2": 15,
+  "it-4": 19,
+  "it-5": 14,
   "jp-3": 23,
   "jp-4": 10,
   "jp-5": 14,
@@ -206,5 +207,6 @@ export const PORTRAET_VERSATZ = {
 export const PORTRAET_GROESSE = {
   "jp-2": { hoehe: 56, unten: 21 },
   "ar-3": { hoehe: 54, unten: 23 },
-  "ar-5": { hoehe: 53, unten: 24 }
+  "ar-5": { hoehe: 53, unten: 24 },
+  "it-3": { hoehe: 52, unten: 25 }
 };
