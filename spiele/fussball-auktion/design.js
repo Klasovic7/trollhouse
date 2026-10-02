@@ -195,7 +195,7 @@ export const PORTRAET_VERSATZ = {
   "it-5": 14,
   "jp-3": 21,
   "jp-4": 19,
-  "jp-5": 14,
+  "jp-5": 19,
   "fr-1": 16,
   "fr-2": 23,
   "fr-3": 21,
@@ -220,10 +220,11 @@ export const PORTRAET_GROESSE = {
   "jp-3": { hoehe: 68 },
   "ar-1": { hoehe: 54, unten: 20 },
   "ar-2": { hoehe: 54, unten: 20 },
-  "ar-4": { hoehe: 70 },
-  "ar-3": { hoehe: 54, unten: 23 },
-  "ar-5": { hoehe: 54, unten: 21 },
+  "ar-4": { hoehe: 70, unten: 8 },
+  "ar-3": { hoehe: 54, unten: 20 },
+  "ar-5": { hoehe: 54, unten: 19 },
   "it-3": { hoehe: 54, unten: 20 },
   "ng-2": { hoehe: 58 },
-  "ng-5": { hoehe: 61, unten: 16 }
+  "ng-5": { hoehe: 61, unten: 16 },
+  "jp-5": { unten: 22 }
 };
