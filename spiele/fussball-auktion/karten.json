@@ -141,7 +141,7 @@
   },
   {
     "id": "fr-1",
-    "name": "Julien Moreau",
+    "name": "Kévin Houfard",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 2,
@@ -155,7 +155,7 @@
   },
   {
     "id": "fr-2",
-    "name": "Hugo Lefevre",
+    "name": "Simon Martin",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 7,
@@ -169,7 +169,7 @@
   },
   {
     "id": "fr-3",
-    "name": "Thomas Girard",
+    "name": "Nicolas Trollet",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 7,
@@ -183,7 +183,7 @@
   },
   {
     "id": "fr-4",
-    "name": "Nicolas Petit",
+    "name": "Luc Épissot",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 7,
@@ -197,7 +197,7 @@
   },
   {
     "id": "fr-5",
-    "name": "Antoine Bernard",
+    "name": "Nadir Mouchel",
     "nation": "Frankreich",
     "faehigkeiten": {
       "SCH": 4,
