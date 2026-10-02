@@ -2693,6 +2693,8 @@
 .fa-karte-portrait {
   position: absolute; z-index: 2; bottom: 13%; right: 2%; height: 64%; width: auto;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .4));
+  -webkit-user-drag: none; user-select: none; -webkit-touch-callout: none;
+  outline: none; border: none; pointer-events: none;
 }
 .fa-karte-platzhalter {
   position: absolute; z-index: 2; bottom: 19%; right: -2%; width: 54%; height: auto;

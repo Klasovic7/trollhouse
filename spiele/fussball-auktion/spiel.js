@@ -33,7 +33,7 @@ import {
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ } from "./design.js";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js";
 
 const VORLAGE = `
   <div id="fa-setup" class="bildschirm-karte" hidden>
@@ -393,8 +393,13 @@ function kartenPortraitHtml(k, akzent) {
   const bild = PORTRAET_BILDER[k.id];
   if (bild) {
     const versatz = PORTRAET_VERSATZ[k.id];
-    const style = versatz ? ` style="right: calc(2% + ${versatz}%)"` : "";
-    return `<img class="fa-karte-portrait" src="${escapeHtml(bild)}" alt="${escapeHtml(k.name)}"${style}>`;
+    const groesse = PORTRAET_GROESSE[k.id];
+    const styleTeile = [];
+    if (versatz) styleTeile.push(`right: calc(2% + ${versatz}%)`);
+    if (groesse?.hoehe) styleTeile.push(`height: ${groesse.hoehe}%`);
+    if (groesse?.unten) styleTeile.push(`bottom: ${groesse.unten}%`);
+    const style = styleTeile.length ? ` style="${styleTeile.join("; ")}"` : "";
+    return `<img class="fa-karte-portrait" src="${escapeHtml(bild)}" alt="${escapeHtml(k.name)}" draggable="false"${style}>`;
   }
   // Platzhalter-Silhouette (Kopf + Schultern) für alle Karten ohne echtes Bild.
   return (

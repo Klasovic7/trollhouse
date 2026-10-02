@@ -156,16 +156,16 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=231",
-  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=231",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=231",
-  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=231",
-  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=231",
-  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=231",
-  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=231",
-  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=231",
-  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=231",
-  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=231"
+  "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=232",
+  "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=232",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=232",
+  "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=232",
+  "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=232",
+  "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=232",
+  "jp-2": "bilder/fussball-auktion/spieler-jp-2.png?v=232",
+  "jp-3": "bilder/fussball-auktion/spieler-jp-3.png?v=232",
+  "jp-4": "bilder/fussball-auktion/spieler-jp-4.png?v=232",
+  "jp-5": "bilder/fussball-auktion/spieler-jp-5.png?v=232"
 };
 
 // Manche Porträts sind (je nach Bildausschnitt) von Natur aus breiter als
@@ -175,5 +175,19 @@ export const PORTRAET_BILDER = {
 // Versatz nach links angeben, in Prozentpunkten der Kartenbreite.
 export const PORTRAET_VERSATZ = {
   "it-2": 7,
-  "it-3": 9
+  "it-3": 9,
+  "jp-3": 14,
+  "jp-5": 14
+};
+
+// Manche Porträt-Ausschnitte sind von Natur aus deutlich schmaler/hochkanter
+// als die Standardfotos (Seitenverhältnis Breite:Höhe ~0.56 statt ~1.05),
+// z.B. wenn das Originalfoto eng um die Person zugeschnitten ist. Bei fixer
+// Höhe (siehe .fa-karte-portrait in stil.css) wirken diese Porträts dadurch
+// automatisch viel schmaler/kleiner. Pro Karten-ID lässt sich hier die Höhe
+// (in Prozentpunkten relativ zur Standardhöhe aus stil.css) sowie optional
+// der Bottom-Versatz (in Prozentpunkten der Kartenhöhe) anpassen.
+export const PORTRAET_GROESSE = {
+  "jp-3": { hoehe: 104, unten: 7 },
+  "jp-5": { hoehe: 104, unten: 7 }
 };
