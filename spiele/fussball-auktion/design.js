@@ -175,7 +175,12 @@ export const PORTRAET_BILDER = {
   "fr-2": "bilder/fussball-auktion/spieler-fr-2.png?v=236",
   "fr-3": "bilder/fussball-auktion/spieler-fr-3.png?v=236",
   "fr-4": "bilder/fussball-auktion/spieler-fr-4.png?v=236",
-  "fr-5": "bilder/fussball-auktion/spieler-fr-5.png?v=236"
+  "fr-5": "bilder/fussball-auktion/spieler-fr-5.png?v=236",
+  "ng-1": "bilder/fussball-auktion/spieler-ng-1.png?v=239",
+  "ng-2": "bilder/fussball-auktion/spieler-ng-2.png?v=239",
+  "ng-3": "bilder/fussball-auktion/spieler-ng-3.png?v=239",
+  "ng-4": "bilder/fussball-auktion/spieler-ng-4.png?v=239",
+  "ng-5": "bilder/fussball-auktion/spieler-ng-5.png?v=239"
 };
 
 // Manche Porträts sind (je nach Bildausschnitt) von Natur aus breiter als
@@ -193,7 +198,10 @@ export const PORTRAET_VERSATZ = {
   "jp-5": 14,
   "ar-1": -5,
   "fr-2": 12,
-  "fr-3": 21
+  "fr-3": 21,
+  "ng-1": 18,
+  "ng-3": 3,
+  "ng-4": 16
 };
 
 // Porträts mit einem sehr BREITEN Bildausschnitt (Seitenverhältnis > 1.2,
@@ -209,5 +217,6 @@ export const PORTRAET_GROESSE = {
   "jp-3": { hoehe: 68 },
   "ar-3": { hoehe: 54, unten: 23 },
   "ar-5": { hoehe: 54, unten: 21 },
-  "it-3": { hoehe: 52, unten: 25 }
+  "it-3": { hoehe: 52, unten: 25 },
+  "ng-5": { hoehe: 61, unten: 16 }
 };
