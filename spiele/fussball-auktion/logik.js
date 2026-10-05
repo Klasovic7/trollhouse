@@ -173,3 +173,116 @@ export function mische(werte, zufaelligFn = Math.random) {
   }
   return kopie;
 }
+
+// ============================================================================
+//  Länderboni (v246)
+// ----------------------------------------------------------------------------
+//  Wer mehrere Spieler desselben Landes besitzt, bekommt einen Bonus, der mit
+//  der Anzahl wächst. Der Bonus wird NICHT in die Karte geschrieben, sondern
+//  immer aus dem aktuellen Kartenbesitz berechnet (karten.json bleibt
+//  unverändert).
+//   - "stat":   n Karten eines Landes (n >= 2) -> jede dieser Karten +n auf
+//               eine feste Fähigkeit (z. B. Italien: Verteidigung).
+//   - "frei":   Deutschland - n >= 2 deutsche Karten -> n-1 frei verteilbare
+//               Fähigkeitspunkte (Wahl nach der Auktion) PLUS n-1 Extrapunkte
+//               auf die Gesamtwertung (je vergebenem Punkt +1 auf die
+//               gewählte Karte).
+//   - "rabatt": Nigeria - Preisnachlass beim Ersteigern (siehe unten).
+// ============================================================================
+export const LAENDER_BONI = {
+  Italien:     { typ: "stat", kat: "VER" },
+  Frankreich:  { typ: "stat", kat: "GES" },
+  Argentinien: { typ: "stat", kat: "SCH" },
+  "Türkei":    { typ: "stat", kat: "PAS" },
+  Brasilien:   { typ: "stat", kat: "TEC" },
+  Japan:       { typ: "stat", kat: "SPI" },
+  Deutschland: { typ: "frei" },
+  Nigeria:     { typ: "rabatt" }
+};
+
+// Anzahl Karten je Land aus einer Liste von Karten-IDs.
+export function zaehleNationen(kartenIds, kartenNachId) {
+  const anzahl = {};
+  for (const id of kartenIds ?? []) {
+    const nation = kartenNachId.get(id)?.nation;
+    if (nation) anzahl[nation] = (anzahl[nation] ?? 0) + 1;
+  }
+  return anzahl;
+}
+
+// Anzahl frei verteilbarer Punkte für n deutsche Karten (2 -> 1, 3 -> 2, ...).
+export function deutschlandPunkte(anzahlDeutsche) {
+  return anzahlDeutsche >= 2 ? anzahlDeutsche - 1 : 0;
+}
+
+// Prüft/bereinigt eine Deutschland-Wahl: nur Karten, die der Spieler besitzt
+// und die deutsch sind, nur gültige Fähigkeiten, höchstens so viele Punkte wie
+// erlaubt. wahl = [{ kartenId, kat }, ...]
+export function bereinigeDeutschlandWahl(wahl, kartenIds, kartenNachId) {
+  const erlaubt = deutschlandPunkte(zaehleNationen(kartenIds, kartenNachId).Deutschland ?? 0);
+  const besitz = new Set(kartenIds ?? []);
+  return (Array.isArray(wahl) ? wahl : [])
+    .filter((w) => w && besitz.has(w.kartenId) && kartenNachId.get(w.kartenId)?.nation === "Deutschland" && KATEGORIEN.includes(w.kat))
+    .slice(0, erlaubt);
+}
+
+// Berechnet alle Boni eines Spielers: { kartenId: { boni: { KAT: +n }, extra: +n } }
+// Es erscheinen nur Karten, die tatsächlich einen Bonus haben.
+export function berechneKartenBoni(kartenIds, kartenNachId, deutschlandWahl = []) {
+  const ergebnis = {};
+  const eintrag = (id) => (ergebnis[id] ??= { boni: {}, extra: 0 });
+  const nationen = zaehleNationen(kartenIds, kartenNachId);
+
+  for (const id of kartenIds ?? []) {
+    const k = kartenNachId.get(id);
+    const regel = k && LAENDER_BONI[k.nation];
+    const n = k ? nationen[k.nation] : 0;
+    if (regel?.typ === "stat" && n >= 2) {
+      const e = eintrag(id);
+      e.boni[regel.kat] = (e.boni[regel.kat] ?? 0) + n;
+    }
+  }
+  for (const w of bereinigeDeutschlandWahl(deutschlandWahl, kartenIds, kartenNachId)) {
+    const e = eintrag(w.kartenId);
+    e.boni[w.kat] = (e.boni[w.kat] ?? 0) + 1;
+    e.extra += 1;
+  }
+  return ergebnis;
+}
+
+// Fähigkeitswerte inkl. Bonus.
+export function effektiveFaehigkeiten(karte, bonus) {
+  const werte = {};
+  for (const kat of KATEGORIEN) werte[kat] = (karte.faehigkeiten[kat] ?? 0) + (bonus?.boni?.[kat] ?? 0);
+  return werte;
+}
+
+// Gesamtwertung inkl. aller Boni (Fähigkeitsboni + Deutschland-Extrapunkte).
+export function effektiveGesamt(karte, bonus) {
+  return kartenSumme(karte) + Object.values(bonus?.boni ?? {}).reduce((s, v) => s + v, 0) + (bonus?.extra ?? 0);
+}
+
+// ---------- Nigeria: Preisnachlass ----------
+// Der k-te Nigerianer im Besitz: 1. 0 %, 2. 20 %, 3. 40 %, 4. 60 %, 5. 80 %.
+export function nigeriaRabattProzent(nummer) {
+  return nummer <= 1 ? 0 : Math.min(80, (nummer - 1) * 20);
+}
+
+// Kaufmännisch gerundeter Prozentanteil (x,5 wird aufgerundet) - rein ganzzahlig.
+export function rundeProzent(betrag, prozent) {
+  return Math.floor((betrag * prozent + 50) / 100);
+}
+
+// Erstattung für die in EINER Gebotsrunde gewonnenen Nigerianer eines Spielers.
+// bisherAnzahl: so viele Nigerianer besaß er vorher; gewonnen: [{ kartenId, betrag }].
+// Die höheren Rabattstufen gehen an die teureren Karten.
+// Rückgabe: { kartenId: { prozent, erstattung } }
+export function berechneNigeriaErstattung(bisherAnzahl, gewonnen) {
+  const sortiert = [...gewonnen].sort((a, b) => b.betrag - a.betrag || (a.kartenId < b.kartenId ? -1 : 1));
+  const stufen = sortiert.map((_, i) => nigeriaRabattProzent(bisherAnzahl + 1 + i)).sort((a, b) => b - a);
+  const ergebnis = {};
+  sortiert.forEach((g, i) => {
+    ergebnis[g.kartenId] = { prozent: stufen[i], erstattung: rundeProzent(g.betrag, stufen[i]) };
+  });
+  return ergebnis;
+}

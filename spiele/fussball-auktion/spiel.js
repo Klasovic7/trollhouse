@@ -27,7 +27,9 @@ import {
   ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN,
   kartenSumme, pruefeGebote, berechneRundenpunkte,
   kartenBearbeitungsreihenfolge, aufloesenEineKarte,
-  zufaelligeRundenKategorien, mische
+  zufaelligeRundenKategorien, mische,
+  LAENDER_BONI, zaehleNationen, deutschlandPunkte, berechneKartenBoni,
+  effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
 } from "./logik.js";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
@@ -43,6 +45,16 @@ const VORLAGE = `
       jeder in 5 Runden verdeckt eine seiner Karten aus - entscheidend sind zwei
       je Runde neu bestimmte Fähigkeiten.
     </p>
+    <div class="hinweis-text fa-boni-legende">
+      <strong>Länderboni</strong> - wer mehrere Spieler eines Landes besitzt, bekommt einen Bonus, der mit der Anzahl wächst:
+      <ul>
+        <li>🇮🇹 Italien: Verteidigung +n · 🇫🇷 Frankreich: Geschwindigkeit +n · 🇦🇷 Argentinien: Schuss +n</li>
+        <li>🇹🇷 Türkei: Pass +n · 🇧🇷 Brasilien: Technik +n · 🇯🇵 Japan: Spielverständnis +n</li>
+        <li>🇩🇪 Deutschland: n-1 Fähigkeitspunkte frei verteilen (und die Gesamtwertung steigt zusätzlich um n-1)</li>
+        <li>🇳🇬 Nigeria: Münzen-Rückerstattung beim 2. (20 %), 3. (40 %), 4. (60 %), 5. (80 %) Nigerianer</li>
+      </ul>
+      (n = Anzahl deiner Spieler dieses Landes, ab 2)
+    </div>
     <p id="fa-spieleranzahl-hinweis" class="hinweis-text"></p>
     <p id="fa-setup-fehler" class="fehler-text"></p>
     <p><button id="fa-starten" class="btn-primaer" hidden>Spiel starten</button></p>
@@ -53,6 +65,7 @@ const VORLAGE = `
   <div id="fa-auktion-screen" class="bildschirm-karte" hidden>
     <h2 id="fa-auktion-titel"></h2>
     <p class="hinweis-text">Münzen: <strong id="fa-eigene-muenzen"></strong> · Karten: <strong id="fa-eigene-kartenanzahl"></strong>/${MAX_KARTEN_PRO_SPIELER}</p>
+    <p id="fa-eigene-boni" class="hinweis-text" hidden></p>
     <p id="fa-auktion-inaktiv-hinweis" class="hinweis-text" hidden>Du hast bereits ${MAX_KARTEN_PRO_SPIELER} Karten - in dieser Runde bietest du nicht mit.</p>
     <div id="fa-auktion-karten" class="fa-karten-grid"></div>
     <p id="fa-auktion-fehler" class="fehler-text"></p>
@@ -83,6 +96,19 @@ const VORLAGE = `
     <div id="fa-auktion-erg-liste" class="fa-karten-grid fa-karten-grid-ergebnis"></div>
     <p><button id="fa-auktion-weiter" class="btn-primaer" hidden></button></p>
     <p id="fa-auktion-erg-warten" hidden><em>Der Spielleiter macht gleich weiter …</em></p>
+  </div>
+
+  <div id="fa-bonus-screen" class="bildschirm-karte" hidden>
+    <h2>Länderboni</h2>
+    <div id="fa-bonus-info" class="hinweis-text"></div>
+    <div id="fa-bonus-de" hidden>
+      <p class="hinweis-text"><strong id="fa-bonus-de-titel"></strong></p>
+      <div id="fa-bonus-de-zeilen"></div>
+      <p id="fa-bonus-fehler" class="fehler-text"></p>
+      <p><button id="fa-bonus-bestaetigen" class="btn-primaer">Auswahl bestätigen</button></p>
+    </div>
+    <div id="fa-bonus-karten" class="fa-karten-grid"></div>
+    <div id="fa-bonus-status" class="warten-block"></div>
   </div>
 
   <div id="fa-runde-screen" class="bildschirm-karte" hidden>
@@ -140,6 +166,11 @@ let stechenGebote = {};
 let stechenAblaufZeit = null;
 let stechenAufloesungAusgeloest = false;
 let timerId = null;
+
+// Länderbonus Deutschland (Auswahlphase "bonus_wahl")
+let deEntwurf = [];            // [{ kartenId, kat }] - lokaler Entwurf vor dem Bestätigen
+let bonusZeilenSignatur = "";
+let bonusWeiterAusgeloest = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
@@ -221,6 +252,7 @@ export function beenden() {
   auktionAufloesungAusgeloest = false; rundeAufloesungAusgeloest = false;
   stechenKarte = null; stechenSpieler = []; stechenGebote = {}; stechenAblaufZeit = null;
   stechenAufloesungAusgeloest = false;
+  deEntwurf = []; bonusZeilenSignatur = ""; bonusWeiterAusgeloest = false;
 }
 
 export function spieler(liste) {
@@ -230,6 +262,7 @@ export function spieler(liste) {
   if (status === "auktion_gebot") { zeigeAuktion(); pruefeAuktionsPhase(); }
   if (status === "auktion_stechen") { zeigeStechen(); }
   if (status === "auktion_ergebnis") zeigeAuktionErgebnis();
+  if (status === "bonus_wahl") { zeigeBonusPhase(); pruefeBonusPhase(); }
   if (status === "runde_spielen") { zeigeRunde(); pruefeRundenPhase(); }
   if (status === "runde_ergebnis") zeigeRundenErgebnis();
   if (status === "beendet") zeigeEndstand();
@@ -250,6 +283,7 @@ export function raumDaten(daten) {
     geboteAbgeschickt = false;
     auktionAufloesungAusgeloest = false;
   }
+  if (status !== "bonus_wahl") { bonusWeiterAusgeloest = false; deEntwurf = []; bonusZeilenSignatur = ""; }
   auktionKarten = daten.faAuktionKarten ?? [];
   auktionErgebnis = daten.faAuktionErgebnis ?? null;
 
@@ -274,6 +308,7 @@ export function raumDaten(daten) {
   api.fortschritt(
     status === "auktion_gebot" || status === "auktion_stechen" || status === "auktion_ergebnis"
       ? (auktionRunde > ANZAHL_GEBOTSRUNDEN ? "Bonusrunde" : `Gebotsrunde ${auktionRunde}/${ANZAHL_GEBOTSRUNDEN}`) :
+    status === "bonus_wahl" ? "Länderboni" :
     status === "runde_spielen" || status === "runde_ergebnis" ? `Spielrunde ${rundenIndex + 1}/${ANZAHL_SPIELRUNDEN}` :
     ""
   );
@@ -292,6 +327,10 @@ export function raumDaten(daten) {
   } else if (status === "auktion_ergebnis") {
     zeigeAuktionErgebnis();
     $("fa-auktion-ergebnis-screen").hidden = false;
+  } else if (status === "bonus_wahl") {
+    zeigeBonusPhase();
+    $("fa-bonus-screen").hidden = false;
+    pruefeBonusPhase();
   } else if (status === "runde_spielen") {
     zeigeRunde();
     $("fa-runde-screen").hidden = false;
@@ -306,7 +345,7 @@ export function raumDaten(daten) {
 }
 
 function alleVerstecken() {
-  ["fa-setup", "fa-auktion-screen", "fa-stechen-screen", "fa-auktion-ergebnis-screen", "fa-runde-screen",
+  ["fa-setup", "fa-auktion-screen", "fa-stechen-screen", "fa-auktion-ergebnis-screen", "fa-bonus-screen", "fa-runde-screen",
    "fa-runde-ergebnis-screen", "fa-endstand-screen"].forEach((id) => { $(id).hidden = true; });
 }
 
@@ -342,7 +381,7 @@ async function spielStarten() {
 
     const reihenfolge = mische(karten.map((k) => k.id));
     await Promise.all(spielerListe.map((s) =>
-      updateDoc(api.spielerRef(s.id), { faMuenzen: STARTMUENZEN, faKarten: [], faGespielt: [], punkte: 0 })
+      updateDoc(api.spielerRef(s.id), { faMuenzen: STARTMUENZEN, faKarten: [], faGespielt: [], punkte: 0, faDeutschlandWahl: [], faDeutschlandFertig: false })
     ));
 
     await updateDoc(api.raumRef(), {
@@ -374,7 +413,7 @@ async function raeumeSpieldatenAuf() {
 export async function vorZurueck() {
   await raeumeSpieldatenAuf();
   await Promise.all(spielerListe.map((s) =>
-    updateDoc(api.spielerRef(s.id), { faMuenzen: 0, faKarten: [], faGespielt: [], punkte: 0 })
+    updateDoc(api.spielerRef(s.id), { faMuenzen: 0, faKarten: [], faGespielt: [], punkte: 0, faDeutschlandWahl: [], faDeutschlandFertig: false })
   ));
   await updateDoc(api.raumRef(), {
     faStatus: null, faKartenReihenfolge: [], faAuktionRunde: 0, faAuktionKarten: [],
@@ -410,21 +449,35 @@ function kartenPortraitHtml(k, akzent) {
   );
 }
 
-function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = {}) {
+// Bonus eines Spielers für alle seine Karten (aus aktuellem Besitz + Deutschland-Wahl).
+function bonusFuerSpieler(spielerObj, wahl) {
+  return berechneKartenBoni(spielerObj?.faKarten ?? [], kartenNachId, wahl ?? spielerObj?.faDeutschlandWahl ?? []);
+}
+
+function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [], bonus = null } = {}) {
   const { top, mid, bottom, akzent, flagge, flagSvg, flagViewBox } = nationDesign(k.nation);
   const [vorname, ...rest] = k.name.split(" ");
   const nachname = rest.join(" ") || vorname;
 
   const chipsHtml = KATEGORIEN.map((kat) => {
     const hervorgehoben = markierteKategorien.includes(kat);
+    const plus = bonus?.boni?.[kat] ?? 0;
     return `<span class="fa-karte-chip${hervorgehoben ? " fa-karte-chip-aktiv" : ""}">` +
       `<span class="fa-karte-chip-kuerzel">${kat}</span>` +
-      `<span class="fa-karte-chip-wert">${k.faehigkeiten[kat]}</span>` +
+      `<span class="fa-karte-chip-wert">${k.faehigkeiten[kat] + plus}` +
+        (plus ? `<span class="fa-bonus-plus">+${plus}</span>` : "") +
+      `</span>` +
     `</span>`;
   }).join("");
 
+  // Gesamtwertung: Hauptzahl enthält die Fähigkeitsboni; daneben steht das
+  // "+n" des Länderbonus (Deutschland: der zusätzliche Gesamtpunkt, sonst die
+  // Fähigkeitserhöhung).
+  const statPlus = Object.values(bonus?.boni ?? {}).reduce((x, y) => x + y, 0);
+  const ratingPlus = k.nation === "Deutschland" ? (bonus?.extra ?? 0) : statPlus;
   const ratingHtml = zeigeGesamt
-    ? `<div class="fa-karte-rating"><span>${kartenSumme(k)}</span></div>`
+    ? `<div class="fa-karte-rating"><span>${kartenSumme(k) + statPlus}</span></div>` +
+      (ratingPlus ? `<div class="fa-karte-rating-plus">+${ratingPlus}</div>` : "")
     : "";
 
   const flaggenBadgeHtml = zeigeGesamt
@@ -452,6 +505,27 @@ function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [] } = 
   );
 }
 
+// Aktuelle Länderboni des eigenen Kartenbesitzes als kurze Textzeile.
+function boniTexte(spielerObj) {
+  const anzahl = zaehleNationen(spielerObj.faKarten ?? [], kartenNachId);
+  const texte = [];
+  for (const [nation, n] of Object.entries(anzahl)) {
+    const regel = LAENDER_BONI[nation];
+    if (!regel || n < 2) continue;
+    if (regel.typ === "stat") texte.push(`${nation} ×${n}: ${KATEGORIE_NAMEN[regel.kat]} +${n}`);
+    else if (regel.typ === "frei") texte.push(`${nation} ×${n}: ${deutschlandPunkte(n)} frei verteilbare${deutschlandPunkte(n) === 1 ? "r" : ""} Punkt${deutschlandPunkte(n) === 1 ? "" : "e"} (+${deutschlandPunkte(n)} Gesamt)`);
+    else if (regel.typ === "rabatt") texte.push(`${nation} ×${n}: Münzen-Rückerstattung bis ${Math.min(80, (n - 1) * 20)} %`);
+  }
+  return texte;
+}
+
+function zeigeEigeneBoniZeile(eigener) {
+  const texte = boniTexte(eigener);
+  const p = $("fa-eigene-boni");
+  p.hidden = texte.length === 0;
+  p.textContent = texte.length ? "Länderboni: " + texte.join(" · ") : "";
+}
+
 function zeigeAuktion() {
   const eigener = eigenerSpieler();
   if (!eigener) return;
@@ -460,6 +534,7 @@ function zeigeAuktion() {
     : `Gebotsrunde ${auktionRunde}/${ANZAHL_GEBOTSRUNDEN}`;
   $("fa-eigene-muenzen").textContent = String(eigener.faMuenzen ?? STARTMUENZEN);
   $("fa-eigene-kartenanzahl").textContent = String(eigener.faKarten?.length ?? 0);
+  zeigeEigeneBoniZeile(eigener);
 
   const aktiv = istAktiverBieter(eigener);
   $("fa-auktion-inaktiv-hinweis").hidden = aktiv;
@@ -629,7 +704,33 @@ async function vergebeKarte(kartenId, spielerId, betrag) {
   });
 }
 
+// Nigeria-Rabatt: nach jeder Gebotsrunde bekommt ein Spieler für seine in dieser
+// Runde gewonnenen Nigerianer einen Teil des Kaufpreises zurück (2. Nigerianer
+// 20 %, 3. 40 %, 4. 60 %, 5. 80 %; bei mehreren in einer Runde gehört die
+// höhere Stufe zur teureren Karte). Kaufmännisch gerundet.
+async function wendeNigeriaErstattungAn(zwischenergebnis) {
+  const proSpieler = {};
+  for (const [kartenId, e] of Object.entries(zwischenergebnis)) {
+    if (karte(kartenId)?.nation !== "Nigeria") continue;
+    (proSpieler[e.spielerId] ??= []).push({ kartenId, betrag: e.betrag });
+  }
+  for (const [spielerId, gewonnen] of Object.entries(proSpieler)) {
+    const s = spielerListe.find((x) => x.id === spielerId);
+    // Vorbesitz = Nigerianer, die NICHT zu dieser Gebotsrunde gehören (robust
+    // gegen einen noch nicht aktualisierten Spieler-Snapshot).
+    const bisher = (s?.faKarten ?? []).filter((id) => karte(id)?.nation === "Nigeria" && !auktionKarten.includes(id)).length;
+    const erstattungen = berechneNigeriaErstattung(bisher, gewonnen);
+    let summe = 0;
+    for (const [kartenId, r] of Object.entries(erstattungen)) {
+      zwischenergebnis[kartenId] = { ...zwischenergebnis[kartenId], prozent: r.prozent, erstattung: r.erstattung };
+      summe += r.erstattung;
+    }
+    if (summe > 0) await updateDoc(api.spielerRef(spielerId), { faMuenzen: increment(summe) });
+  }
+}
+
 async function beendeAuktionsRunde(zwischenergebnis) {
+  await wendeNigeriaErstattungAn(zwischenergebnis);
   await updateDoc(api.raumRef(), {
     faStatus: "auktion_ergebnis",
     faAuktionErgebnis: zwischenergebnis,
@@ -798,9 +899,13 @@ function zeigeAuktionErgebnis() {
       `</div>`;
     }).join("");
 
+    const erg = raum.faAuktionErgebnis?.[kartenId];
+    const rabattHtml = erg?.prozent > 0
+      ? `<div class="fa-rabatt-zeile">🇳🇬 Nigeria-Rabatt ${erg.prozent} %: <strong>${erg.erstattung}</strong> <span class="fa-goldmuenze" aria-hidden="true"></span> zurück</div>`
+      : "";
     const div = document.createElement("div");
     div.className = "fa-karte fa-karte-ergebnis";
-    div.innerHTML = kartenKachelHtml(k) +
+    div.innerHTML = kartenKachelHtml(k) + rabattHtml +
       `<div class="fa-gebote-ueberschrift">Gebote auf diese Karte</div>` +
       (geboteFuerKarte.length
         ? `<div class="fa-gebote-liste">${geboteHtml}</div>`
@@ -820,6 +925,15 @@ function zeigeAuktionErgebnis() {
   $("fa-auktion-weiter").hidden = !api.istLeiter;
   $("fa-auktion-weiter").textContent = weiterText;
   $("fa-auktion-erg-warten").hidden = api.istLeiter;
+}
+
+async function starteSpielphase() {
+  await updateDoc(api.raumRef(), {
+    faStatus: "runde_spielen",
+    faRundenIndex: 0,
+    faRundenKategorien: zufaelligeRundenKategorien(),
+    faRundenErgebnis: null
+  });
 }
 
 async function auktionWeiter() {
@@ -848,18 +962,122 @@ async function auktionWeiter() {
         faUnvergebeneKarten: [],
         faAuktionErgebnis: null
       });
+    } else if (spielerListe.some((s) => deutschlandPunkte(zaehleNationen(s.faKarten ?? [], kartenNachId).Deutschland ?? 0) > 0)) {
+      // Mindestens ein Spieler hat 2+ deutsche Karten -> erst die Deutschland-Wahl.
+      await updateDoc(api.raumRef(), { faStatus: "bonus_wahl", faAuktionErgebnis: null });
     } else {
-      await updateDoc(api.raumRef(), {
-        faStatus: "runde_spielen",
-        faRundenIndex: 0,
-        faRundenKategorien: zufaelligeRundenKategorien(),
-        faRundenErgebnis: null
-      });
+      await starteSpielphase();
     }
   } catch (e) {
     zeigeDebug("Fehler beim Weiterschalten: " + e.message);
   }
   $("fa-auktion-weiter").disabled = false;
+}
+
+// ============================================================================
+//  Länderbonus-Phase (nur wenn jemand 2+ deutsche Karten hat)
+// ============================================================================
+function deutscheKartenIds(spielerObj) {
+  return (spielerObj.faKarten ?? []).filter((id) => karte(id)?.nation === "Deutschland");
+}
+
+function zeigeBonusPhase() {
+  const eigener = eigenerSpieler();
+  if (!eigener || !el.wurzel) return;
+  const deIds = deutscheKartenIds(eigener);
+  const punkte = deutschlandPunkte(deIds.length);
+  const fertig = !!eigener.faDeutschlandFertig;
+
+  const texte = boniTexte(eigener).filter((t) => !t.startsWith("Deutschland") && !t.startsWith("Nigeria"));
+  $("fa-bonus-info").innerHTML = texte.length
+    ? `Deine Länderboni:<ul>${texte.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>`
+    : (punkte > 0 ? "" : "Du hast keinen Länderbonus.");
+
+  const deBlock = $("fa-bonus-de");
+  deBlock.hidden = !(punkte > 0 && !fertig);
+  if (punkte > 0 && !fertig) {
+    $("fa-bonus-de-titel").textContent =
+      `Deutschland ×${deIds.length}: Verteile ${punkte} Punkt${punkte === 1 ? "" : "e"} auf Fähigkeiten deiner deutschen Spieler ` +
+      `(jeder Punkt erhöht auch die Gesamtwertung zusätzlich um +1).`;
+    const signatur = `${punkte}|${deIds.join(",")}`;
+    if (signatur !== bonusZeilenSignatur) {
+      bonusZeilenSignatur = signatur;
+      deEntwurf = Array.from({ length: punkte }, (_, i) => deEntwurf[i] && deIds.includes(deEntwurf[i].kartenId)
+        ? deEntwurf[i] : { kartenId: deIds[0], kat: KATEGORIEN[0] });
+      const zeilen = $("fa-bonus-de-zeilen");
+      zeilen.innerHTML = "";
+      deEntwurf.forEach((wahl, i) => {
+        const zeile = document.createElement("div");
+        zeile.className = "fa-gebot-zeile fa-bonus-zeile";
+        zeile.innerHTML =
+          `<span>Punkt ${i + 1}</span>` +
+          `<select class="fa-bonus-auswahl" data-i="${i}" data-feld="kartenId">` +
+            deIds.map((id) => `<option value="${id}"${id === wahl.kartenId ? " selected" : ""}>${escapeHtml(karte(id)?.name ?? id)}</option>`).join("") +
+          `</select>` +
+          `<select class="fa-bonus-auswahl" data-i="${i}" data-feld="kat">` +
+            KATEGORIEN.map((kat) => `<option value="${kat}"${kat === wahl.kat ? " selected" : ""}>${KATEGORIE_NAMEN[kat]}</option>`).join("") +
+          `</select>`;
+        zeilen.appendChild(zeile);
+      });
+      zeilen.querySelectorAll("select").forEach((sel) => sel.addEventListener("change", () => {
+        deEntwurf[Number(sel.dataset.i)][sel.dataset.feld] = sel.value;
+        zeigeBonusKarten();
+      }));
+    }
+    $("fa-bonus-bestaetigen").onclick = deutschlandBestaetigen;
+  }
+
+  zeigeBonusKarten();
+
+  const wartende = spielerListe.filter((s) => deutschlandPunkte(deutscheKartenIds(s).length) > 0 && !s.faDeutschlandFertig);
+  renderWarteAvatare($("fa-bonus-status"), wartende);
+}
+
+// Eigene Karten inkl. Boni (Vorschau der aktuellen Deutschland-Auswahl).
+function zeigeBonusKarten() {
+  const eigener = eigenerSpieler();
+  if (!eigener) return;
+  const wahl = eigener.faDeutschlandFertig ? (eigener.faDeutschlandWahl ?? []) : deEntwurf;
+  const bonus = bonusFuerSpieler(eigener, wahl);
+  const grid = $("fa-bonus-karten");
+  grid.innerHTML = "";
+  (eigener.faKarten ?? []).forEach((id) => {
+    const k = karte(id);
+    if (!k) return;
+    const div = document.createElement("div");
+    div.className = "fa-karte";
+    div.innerHTML = kartenKachelHtml(k, { bonus: bonus[id] });
+    grid.appendChild(div);
+  });
+}
+
+async function deutschlandBestaetigen() {
+  const eigener = eigenerSpieler();
+  if (!eigener) return;
+  $("fa-bonus-bestaetigen").disabled = true;
+  try {
+    await updateDoc(api.spielerRef(api.spielerId), {
+      faDeutschlandWahl: deEntwurf.map((w) => ({ kartenId: w.kartenId, kat: w.kat })),
+      faDeutschlandFertig: true
+    });
+  } catch (e) {
+    zeigeDebug("Fehler beim Speichern der Deutschland-Wahl: " + e.message);
+  }
+  $("fa-bonus-bestaetigen").disabled = false;
+}
+
+// Leiter: sobald alle betroffenen Spieler bestätigt haben, geht es los.
+async function pruefeBonusPhase() {
+  if (!api?.istLeiter || status !== "bonus_wahl" || bonusWeiterAusgeloest) return;
+  const offen = spielerListe.some((s) => deutschlandPunkte(deutscheKartenIds(s).length) > 0 && !s.faDeutschlandFertig);
+  if (offen) return;
+  bonusWeiterAusgeloest = true;
+  try {
+    await starteSpielphase();
+  } catch (e) {
+    bonusWeiterAusgeloest = false;
+    zeigeDebug("Fehler beim Start der Spielphase: " + e.message);
+  }
 }
 
 // ============================================================================
@@ -888,12 +1106,13 @@ function zeigeRunde() {
 
   const grid = $("fa-runde-karten");
   grid.innerHTML = "";
+  const eigeneBoni = bonusFuerSpieler(eigener);
   verfuegbar.forEach((kartenId) => {
     const k = karte(kartenId);
     if (!k) return;
     const div = document.createElement("div");
     div.className = "fa-karte fa-karte-waehlbar";
-    div.innerHTML = kartenKachelHtml(k, { markierteKategorien: rundenKategorien }) +
+    div.innerHTML = kartenKachelHtml(k, { markierteKategorien: rundenKategorien, bonus: eigeneBoni[kartenId] }) +
       (bereitsGespielt ? "" : `<button type="button" class="btn-flach fa-karte-spielen-btn">Diese Karte spielen</button>`);
     if (!bereitsGespielt) {
       div.querySelector(".fa-karte-spielen-btn").addEventListener("click", () => karteSpielen(kartenId));
@@ -935,8 +1154,10 @@ async function pruefeRundenPhase() {
     const [kat1, kat2] = rundenKategorien;
     const eintraege = zuegeDieserRunde.map((z) => {
       const k = karte(z.kartenId);
-      const summe = (k?.faehigkeiten?.[kat1] ?? 0) + (k?.faehigkeiten?.[kat2] ?? 0);
-      return { spielerId: z.spielerId, kartenId: z.kartenId, summe, gesamt: k ? kartenSumme(k) : 0 };
+      const bonus = bonusFuerSpieler(spielerListe.find((x) => x.id === z.spielerId))[z.kartenId];
+      const werte = k ? effektiveFaehigkeiten(k, bonus) : {};
+      const summe = (werte[kat1] ?? 0) + (werte[kat2] ?? 0);
+      return { spielerId: z.spielerId, kartenId: z.kartenId, summe, gesamt: k ? effektiveGesamt(k, bonus) : 0 };
     });
     const punkte = relevant.length > 0 ? berechneRundenpunkte(eintraege) : {};
 

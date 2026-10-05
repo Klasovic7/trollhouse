@@ -282,7 +282,7 @@
   {
     "id": "es-1",
     "name": "Diego Fernández",
-    "nation": "Spanien",
+    "nation": "Türkei",
     "faehigkeiten": {
       "SCH": 4,
       "PAS": 3,
@@ -296,7 +296,7 @@
   {
     "id": "es-2",
     "name": "Pablo Molina",
-    "nation": "Spanien",
+    "nation": "Türkei",
     "faehigkeiten": {
       "SCH": 5,
       "PAS": 4,
@@ -310,7 +310,7 @@
   {
     "id": "es-3",
     "name": "Álvaro Ortiz",
-    "nation": "Spanien",
+    "nation": "Türkei",
     "faehigkeiten": {
       "SCH": 4,
       "PAS": 8,
@@ -324,7 +324,7 @@
   {
     "id": "es-4",
     "name": "Sergio Delgado",
-    "nation": "Spanien",
+    "nation": "Türkei",
     "faehigkeiten": {
       "SCH": 10,
       "PAS": 4,
@@ -338,7 +338,7 @@
   {
     "id": "es-5",
     "name": "Iker Santos",
-    "nation": "Spanien",
+    "nation": "Türkei",
     "faehigkeiten": {
       "SCH": 7,
       "PAS": 8,

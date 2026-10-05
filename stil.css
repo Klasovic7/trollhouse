@@ -2720,6 +2720,23 @@
   font-size: 7.2cqw; font-weight: 800; color: #fff;
   text-shadow: 0 0 3px color-mix(in srgb, var(--n-akzent) 70%, transparent); line-height: 1;
 }
+.fa-karte-rating-plus {
+  position: absolute; z-index: 3; top: 6.2%; right: 24%;
+  padding: 0.6cqw 2.2cqw; border-radius: 3cqw;
+  background: #16a34a; color: #fff; font-size: 5cqw; font-weight: 800; line-height: 1.15;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+}
+.fa-bonus-plus {
+  margin-left: .8cqw; font-size: 3.6cqw; font-weight: 800; color: #0b7a2b;
+}
+.fa-boni-legende ul { margin: 4px 0; padding-left: 18px; }
+.fa-boni-legende li { margin: 2px 0; }
+.fa-bonus-zeile { flex-wrap: wrap; margin: 6px 0; }
+.fa-bonus-auswahl { padding: 4px 6px; border-radius: 6px; max-width: 48%; }
+.fa-rabatt-zeile {
+  margin: 6px 0 2px; padding: 4px 8px; border-radius: 6px; font-size: .9em;
+  background: rgba(22, 163, 74, .16);
+}
 .fa-karte-flaggenbadge {
   position: absolute; z-index: 3; top: calc(4% + 18%); right: -1%; width: 30%;
   aspect-ratio: 2.5 / 1;
