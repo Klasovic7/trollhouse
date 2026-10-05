@@ -156,14 +156,14 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "de-1": "bilder/fussball-auktion/spieler-de-1.png?v=243",
-  "de-2": "bilder/fussball-auktion/spieler-de-2.png?v=243",
-  "de-3": "bilder/fussball-auktion/spieler-de-3.png?v=243",
-  "de-4": "bilder/fussball-auktion/spieler-de-4.png?v=243",
-  "de-5": "bilder/fussball-auktion/spieler-de-5.png?v=244",
+  "de-1": "bilder/fussball-auktion/spieler-de-1.png?v=245",
+  "de-2": "bilder/fussball-auktion/spieler-de-2.png?v=245",
+  "de-3": "bilder/fussball-auktion/spieler-de-3.png?v=245",
+  "de-4": "bilder/fussball-auktion/spieler-de-4.png?v=245",
+  "de-5": "bilder/fussball-auktion/spieler-de-5.png?v=245",
   "it-1": "bilder/fussball-auktion/spieler-it-1.png?v=237",
   "it-2": "bilder/fussball-auktion/spieler-it-2.png?v=237",
-  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=244",
+  "it-3": "bilder/fussball-auktion/spieler-it-3.png?v=245",
   "it-4": "bilder/fussball-auktion/spieler-it-4.png?v=237",
   "it-5": "bilder/fussball-auktion/spieler-it-5.png?v=237",
   "jp-1": "bilder/fussball-auktion/spieler-jp-1.png?v=236",
