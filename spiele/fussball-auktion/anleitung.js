@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI
-} from "./logik.js?v=255";
+} from "./logik.js?v=256";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -46,22 +46,6 @@ function szenen(kh) {
   const boni = (kat, n) => ({ boni: { [kat]: n }, extra: 0 });
 
   return [
-    {
-      titel: "",
-      dauer: 7500,
-      intro: true,
-      html: () => `
-        <canvas class="fa-anl-feuerwerk" aria-hidden="true"></canvas>
-        <div class="fa-anl-update">
-          <div class="fa-anl-update-badge">‼️ UPDATE ‼️</div>
-          <div class="fa-anl-update-neu">Ein neues Spiel!</div>
-          <div class="fa-anl-update-ball">⚽</div>
-          <div class="fa-anl-update-name">Länderspiel</div>
-          <div class="fa-anl-update-sub">Ersteigere Spieler, sammle Länderboni und tritt gegen deine Freunde an.</div>
-          <div class="fa-anl-update-hinweis">Die Spielregeln - kurz erklärt ▸</div>
-        </div>`,
-      start: (buehne) => starteFeuerwerk(buehne.querySelector(".fa-anl-feuerwerk"))
-    },
     {
       titel: "Worum geht's?",
       dauer: 11000,
@@ -266,63 +250,6 @@ function szenen(kh) {
 }
 
 // ----------------------------------------------------------------------------
-//  Feuerwerk (Canvas) - gibt eine Funktion zum Beenden zurück
-// ----------------------------------------------------------------------------
-function starteFeuerwerk(canvas) {
-  if (!canvas || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return () => {};
-  const ctx = canvas.getContext("2d");
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const farben = ["#fcd34d", "#f97316", "#f43f5e", "#a78bfa", "#38bdf8", "#4ade80", "#ffffff"];
-  let w = 0, h = 0, raketen = [], funken = [], letzte = performance.now(), naechste = 0, laeuft = true, raf = 0;
-
-  function groesse() {
-    const r = canvas.getBoundingClientRect();
-    w = Math.max(1, r.width); h = Math.max(1, r.height);
-    canvas.width = w * dpr; canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  groesse();
-
-  function rakete() {
-    raketen.push({ x: w * (0.15 + Math.random() * 0.7), y: h, ziel: h * (0.12 + Math.random() * 0.4), vy: -(260 + Math.random() * 80), farbe: farben[Math.floor(Math.random() * farben.length)] });
-  }
-  function explosion(x, y, farbe) {
-    const n = 46 + Math.floor(Math.random() * 20);
-    for (let i = 0; i < n; i++) {
-      const wi = (i / n) * Math.PI * 2 + Math.random() * 0.2, v = 60 + Math.random() * 110;
-      funken.push({ x, y, vx: Math.cos(wi) * v, vy: Math.sin(wi) * v, leben: 1, farbe: Math.random() < 0.25 ? "#ffffff" : farbe });
-    }
-  }
-  function schritt(jetzt) {
-    if (!laeuft) return;
-    const dt = Math.min(0.05, (jetzt - letzte) / 1000); letzte = jetzt;
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.fillStyle = "rgba(0,0,0,0.22)"; ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "lighter";
-    naechste -= dt;
-    if (naechste <= 0) { rakete(); if (Math.random() < 0.4) rakete(); naechste = 0.35 + Math.random() * 0.5; }
-    raketen = raketen.filter((r) => {
-      r.y += r.vy * dt;
-      ctx.fillStyle = r.farbe; ctx.fillRect(r.x - 1, r.y, 2, 8);
-      if (r.y <= r.ziel) { explosion(r.x, r.y, r.farbe); return false; }
-      return true;
-    });
-    funken = funken.filter((f) => {
-      f.vy += 90 * dt; f.vx *= 0.985; f.vy *= 0.985;
-      f.x += f.vx * dt; f.y += f.vy * dt; f.leben -= dt * 0.7;
-      if (f.leben <= 0) return false;
-      ctx.globalAlpha = Math.max(0, f.leben); ctx.fillStyle = f.farbe;
-      ctx.beginPath(); ctx.arc(f.x, f.y, 2, 0, Math.PI * 2); ctx.fill();
-      ctx.globalAlpha = 1;
-      return true;
-    });
-    raf = requestAnimationFrame(schritt);
-  }
-  raf = requestAnimationFrame(schritt);
-  return () => { laeuft = false; cancelAnimationFrame(raf); };
-}
-
-// ----------------------------------------------------------------------------
 //  Overlay
 // ----------------------------------------------------------------------------
 let offen = null;
@@ -375,7 +302,6 @@ export function zeigeAnleitung({ kartenHtml, raumCode }) {
     q(".fa-anl-titel").textContent = szene.titel;
     const buehne = q(".fa-anl-buehne");
     if (beendeSzene) { beendeSzene(); beendeSzene = null; }
-    wurzel.classList.toggle("fa-anl-intro", !!szene.intro);
     buehne.innerHTML = `<div class="fa-anl-szene">${szene.html()}</div>`;
     if (szene.start) beendeSzene = szene.start(buehne);
     buehne.scrollTop = 0;

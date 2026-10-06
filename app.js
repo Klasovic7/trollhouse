@@ -13,9 +13,9 @@ import {
 // WICHTIG: bei jedem Versionssprung hier UND in spiele/register.js
 // (SPIEL_VERSION) mit hochzaehlen, sonst bekommen manche Geraete
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
-import { SPIELE, spielInfo } from "./spiele/register.js?v=255";
+import { SPIELE, spielInfo } from "./spiele/register.js?v=256";
 
-export const APP_VERSION = "v255";
+export const APP_VERSION = "v256";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -1144,6 +1144,9 @@ function reagiereAufRaum(daten) {
     zeigeProfilAuswahl();
     return;
   }
+
+  // Update-Hinweis (einmal pro Raum): jeder sieht ihn direkt nach der Profilwahl.
+  import("./kern/update-hinweis.js?v=256").then((m) => m.zeigeUpdateHinweis(zustand.code)).catch(() => {});
 
   const spielId = daten.aktuellesSpiel ?? null;
   // v198: kommt die Lobby gerade aus einem beendeten Spiel zurueck (vorher

@@ -30,14 +30,14 @@ import {
   zufaelligeRundenKategorien, mische,
   LAENDER_BONI, zaehleNationen, deutschlandPunkte, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=255";
+} from "./logik.js?v=256";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
 const BONUS_DAUER_MS = 30000;   // Zeit für die Deutschland-Wahl; danach wird automatisch zufällig verteilt
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=255";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=255";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=256";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=256";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
@@ -231,8 +231,14 @@ export async function starten(uebergebeneApi) {
   // keine laufende Auktion mit Timern verdeckt wird. Sonst über den Knopf oben.
   const anleitungOeffnen = () => zeigeAnleitung({ kartenHtml: (id, opt) => kartenKachelHtml(karte(id), opt), raumCode: api.code });
   $("fa-anleitung-btn").addEventListener("click", anleitungOeffnen);
+  // Ist gerade der Update-Hinweis offen, erst danach die Anleitung zeigen.
+  let versuche = 0;
+  const wartenUndOeffnen = () => {
+    if (document.querySelector(".ank-overlay") && versuche++ < 240) { setTimeout(wartenUndOeffnen, 500); return; }
+    anleitungOeffnen();
+  };
   const startStatus = api.raum?.faStatus ?? null;
-  if ((startStatus === null || startStatus === "setup") && !anleitungFuerRaumGezeigt(api.code)) setTimeout(anleitungOeffnen, 400);
+  if ((startStatus === null || startStatus === "setup") && !anleitungFuerRaumGezeigt(api.code)) wartenUndOeffnen();
 
   if (api.istLeiter && !api.raum?.faStatus) {
     await updateDoc(api.raumRef(), { faStatus: "setup" });

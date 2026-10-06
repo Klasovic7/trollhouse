@@ -2950,22 +2950,28 @@ body.fa-anl-offen { overflow: hidden; }
 .fa-anl .fa-anl-fertig-knopf, .fa-anl .fa-anl-fertig-knopf:focus { background: #22c55e; }
 .fa-anl .fa-anl-fertig-knopf:hover { background: #16a34a; }
 
-/* ===== v254: Intro-Szene mit Feuerwerk, Regelübersicht im Setup ===== */
-.fa-anl-buehne { position: relative; }
-.fa-anl-intro .fa-anl-titel { display: none; }
-.fa-anl-intro .fa-anl-buehne { display: flex; }
-.fa-anl-intro .fa-anl-szene { flex: 1; position: relative; align-items: center; justify-content: center; text-align: center; gap: 10px; }
-.fa-anl-feuerwerk { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.fa-anl-update > * { position: relative; z-index: 1; }
-.fa-anl-update { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.fa-anl-update-badge { font-size: 1.5rem; font-weight: 900; letter-spacing: .12em; color: #1b1740; background: #fcd34d; padding: 8px 20px; border-radius: 999px; box-shadow: 0 0 28px rgba(252,211,77,.7); animation: fa-anl-puls 1.1s ease-in-out infinite; }
+/* ===== Update-Hinweis mit Feuerwerk (kern/update-hinweis.js) ===== */
+body.ank-offen { overflow: hidden; }
+.ank-overlay {
+  position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(120% 80% at 50% 0%, #2a2160 0%, #14112b 60%, #0c0a1c 100%);
+  color: #f4f2ff; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  animation: fa-anl-rein .4s ease-out;
+}
+.ank-feuerwerk { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ank-inhalt { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; max-width: 360px; }
+.ank-badge { font-size: 1.5rem; font-weight: 900; letter-spacing: .12em; color: #1b1740; background: #fcd34d; padding: 8px 20px; border-radius: 999px; box-shadow: 0 0 28px rgba(252,211,77,.7); animation: fa-anl-puls 1.1s ease-in-out infinite; }
+.ank-neu { font-size: 1.15rem; font-weight: 700; color: #e9e5ff; margin-top: 8px; animation: fa-anl-rein .6s ease-out .3s backwards; }
+.ank-symbol { font-size: 4.2rem; line-height: 1; animation: fa-anl-huepf 1s ease-in-out .6s infinite; }
+.ank-name { font-size: 2.6rem; font-weight: 900; line-height: 1.05; background: linear-gradient(90deg, #fcd34d, #fb923c, #f43f5e); -webkit-background-clip: text; background-clip: text; color: transparent; animation: fa-anl-rein .7s ease-out .5s backwards; }
+.ank-sub { color: #d6d1f5; animation: fa-anl-rein .7s ease-out 1.1s backwards; }
+.ank-ok { margin-top: 14px; padding: 12px 34px; font-size: 1.1rem; background: #22c55e; border-radius: 999px; animation: fa-anl-rein .7s ease-out 1.6s backwards; }
+.ank-ok:hover { background: #16a34a; }
+.ank-hinweis { font-size: .85rem; color: #a5b4fc; animation: fa-anl-rein .7s ease-out 2s backwards; }
 @keyframes fa-anl-puls { 0%,100% { transform: scale(1); } 50% { transform: scale(1.09); } }
-.fa-anl-update-neu { font-size: 1.15rem; font-weight: 700; color: #e9e5ff; margin-top: 8px; animation: fa-anl-rein .6s ease-out .3s backwards; }
-.fa-anl-update-ball { font-size: 4.2rem; line-height: 1; animation: fa-anl-huepf 1s ease-in-out .6s infinite; }
 @keyframes fa-anl-huepf { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-16px) rotate(180deg); } }
-.fa-anl-update-name { font-size: 2.3rem; font-weight: 900; line-height: 1.05; background: linear-gradient(90deg, #fcd34d, #fb923c, #f43f5e); -webkit-background-clip: text; background-clip: text; color: transparent; animation: fa-anl-rein .7s ease-out .5s backwards; }
-.fa-anl-update-sub { max-width: 300px; color: #d6d1f5; animation: fa-anl-rein .7s ease-out 1.1s backwards; }
-.fa-anl-update-hinweis { margin-top: 10px; font-size: .9rem; color: #a5b4fc; animation: fa-anl-rein .7s ease-out 2s backwards; }
+@keyframes fa-anl-rein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ank-overlay *, .ank-overlay { animation: none !important; } }
 
 .fa-regeln { display: flex; flex-direction: column; gap: 18px; margin-bottom: 14px; }
 .fa-regel-block h3 { margin: 0 0 8px; font-size: 1.05rem; }
