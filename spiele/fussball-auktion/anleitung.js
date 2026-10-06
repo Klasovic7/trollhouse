@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI
-} from "./logik.js?v=256";
+} from "./logik.js?v=257";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -52,8 +52,8 @@ function szenen(kh) {
       html: () => `
         <div class="fa-anl-faecher">
           ${karte(kh, "it-3", {}, 118, "fa-anl-f1")}
-          ${karte(kh, "de-3", {}, 118, "fa-anl-f2")}
-          ${karte(kh, "jp-3", {}, 118, "fa-anl-f3")}
+          ${karte(kh, "ar-3", {}, 118, "fa-anl-f2")}
+          ${karte(kh, "jp-1", {}, 118, "fa-anl-f3")}
         </div>
         <p ${ein(0.2)}>Du ersteigerst Fußballer, stellst dir damit ein Team zusammen und trittst in <strong>${ANZAHL_SPIELRUNDEN} Spielrunden</strong> gegen deine Freunde an.</p>
         <p ${ein(0.8)}><strong>Wer am Ende die meisten Punkte hat, gewinnt.</strong></p>
@@ -84,7 +84,7 @@ function szenen(kh) {
       html: () => `
         <p ${ein(0)}>Alle sehen dieselben Karten und bieten <strong>gleichzeitig und verdeckt</strong> Münzen darauf.</p>
         <div class="fa-anl-gebote">
-          <div ${ein(0.7, "fa-anl-gebot")}>${karte(kh, "it-2", {}, 74)}<span class="fa-anl-eingabe">12</span></div>
+          <div ${ein(0.7, "fa-anl-gebot")}>${karte(kh, "fr-3", {}, 74)}<span class="fa-anl-eingabe">12</span></div>
           <div ${ein(1.3, "fa-anl-gebot")}>${karte(kh, "de-2", {}, 74)}<span class="fa-anl-eingabe">0</span></div>
           <div ${ein(1.9, "fa-anl-gebot")}>${karte(kh, "jp-2", {}, 74)}<span class="fa-anl-eingabe fa-anl-hoch">20</span></div>
         </div>
@@ -200,8 +200,8 @@ function szenen(kh) {
           <span class="fa-anl-kat">Schuss</span><span class="fa-anl-plus">+</span><span class="fa-anl-kat">Pass</span>
         </div>
         <div class="fa-anl-spielkarten">
-          ${karte(kh, "de-3", { markierteKategorien: ["SCH", "PAS"] }, 108)}
-          ${karte(kh, "jp-3", { markierteKategorien: ["SCH", "PAS"] }, 108)}
+          ${karte(kh, "br-2", { markierteKategorien: ["SCH", "PAS"] }, 108)}
+          ${karte(kh, "ng-3", { markierteKategorien: ["SCH", "PAS"] }, 108)}
         </div>
         <p ${ein(2.4)}>Jeder spielt <strong>verdeckt eine Karte</strong>, die er noch nicht gespielt hat. Es zählt die <strong>Summe der beiden Werte</strong> - inklusive Länderboni.</p>`
     },
