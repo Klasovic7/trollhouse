@@ -1,5 +1,5 @@
 // ============================================================================
-//  Fußball-Auktion - animierte Spielanleitung
+//  Länderspiel - animierte Spielanleitung
 // ----------------------------------------------------------------------------
 //  Ein Overlay mit mehreren Szenen, das sich beim allerersten Öffnen des Spiels
 //  von selbst abspielt (danach über den "Spielanleitung"-Knopf abrufbar).
@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI
-} from "./logik.js?v=254";
+} from "./logik.js?v=255";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -56,7 +56,7 @@ function szenen(kh) {
           <div class="fa-anl-update-badge">‼️ UPDATE ‼️</div>
           <div class="fa-anl-update-neu">Ein neues Spiel!</div>
           <div class="fa-anl-update-ball">⚽</div>
-          <div class="fa-anl-update-name">Fußball-Auktion</div>
+          <div class="fa-anl-update-name">Länderspiel</div>
           <div class="fa-anl-update-sub">Ersteigere Spieler, sammle Länderboni und tritt gegen deine Freunde an.</div>
           <div class="fa-anl-update-hinweis">Die Spielregeln - kurz erklärt ▸</div>
         </div>`,
@@ -340,7 +340,7 @@ export function zeigeAnleitung({ kartenHtml, raumCode }) {
   wurzel.className = "fa-anl";
   wurzel.setAttribute("role", "dialog");
   wurzel.setAttribute("aria-modal", "true");
-  wurzel.setAttribute("aria-label", "Spielanleitung Fußball-Auktion");
+  wurzel.setAttribute("aria-label", "Spielanleitung Länderspiel");
   wurzel.innerHTML = `
     <div class="fa-anl-kopf">
       <div class="fa-anl-fortschritt"></div>

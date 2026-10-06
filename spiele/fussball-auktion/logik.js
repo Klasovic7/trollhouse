@@ -1,5 +1,5 @@
 // ============================================================================
-//  Fußball-Auktion - reine Spiellogik (keine DOM-/Firestore-Zugriffe)
+//  Länderspiel - reine Spiellogik (keine DOM-/Firestore-Zugriffe)
 //  Getrennt von spiel.js, damit sich die Regeln unabhängig vom UI-Code lesen
 //  und (lokal mit Node) testen lassen - gleiches Muster wie bei
 //  spiele/reih-dich-ein/logik.js.
