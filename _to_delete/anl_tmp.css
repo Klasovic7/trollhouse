@@ -1,0 +1,134 @@
+
+/* ===== Fußball-Auktion: Spielanleitung (v253) ===== */
+.fa-anl-knopf {
+  display: block; margin: 0 0 10px auto; font-size: .85rem; padding: 6px 14px; border-radius: 999px;
+  background: rgba(255,255,255,.18); color: #fff; border: 1px solid rgba(255,255,255,.4);
+}
+.fa-anl-knopf:hover { background: rgba(255,255,255,.28); }
+body.fa-anl-offen { overflow: hidden; }
+.fa-anl {
+  position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column;
+  max-width: 480px; margin: 0 auto; color: #f4f2ff;
+  background: radial-gradient(120% 80% at 50% 0%, #2a2160 0%, #14112b 60%, #0c0a1c 100%);
+  padding: max(14px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+}
+.fa-anl-kopf { display: flex; align-items: center; gap: 10px; }
+.fa-anl-fortschritt { flex: 1; display: flex; gap: 4px; }
+.fa-anl-seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.2); overflow: hidden; }
+.fa-anl-seg i { display: block; height: 100%; width: 0; background: #fff; }
+.fa-anl-seg.fa-anl-fertig i { width: 100%; }
+.fa-anl-seg.fa-anl-aktiv i { animation: fa-anl-fuellen linear forwards; }
+@keyframes fa-anl-fuellen { from { width: 0; } to { width: 100%; } }
+.fa-anl-x { margin: 0; padding: 4px 10px; background: rgba(255,255,255,.12); border-radius: 999px; font-size: .9rem; }
+.fa-anl-titel { font-size: 1.45rem; font-weight: 800; margin: 14px 0 6px; letter-spacing: .01em; }
+.fa-anl-buehne { flex: 1; overflow-y: auto; padding: 4px 2px 10px; -webkit-overflow-scrolling: touch; }
+.fa-anl-szene { display: flex; flex-direction: column; gap: 12px; font-size: 1.02rem; line-height: 1.45; }
+.fa-anl-szene p { margin: 0; }
+.fa-anl-klein { font-size: .88rem; color: #c9c4ee; }
+.fa-anl-fuss { display: flex; gap: 8px; align-items: stretch; }
+.fa-anl-nav { margin: 0; flex: 0 0 56px; background: rgba(255,255,255,.12); font-size: 1.5rem; padding: 6px; line-height: 1; }
+.fa-anl-nav.fa-anl-mitte { flex: 1; font-size: .95rem; }
+.fa-anl-fertig-knopf { margin-top: 14px; width: 100%; background: #22c55e; font-size: 1.1rem; padding: 12px; }
+.fa-anl-fertig-knopf:hover { background: #16a34a; }
+.fa-anl.fa-anl-pausiert *, .fa-anl.fa-anl-pausiert *::before, .fa-anl.fa-anl-pausiert *::after { animation-play-state: paused !important; }
+
+.fa-anl-ein { opacity: 0; animation: fa-anl-rein .55s ease-out forwards; }
+@keyframes fa-anl-rein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.fa-anl-karte { flex: none; }
+.fa-anl-karte .fa-karte-art { box-shadow: 0 8px 20px rgba(0,0,0,.5); }
+
+/* Szene 1 */
+.fa-anl-faecher { display: flex; justify-content: center; height: 190px; margin: 6px 0 4px; position: relative; }
+.fa-anl-faecher .fa-anl-karte { position: absolute; top: 0; opacity: 0; animation: fa-anl-faecher 1s cubic-bezier(.2,.9,.3,1) forwards; }
+.fa-anl-f1 { --w: -118px; --r: -10deg; animation-delay: .1s !important; }
+.fa-anl-f2 { --w: 0px; --r: 0deg; animation-delay: .35s !important; z-index: 2; }
+.fa-anl-f3 { --w: 118px; --r: 10deg; animation-delay: .6s !important; }
+@keyframes fa-anl-faecher { from { opacity: 0; transform: translateY(40px) scale(.8); } to { opacity: 1; transform: translateX(var(--w)) rotate(var(--r)); } }
+.fa-anl-phasen { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.fa-anl-phasen span { background: rgba(255,255,255,.14); border-radius: 999px; padding: 6px 14px; font-weight: 700; }
+
+/* Szene 2 */
+.fa-anl-muenzen { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.fa-anl-muenze { font-size: 3.2rem; animation: fa-anl-dreh 3s ease-in-out infinite; }
+@keyframes fa-anl-dreh { 0%,100% { transform: rotateY(0); } 50% { transform: rotateY(180deg); } }
+.fa-anl-zahl { font-size: 3.6rem; font-weight: 900; color: #fcd34d; }
+.fa-anl-slots { display: flex; gap: 8px; justify-content: center; }
+.fa-anl-slot { width: 46px; height: 62px; border-radius: 8px; border: 2px dashed rgba(255,255,255,.5); display: flex; align-items: center; justify-content: center; font-weight: 800; opacity: .3; animation: fa-anl-slot .5s ease-out forwards; }
+@keyframes fa-anl-slot { to { opacity: 1; background: rgba(34,197,94,.35); border-style: solid; border-color: #4ade80; } }
+
+/* Szene 3 */
+.fa-anl-gebote { display: flex; gap: 14px; justify-content: center; }
+.fa-anl-gebot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.fa-anl-eingabe { min-width: 64px; text-align: center; padding: 6px 10px; border-radius: 10px; background: #fff; color: #1f2330; font-weight: 800; font-size: 1.15rem; }
+.fa-anl-eingabe.fa-anl-hoch { background: #fcd34d; }
+.fa-anl-summe { text-align: center; background: rgba(255,255,255,.1); padding: 8px; border-radius: 10px; }
+
+/* Szene 4 */
+.fa-anl-stechen { display: flex; gap: 14px; align-items: center; background: rgba(255,255,255,.08); padding: 12px; border-radius: 14px; }
+.fa-anl-ring { flex: none; width: 74px; height: 74px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: conic-gradient(#f97316 0deg, #f97316 var(--w, 360deg), rgba(255,255,255,.18) 0); animation: fa-anl-ring 10s linear infinite; }
+.fa-anl-ring::before { content: ""; position: absolute; }
+.fa-anl-ring-zahl { width: 58px; height: 58px; border-radius: 50%; background: #1b1740; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.5rem; }
+@property --w { syntax: "<angle>"; inherits: false; initial-value: 360deg; }
+@keyframes fa-anl-ring { from { --w: 360deg; } to { --w: 0deg; } }
+.fa-anl-liste { display: flex; flex-direction: column; gap: 10px; padding-left: 0; }
+.fa-anl-liste li { margin: 0; padding-left: 18px; position: relative; }
+.fa-anl-liste li::before { content: ""; position: absolute; left: 0; top: .55em; width: 8px; height: 8px; border-radius: 50%; background: #a78bfa; }
+
+/* Szene 5 */
+.fa-anl-vorher-nachher { display: grid; justify-items: center; }
+.fa-anl-paar { grid-area: 1 / 1; display: flex; gap: 12px; justify-content: center; }
+.fa-anl-vorher { animation: fa-anl-aus .6s ease 2.4s forwards; }
+.fa-anl-nachher { opacity: 0; animation: fa-anl-an .8s ease 2.6s forwards; }
+@keyframes fa-anl-aus { to { opacity: 0; } }
+@keyframes fa-anl-an { to { opacity: 1; } }
+
+/* Szene 6 */
+.fa-anl-kacheln { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fa-anl-kachel { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.1); border-radius: 12px; padding: 8px 10px; opacity: 0; animation: fa-anl-rein .5s ease-out forwards; }
+.fa-anl-flagge { font-size: 1.8rem; }
+.fa-anl-kachel-text { font-size: .9rem; line-height: 1.25; }
+
+/* Szene 7 */
+.fa-anl-de-beispiel { display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,.08); padding: 10px 14px; border-radius: 12px; }
+.fa-anl-gesamt { text-align: center; font-size: 1.5rem; font-weight: 800; }
+.fa-anl-gesamt span { color: #cbd5e1; }
+.fa-anl-gesamt .fa-anl-neu { color: #fff; }
+.fa-anl-gesamt b { color: #4ade80; font-size: 1.2rem; }
+
+/* Szene 8 */
+.fa-anl-tabelle { width: 100%; border-collapse: collapse; text-align: center; }
+.fa-anl-tabelle th, .fa-anl-tabelle td { padding: 8px 6px; border: 1px solid rgba(255,255,255,.2); }
+.fa-anl-tabelle th { text-align: left; background: rgba(255,255,255,.08); }
+.fa-anl-rueck { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(255,255,255,.08); border-radius: 12px; padding: 10px; }
+.fa-anl-pfeil { color: #fcd34d; font-weight: 800; }
+.fa-anl-muenze-fliegt { font-size: 1.5rem; animation: fa-anl-flug 1.6s ease-in-out 2.4s infinite; }
+.fa-anl-m2 { animation-delay: 2.8s; }
+@keyframes fa-anl-flug { 0% { transform: translateX(-14px); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateX(14px); opacity: 0; } }
+
+/* Szene 9 */
+.fa-anl-kategorien { display: flex; gap: 10px; align-items: center; justify-content: center; }
+.fa-anl-kat { background: #7c3aed; padding: 8px 16px; border-radius: 10px; font-weight: 800; }
+.fa-anl-plus { font-size: 1.5rem; font-weight: 900; }
+.fa-anl-spielkarten { display: flex; gap: 14px; justify-content: center; }
+
+/* Szene 10 */
+.fa-anl-rang { display: flex; flex-direction: column; gap: 8px; }
+.fa-anl-rang-zeile { display: grid; grid-template-columns: 22px 78px 1fr 26px 38px; gap: 6px; align-items: center; opacity: 0; animation: fa-anl-rein .5s ease-out forwards; font-size: .95rem; }
+.fa-anl-balken { height: 12px; background: rgba(255,255,255,.12); border-radius: 6px; overflow: hidden; }
+.fa-anl-balken i { display: block; height: 100%; width: 0; background: #a78bfa; border-radius: 6px; animation: fa-anl-balken .9s ease-out forwards; }
+@keyframes fa-anl-balken { to { width: var(--b); } }
+.fa-anl-rang-pkt { font-weight: 900; text-align: right; }
+.fa-anl-top .fa-anl-rang-pkt { color: #4ade80; }
+.fa-anl-top .fa-anl-balken i { background: #4ade80; }
+.fa-anl-minus .fa-anl-rang-pkt { color: #f87171; }
+.fa-anl-minus .fa-anl-balken i { background: #f87171; }
+
+/* Szene 11 */
+.fa-anl-pokal { font-size: 4rem; text-align: center; animation: fa-anl-rein .6s ease-out forwards, fa-anl-wippe 2.4s ease-in-out .8s infinite; }
+@keyframes fa-anl-wippe { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-anl *, .fa-anl *::before, .fa-anl *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+  .fa-anl-ein, .fa-anl-kachel, .fa-anl-rang-zeile { opacity: 1; }
+  .fa-anl-nachher { opacity: 1; } .fa-anl-vorher { display: none; }
+}
