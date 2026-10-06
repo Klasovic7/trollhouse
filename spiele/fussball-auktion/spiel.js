@@ -30,12 +30,13 @@ import {
   zufaelligeRundenKategorien, mische,
   LAENDER_BONI, zaehleNationen, deutschlandPunkte, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=250";
+} from "./logik.js?v=251";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=250";
+const BONUS_DAUER_MS = 30000;   // Zeit für die Deutschland-Wahl; danach wird automatisch zufällig verteilt
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=251";
 
 const VORLAGE = `
   <div id="fa-setup" class="bildschirm-karte" hidden>
@@ -103,6 +104,7 @@ const VORLAGE = `
     <div id="fa-bonus-info" class="hinweis-text"></div>
     <div id="fa-bonus-de" hidden>
       <p class="hinweis-text"><strong id="fa-bonus-de-titel"></strong></p>
+      <p class="hinweis-text" id="fa-bonus-countdown"></p>
       <div id="fa-bonus-de-zeilen"></div>
       <p id="fa-bonus-fehler" class="fehler-text"></p>
       <p><button id="fa-bonus-bestaetigen" class="btn-primaer">Auswahl bestätigen</button></p>
@@ -164,6 +166,9 @@ let stechenKarte = null;
 let stechenSpieler = [];
 let stechenGebote = {};
 let stechenAblaufZeit = null;
+let bonusAblaufZeit = null;
+let bonusEntwurfBeruehrt = false;
+let bonusAutoLaeuft = false;
 let stechenAufloesungAusgeloest = false;
 let timerId = null;
 
@@ -211,7 +216,7 @@ export async function starten(uebergebeneApi) {
     await updateDoc(api.raumRef(), { faStatus: "setup" });
   }
 
-  timerId = setInterval(() => { aktualisiereStechenCountdown(); pruefeStechenAblauf(); }, 300);
+  timerId = setInterval(() => { aktualisiereStechenCountdown(); pruefeStechenAblauf(); aktualisiereBonusCountdown(); pruefeBonusAblauf(); }, 300);
 }
 
 function verdrahteBedienelemente() {
@@ -252,7 +257,7 @@ export function beenden() {
   auktionAufloesungAusgeloest = false; rundeAufloesungAusgeloest = false;
   stechenKarte = null; stechenSpieler = []; stechenGebote = {}; stechenAblaufZeit = null;
   stechenAufloesungAusgeloest = false;
-  deEntwurf = []; bonusZeilenSignatur = ""; bonusWeiterAusgeloest = false;
+  deEntwurf = []; bonusZeilenSignatur = ""; bonusWeiterAusgeloest = false; bonusEntwurfBeruehrt = false; bonusAblaufZeit = null;
 }
 
 export function spieler(liste) {
@@ -283,7 +288,7 @@ export function raumDaten(daten) {
     geboteAbgeschickt = false;
     auktionAufloesungAusgeloest = false;
   }
-  if (status !== "bonus_wahl") { bonusWeiterAusgeloest = false; deEntwurf = []; bonusZeilenSignatur = ""; }
+  if (status !== "bonus_wahl") { bonusWeiterAusgeloest = false; deEntwurf = []; bonusZeilenSignatur = ""; bonusEntwurfBeruehrt = false; }
   auktionKarten = daten.faAuktionKarten ?? [];
   auktionErgebnis = daten.faAuktionErgebnis ?? null;
 
@@ -304,6 +309,7 @@ export function raumDaten(daten) {
   stechenSpieler = daten.faStechenSpieler ?? [];
   stechenGebote = daten.faStechenGebote ?? {};
   stechenAblaufZeit = daten.faStechenAblaufZeit ?? null;
+  bonusAblaufZeit = daten.faBonusAblaufZeit ?? null;
 
   api.fortschritt(
     status === "auktion_gebot" || status === "auktion_stechen" || status === "auktion_ergebnis"
@@ -964,7 +970,7 @@ async function auktionWeiter() {
       });
     } else if (spielerListe.some((s) => deutschlandPunkte(zaehleNationen(s.faKarten ?? [], kartenNachId).Deutschland ?? 0) > 0)) {
       // Mindestens ein Spieler hat 2+ deutsche Karten -> erst die Deutschland-Wahl.
-      await updateDoc(api.raumRef(), { faStatus: "bonus_wahl", faAuktionErgebnis: null });
+      await updateDoc(api.raumRef(), { faStatus: "bonus_wahl", faAuktionErgebnis: null, faBonusAblaufZeit: Date.now() + BONUS_DAUER_MS });
     } else {
       await starteSpielphase();
     }
@@ -1021,6 +1027,7 @@ function zeigeBonusPhase() {
       });
       zeilen.querySelectorAll("select").forEach((sel) => sel.addEventListener("change", () => {
         deEntwurf[Number(sel.dataset.i)][sel.dataset.feld] = sel.value;
+        bonusEntwurfBeruehrt = true;
         zeigeBonusKarten();
       }));
     }
@@ -1064,6 +1071,49 @@ async function deutschlandBestaetigen() {
     zeigeDebug("Fehler beim Speichern der Deutschland-Wahl: " + e.message);
   }
   $("fa-bonus-bestaetigen").disabled = false;
+}
+
+function aktualisiereBonusCountdown() {
+  const feld = $("fa-bonus-countdown");
+  if (!feld) return;
+  if (status !== "bonus_wahl" || !bonusAblaufZeit) { feld.textContent = ""; return; }
+  const rest = Math.max(0, Math.ceil((bonusAblaufZeit - Date.now()) / 1000));
+  feld.textContent = rest > 0
+    ? `Noch ${rest} s - danach wird zufällig eine Fähigkeit aufgewertet.`
+    : "Zeit abgelaufen - Punkte werden vergeben ...";
+}
+
+// Nach Ablauf der 30 Sekunden: Wer seine Wahl angefasst hat, bestätigt sie
+// selbst; für alle anderen würfelt der Leiter (nach kurzer Gnadenfrist) eine
+// zufällige deutsche Karte und eine zufällige Fähigkeit pro Punkt aus.
+async function pruefeBonusAblauf() {
+  if (status !== "bonus_wahl" || !bonusAblaufZeit || Date.now() < bonusAblaufZeit || bonusAutoLaeuft) return;
+  const eigener = eigenerSpieler();
+  if (eigener && !eigener.faDeutschlandFertig && bonusEntwurfBeruehrt
+      && deutschlandPunkte(deutscheKartenIds(eigener).length) > 0 && deEntwurf.length) {
+    bonusAutoLaeuft = true;
+    await deutschlandBestaetigen();
+    bonusAutoLaeuft = false;
+    return;
+  }
+  if (!api?.istLeiter || Date.now() < bonusAblaufZeit + 2000) return;
+  const offene = spielerListe.filter((s) => deutschlandPunkte(deutscheKartenIds(s).length) > 0 && !s.faDeutschlandFertig);
+  if (!offene.length) return;
+  bonusAutoLaeuft = true;
+  try {
+    for (const s of offene) {
+      const deIds = deutscheKartenIds(s);
+      const punkte = deutschlandPunkte(deIds.length);
+      const wahl = Array.from({ length: punkte }, () => ({
+        kartenId: deIds[Math.floor(Math.random() * deIds.length)],
+        kat: KATEGORIEN[Math.floor(Math.random() * KATEGORIEN.length)]
+      }));
+      await updateDoc(api.spielerRef(s.id), { faDeutschlandWahl: wahl, faDeutschlandFertig: true });
+    }
+  } catch (e) {
+    zeigeDebug("Fehler bei der automatischen Deutschland-Wahl: " + e.message);
+  }
+  bonusAutoLaeuft = false;
 }
 
 // Leiter: sobald alle betroffenen Spieler bestätigt haben, geht es los.
