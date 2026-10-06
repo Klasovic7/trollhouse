@@ -30,13 +30,13 @@ import {
   zufaelligeRundenKategorien, mische,
   LAENDER_BONI, zaehleNationen, deutschlandPunkte, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=251";
+} from "./logik.js?v=252";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
 const BONUS_DAUER_MS = 30000;   // Zeit für die Deutschland-Wahl; danach wird automatisch zufällig verteilt
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=251";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=252";
 
 const VORLAGE = `
   <div id="fa-setup" class="bildschirm-karte" hidden>
