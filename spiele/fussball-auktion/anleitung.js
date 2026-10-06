@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI
-} from "./logik.js?v=258";
+} from "./logik.js?v=259";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -143,7 +143,7 @@ function szenen(kh) {
         <div class="fa-anl-kacheln fa-anl-kacheln-sonder">
           <div class="fa-anl-kachel" style="animation-delay:${0.5 + stats.length * 0.35}s">
             <span class="fa-anl-flagge">${FLAGGEN.Deutschland}</span>
-            <span class="fa-anl-kachel-text"><strong>Deutschland</strong><br>immer +n in der Runde</span>
+            <span class="fa-anl-kachel-text"><strong>Deutschland</strong><br>immer +(n−1) in der Runde</span>
           </div>
           <div class="fa-anl-kachel" style="animation-delay:${0.5 + (stats.length + 1) * 0.35}s">
             <span class="fa-anl-flagge">${FLAGGEN.Nigeria}</span>
@@ -157,14 +157,14 @@ function szenen(kh) {
       titel: "Bonus Deutschland",
       dauer: 14000,
       html: () => `
-        <p ${ein(0)}>Mit <strong>n deutschen Karten</strong> (ab 2) bekommt in <strong>jeder Spielrunde jede deutsche Karte +n</strong> - automatisch, du musst nichts auswählen.</p>
-        <p ${ein(0.8)}>Der Bonus landet auf einer der beiden gezogenen Fähigkeiten. Beispiel mit 3 deutschen Karten in einer Runde mit <strong>Schuss + Pass</strong>:</p>
+        <p ${ein(0)}>Mit <strong>n deutschen Karten</strong> (ab 2) bekommt in <strong>jeder Spielrunde jede deutsche Karte +(n − 1)</strong> - automatisch, du musst nichts auswählen.</p>
+        <p ${ein(0.8)}>Der Bonus landet auf einer der beiden gezogenen Fähigkeiten. Beispiel: 3 deutsche Karten = <strong>+2</strong> pro Karte, hier in einer Runde mit <strong>Schuss + Pass</strong>:</p>
         <div class="fa-anl-vorher-nachher">
           <div class="fa-anl-paar fa-anl-vorher">
             ${karte(kh, "de-3", { markierteKategorien: ["SCH", "PAS"] }, 92)}${karte(kh, "de-4", { markierteKategorien: ["SCH", "PAS"] }, 92)}${karte(kh, "de-5", { markierteKategorien: ["SCH", "PAS"] }, 92)}
           </div>
           <div class="fa-anl-paar fa-anl-nachher">
-            ${karte(kh, "de-3", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 3) }, 92)}${karte(kh, "de-4", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 3) }, 92)}${karte(kh, "de-5", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 3) }, 92)}
+            ${karte(kh, "de-3", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 2) }, 92)}${karte(kh, "de-4", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 2) }, 92)}${karte(kh, "de-5", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 2) }, 92)}
           </div>
         </div>
         <p ${ein(3.6)}>Der Bonus steht direkt auf der Karte, sobald die Fähigkeiten der Runde feststehen - und gilt in <strong>jeder</strong> Spielrunde neu.</p>

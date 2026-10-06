@@ -30,13 +30,13 @@ import {
   zufaelligeRundenKategorien, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=258";
+} from "./logik.js?v=259";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=258";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=258";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=259";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=259";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
@@ -63,7 +63,7 @@ const VORLAGE = `
           <li>🇹🇷 <strong>Türkei</strong> – Pass +n</li>
           <li>🇧🇷 <strong>Brasilien</strong> – Technik +n</li>
           <li>🇯🇵 <strong>Japan</strong> – Spielverständnis +n</li>
-          <li>🇩🇪 <strong>Deutschland</strong> – in jeder Spielrunde bekommt jede deutsche Karte automatisch +n auf eine der beiden gezogenen Fähigkeiten</li>
+          <li>🇩🇪 <strong>Deutschland</strong> – in jeder Spielrunde bekommt jede deutsche Karte automatisch +(n−1) auf eine der beiden gezogenen Fähigkeiten</li>
           <li>🇳🇬 <strong>Nigeria</strong> – Münzen-Rückerstattung beim 2. (20 %), 3. (40 %), 4. (60 %) und 5. (80 %) Nigerianer</li>
         </ul>
         <p class="fa-regel-hinweis">n = Anzahl deiner Spieler dieses Landes (ab 2)</p>
@@ -476,7 +476,8 @@ function kartenKachelHtml(k, { zeigeGesamt = true, markierteKategorien = [], bon
 
   // Gesamtwertung: Hauptzahl enthält die Fähigkeitsboni; daneben steht das
   // "+n" des Länderbonus (Summe der Fähigkeitserhöhungen).
-  const statPlus = Object.values(bonus?.boni ?? {}).reduce((x, y) => x + y, 0);
+  // Deutschland: Rundenbonus steht nur auf der Fähigkeit, nicht bei der Gesamtwertung.
+  const statPlus = k.nation === "Deutschland" ? 0 : Object.values(bonus?.boni ?? {}).reduce((x, y) => x + y, 0);
   const ratingPlus = statPlus;
   const ratingHtml = zeigeGesamt
     ? `<div class="fa-karte-rating"><span>${kartenSumme(k) + statPlus}</span></div>` +
@@ -516,7 +517,7 @@ function boniTexte(spielerObj) {
     const regel = LAENDER_BONI[nation];
     if (!regel || n < 2) continue;
     if (regel.typ === "stat") texte.push(`${nation} ×${n}: ${KATEGORIE_NAMEN[regel.kat]} +${n}`);
-    else if (regel.typ === "frei") texte.push(`${nation} ×${n}: in jeder Spielrunde +${n} auf eine der gezogenen Fähigkeiten`);
+    else if (regel.typ === "frei") texte.push(`${nation} ×${n}: in jeder Spielrunde +${n - 1} auf eine der gezogenen Fähigkeiten`);
     else if (regel.typ === "rabatt") texte.push(`${nation} ×${n}: Münzen-Rückerstattung bis ${Math.min(80, (n - 1) * 20)} %`);
   }
   return texte;
@@ -1004,7 +1005,7 @@ function zeigeRunde() {
   const deAnzahl = zaehleNationen(eigener.faKarten ?? [], kartenNachId).Deutschland ?? 0;
   const deHinweis = $("fa-runde-de-hinweis");
   deHinweis.hidden = deAnzahl < 2 || rundenKategorien.length === 0;
-  deHinweis.textContent = deHinweis.hidden ? "" : `🇩🇪 Deutschland-Bonus: +${deAnzahl} auf ${KATEGORIE_NAMEN[rundenKategorien[0]]} bei jeder deutschen Karte`;
+  deHinweis.textContent = deHinweis.hidden ? "" : `🇩🇪 Deutschland-Bonus: +${deAnzahl - 1} auf ${KATEGORIE_NAMEN[rundenKategorien[0]]} bei jeder deutschen Karte`;
   verfuegbar.forEach((kartenId) => {
     const k = karte(kartenId);
     if (!k) return;

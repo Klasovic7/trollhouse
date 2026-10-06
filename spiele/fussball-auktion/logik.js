@@ -184,7 +184,7 @@ export function mische(werte, zufaelligFn = Math.random) {
 //   - "stat":   n Karten eines Landes (n >= 2) -> jede dieser Karten +n auf
 //               eine feste Fähigkeit (z. B. Italien: Verteidigung).
 //   - "frei":   Deutschland - n >= 2 deutsche Karten -> in JEDER Spielrunde
-//               bekommt jede deutsche Karte automatisch +n auf eine der beiden
+//               bekommt jede deutsche Karte automatisch +(n-1) auf eine der beiden
 //               gezogenen Fähigkeiten (immer wirksam, keine Auswahl nötig).
 //   - "rabatt": Nigeria - Preisnachlass beim Ersteigern (siehe unten).
 // ============================================================================
@@ -213,7 +213,7 @@ export function zaehleNationen(kartenIds, kartenNachId) {
 // Es erscheinen nur Karten, die tatsächlich einen Bonus haben.
 // rundenKategorien: die beiden in der aktuellen Spielrunde gezogenen Fähigkeiten
 // (leer = außerhalb der Spielrunden). Deutschland: n >= 2 deutsche Karten ->
-// jede deutsche Karte bekommt +n auf die ERSTE gezogene Fähigkeit (für die
+// jede deutsche Karte bekommt +(n-1) auf die ERSTE gezogene Fähigkeit (für die
 // Rundensumme ist egal, auf welche der beiden es geht).
 export function berechneKartenBoni(kartenIds, kartenNachId, rundenKategorien = []) {
   const ergebnis = {};
@@ -231,7 +231,7 @@ export function berechneKartenBoni(kartenIds, kartenNachId, rundenKategorien = [
     } else if (regel?.typ === "frei" && rundenKategorien.length > 0) {
       const e = eintrag(id);
       const kat = rundenKategorien[0];
-      e.boni[kat] = (e.boni[kat] ?? 0) + n;
+      e.boni[kat] = (e.boni[kat] ?? 0) + (n - 1);
     }
   }
   return ergebnis;
@@ -244,8 +244,10 @@ export function effektiveFaehigkeiten(karte, bonus) {
   return werte;
 }
 
-// Gesamtwertung inkl. aller Boni.
+// Gesamtwertung inkl. der Länderboni. Der Deutschland-Rundenbonus zählt hier
+// bewusst NICHT mit (kein Gesamtpunktebonus für Deutschland).
 export function effektiveGesamt(karte, bonus) {
+  if (karte.nation === "Deutschland") return kartenSumme(karte);
   return kartenSumme(karte) + Object.values(bonus?.boni ?? {}).reduce((s, v) => s + v, 0);
 }
 
