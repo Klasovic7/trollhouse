@@ -183,10 +183,9 @@ export function mische(werte, zufaelligFn = Math.random) {
 //  unverändert).
 //   - "stat":   n Karten eines Landes (n >= 2) -> jede dieser Karten +n auf
 //               eine feste Fähigkeit (z. B. Italien: Verteidigung).
-//   - "frei":   Deutschland - n >= 2 deutsche Karten -> n-1 frei verteilbare
-//               Fähigkeitspunkte (Wahl nach der Auktion) PLUS n-1 Extrapunkte
-//               auf die Gesamtwertung (je vergebenem Punkt +1 auf die
-//               gewählte Karte).
+//   - "frei":   Deutschland - n >= 2 deutsche Karten -> in JEDER Spielrunde
+//               bekommt jede deutsche Karte automatisch +n auf eine der beiden
+//               gezogenen Fähigkeiten (immer wirksam, keine Auswahl nötig).
 //   - "rabatt": Nigeria - Preisnachlass beim Ersteigern (siehe unten).
 // ============================================================================
 export const LAENDER_BONI = {
@@ -210,42 +209,30 @@ export function zaehleNationen(kartenIds, kartenNachId) {
   return anzahl;
 }
 
-// Anzahl frei verteilbarer Punkte für n deutsche Karten (2 -> 1, 3 -> 2, ...).
-export function deutschlandPunkte(anzahlDeutsche) {
-  return anzahlDeutsche >= 2 ? anzahlDeutsche - 1 : 0;
-}
-
-// Prüft/bereinigt eine Deutschland-Wahl: nur Karten, die der Spieler besitzt
-// und die deutsch sind, nur gültige Fähigkeiten, höchstens so viele Punkte wie
-// erlaubt. wahl = [{ kartenId, kat }, ...]
-export function bereinigeDeutschlandWahl(wahl, kartenIds, kartenNachId) {
-  const erlaubt = deutschlandPunkte(zaehleNationen(kartenIds, kartenNachId).Deutschland ?? 0);
-  const besitz = new Set(kartenIds ?? []);
-  return (Array.isArray(wahl) ? wahl : [])
-    .filter((w) => w && besitz.has(w.kartenId) && kartenNachId.get(w.kartenId)?.nation === "Deutschland" && KATEGORIEN.includes(w.kat))
-    .slice(0, erlaubt);
-}
-
-// Berechnet alle Boni eines Spielers: { kartenId: { boni: { KAT: +n }, extra: +n } }
+// Berechnet alle Boni eines Spielers: { kartenId: { boni: { KAT: +n } } }
 // Es erscheinen nur Karten, die tatsächlich einen Bonus haben.
-export function berechneKartenBoni(kartenIds, kartenNachId, deutschlandWahl = []) {
+// rundenKategorien: die beiden in der aktuellen Spielrunde gezogenen Fähigkeiten
+// (leer = außerhalb der Spielrunden). Deutschland: n >= 2 deutsche Karten ->
+// jede deutsche Karte bekommt +n auf die ERSTE gezogene Fähigkeit (für die
+// Rundensumme ist egal, auf welche der beiden es geht).
+export function berechneKartenBoni(kartenIds, kartenNachId, rundenKategorien = []) {
   const ergebnis = {};
-  const eintrag = (id) => (ergebnis[id] ??= { boni: {}, extra: 0 });
+  const eintrag = (id) => (ergebnis[id] ??= { boni: {} });
   const nationen = zaehleNationen(kartenIds, kartenNachId);
 
   for (const id of kartenIds ?? []) {
     const k = kartenNachId.get(id);
     const regel = k && LAENDER_BONI[k.nation];
     const n = k ? nationen[k.nation] : 0;
-    if (regel?.typ === "stat" && n >= 2) {
+    if (n < 2) continue;
+    if (regel?.typ === "stat") {
       const e = eintrag(id);
       e.boni[regel.kat] = (e.boni[regel.kat] ?? 0) + n;
+    } else if (regel?.typ === "frei" && rundenKategorien.length > 0) {
+      const e = eintrag(id);
+      const kat = rundenKategorien[0];
+      e.boni[kat] = (e.boni[kat] ?? 0) + n;
     }
-  }
-  for (const w of bereinigeDeutschlandWahl(deutschlandWahl, kartenIds, kartenNachId)) {
-    const e = eintrag(w.kartenId);
-    e.boni[w.kat] = (e.boni[w.kat] ?? 0) + 1;
-    e.extra += 1;
   }
   return ergebnis;
 }
@@ -257,9 +244,9 @@ export function effektiveFaehigkeiten(karte, bonus) {
   return werte;
 }
 
-// Gesamtwertung inkl. aller Boni (Fähigkeitsboni + Deutschland-Extrapunkte).
+// Gesamtwertung inkl. aller Boni.
 export function effektiveGesamt(karte, bonus) {
-  return kartenSumme(karte) + Object.values(bonus?.boni ?? {}).reduce((s, v) => s + v, 0) + (bonus?.extra ?? 0);
+  return kartenSumme(karte) + Object.values(bonus?.boni ?? {}).reduce((s, v) => s + v, 0);
 }
 
 // ---------- Nigeria: Preisnachlass ----------

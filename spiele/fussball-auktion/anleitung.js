@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI
-} from "./logik.js?v=257";
+} from "./logik.js?v=258";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -143,7 +143,7 @@ function szenen(kh) {
         <div class="fa-anl-kacheln fa-anl-kacheln-sonder">
           <div class="fa-anl-kachel" style="animation-delay:${0.5 + stats.length * 0.35}s">
             <span class="fa-anl-flagge">${FLAGGEN.Deutschland}</span>
-            <span class="fa-anl-kachel-text"><strong>Deutschland</strong><br>frei verteilbare Punkte</span>
+            <span class="fa-anl-kachel-text"><strong>Deutschland</strong><br>immer +n in der Runde</span>
           </div>
           <div class="fa-anl-kachel" style="animation-delay:${0.5 + (stats.length + 1) * 0.35}s">
             <span class="fa-anl-flagge">${FLAGGEN.Nigeria}</span>
@@ -155,18 +155,20 @@ function szenen(kh) {
     },
     {
       titel: "Bonus Deutschland",
-      dauer: 15000,
+      dauer: 14000,
       html: () => `
-        <p ${ein(0)}>Mit <strong>n deutschen Karten</strong> (ab 2) bekommst du <strong>n − 1 Punkte</strong>, die du frei verteilen darfst.</p>
-        <div ${ein(0.8, "fa-anl-de-beispiel")}>
-          <div>2 Deutsche → <strong>1</strong> Punkt</div>
-          <div>3 Deutsche → <strong>2</strong> Punkte</div>
-          <div>4 Deutsche → <strong>3</strong> Punkte</div>
+        <p ${ein(0)}>Mit <strong>n deutschen Karten</strong> (ab 2) bekommt in <strong>jeder Spielrunde jede deutsche Karte +n</strong> - automatisch, du musst nichts auswählen.</p>
+        <p ${ein(0.8)}>Der Bonus landet auf einer der beiden gezogenen Fähigkeiten. Beispiel mit 3 deutschen Karten in einer Runde mit <strong>Schuss + Pass</strong>:</p>
+        <div class="fa-anl-vorher-nachher">
+          <div class="fa-anl-paar fa-anl-vorher">
+            ${karte(kh, "de-3", { markierteKategorien: ["SCH", "PAS"] }, 92)}${karte(kh, "de-4", { markierteKategorien: ["SCH", "PAS"] }, 92)}${karte(kh, "de-5", { markierteKategorien: ["SCH", "PAS"] }, 92)}
+          </div>
+          <div class="fa-anl-paar fa-anl-nachher">
+            ${karte(kh, "de-3", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 3) }, 92)}${karte(kh, "de-4", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 3) }, 92)}${karte(kh, "de-5", { markierteKategorien: ["SCH", "PAS"], bonus: boni("SCH", 3) }, 92)}
+          </div>
         </div>
-        <p ${ein(1.8)}>Jeder Punkt erhöht <strong>eine Fähigkeit</strong> einer deutschen Karte deiner Wahl um 1 - und zusätzlich die <strong>Gesamtstärke</strong> der Karte ein weiteres Mal.</p>
-        <div ${ein(2.8, "fa-anl-gesamt")}>Gesamt <span>44</span> → <span class="fa-anl-neu">45</span> <b>+1</b></div>
-        <p ${ein(3.6)}>Du wählst <strong>nach der Auktion</strong>, bevor die Spielrunden beginnen - dafür hast du <strong>30 Sekunden</strong>. Danach verteilt das Spiel die Punkte <strong>zufällig</strong>. Die Wahl gilt dann für das ganze Spiel.</p>
-        <p ${ein(4.6, "fa-anl-klein")}>Die Gesamtstärke zählt nur bei Gleichstand in einer Runde. Die Fähigkeitspunkte wirken dagegen immer.</p>`
+        <p ${ein(3.6)}>Der Bonus steht direkt auf der Karte, sobald die Fähigkeiten der Runde feststehen - und gilt in <strong>jeder</strong> Spielrunde neu.</p>
+        <p ${ein(4.6, "fa-anl-klein")}>Anders als bei den anderen Ländern wirkt dieser Bonus immer, auch wenn „seine“ Fähigkeit nicht gezogen wird. Dafür wirkt er nur in Runden, in denen du eine deutsche Karte ausspielst.</p>`
     },
     {
       titel: "Bonus Nigeria",
