@@ -30,15 +30,17 @@ import {
   zufaelligeRundenKategorien, mische,
   LAENDER_BONI, zaehleNationen, deutschlandPunkte, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=252";
+} from "./logik.js?v=253";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
 const BONUS_DAUER_MS = 30000;   // Zeit für die Deutschland-Wahl; danach wird automatisch zufällig verteilt
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=252";
+import { zeigeAnleitung, anleitungSchonGesehen } from "./anleitung.js?v=253";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=253";
 
 const VORLAGE = `
+  <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
   <div id="fa-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">
       Jeder startet mit ${STARTMUENZEN} Münzen. In 5 Gebotsrunden werden verdeckt Gebote auf
@@ -211,6 +213,12 @@ export async function starten(uebergebeneApi) {
 
   verdrahteBedienelemente();
   starteListener();
+
+  // Anleitung: beim allerersten Öffnen automatisch (nur im Setup, damit keine
+  // laufende Auktion mit Timern verdeckt wird), sonst über den Knopf oben.
+  const anleitungOeffnen = () => zeigeAnleitung({ kartenHtml: (id, opt) => kartenKachelHtml(karte(id), opt) });
+  $("fa-anleitung-btn").addEventListener("click", anleitungOeffnen);
+  if (!anleitungSchonGesehen() && !api.raum?.faStatus) setTimeout(anleitungOeffnen, 400);
 
   if (api.istLeiter && !api.raum?.faStatus) {
     await updateDoc(api.raumRef(), { faStatus: "setup" });
