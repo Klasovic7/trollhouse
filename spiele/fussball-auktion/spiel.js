@@ -30,33 +30,45 @@ import {
   zufaelligeRundenKategorien, mische,
   LAENDER_BONI, zaehleNationen, deutschlandPunkte, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=253";
+} from "./logik.js?v=254";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
 const BONUS_DAUER_MS = 30000;   // Zeit für die Deutschland-Wahl; danach wird automatisch zufällig verteilt
-import { zeigeAnleitung, anleitungSchonGesehen } from "./anleitung.js?v=253";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=253";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=254";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=254";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
   <div id="fa-setup" class="bildschirm-karte" hidden>
-    <p class="hinweis-text">
-      Jeder startet mit ${STARTMUENZEN} Münzen. In 5 Gebotsrunden werden verdeckt Gebote auf
-      Fußballkarten abgegeben (maximal ${MAX_KARTEN_PRO_SPIELER} Karten pro Spieler). Danach spielt
-      jeder in 5 Runden verdeckt eine seiner Karten aus - entscheidend sind zwei
-      je Runde neu bestimmte Fähigkeiten.
-    </p>
-    <div class="hinweis-text fa-boni-legende">
-      <strong>Länderboni</strong> - wer mehrere Spieler eines Landes besitzt, bekommt einen Bonus, der mit der Anzahl wächst:
-      <ul>
-        <li>🇮🇹 Italien: Verteidigung +n · 🇫🇷 Frankreich: Geschwindigkeit +n · 🇦🇷 Argentinien: Schuss +n</li>
-        <li>🇹🇷 Türkei: Pass +n · 🇧🇷 Brasilien: Technik +n · 🇯🇵 Japan: Spielverständnis +n</li>
-        <li>🇩🇪 Deutschland: n-1 Fähigkeitspunkte frei verteilen (und die Gesamtwertung steigt zusätzlich um n-1)</li>
-        <li>🇳🇬 Nigeria: Münzen-Rückerstattung beim 2. (20 %), 3. (40 %), 4. (60 %), 5. (80 %) Nigerianer</li>
-      </ul>
-      (n = Anzahl deiner Spieler dieses Landes, ab 2)
+    <div class="fa-regeln">
+      <div class="fa-regel-block">
+        <h3>🪙 Auktion</h3>
+        <p>Jeder startet mit <strong>${STARTMUENZEN} Münzen</strong>.</p>
+        <p>In ${ANZAHL_GEBOTSRUNDEN} Gebotsrunden bietest du verdeckt auf Fußballkarten.</p>
+        <p>Maximal <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> pro Spieler.</p>
+      </div>
+      <div class="fa-regel-block">
+        <h3>🎯 Spielrunden</h3>
+        <p>Danach spielt jeder in ${ANZAHL_SPIELRUNDEN} Runden verdeckt eine seiner Karten aus.</p>
+        <p>Entscheidend sind zwei je Runde neu bestimmte Fähigkeiten.</p>
+      </div>
+      <div class="fa-regel-block">
+        <h3>🌍 Länderboni</h3>
+        <p>Wer mehrere Spieler eines Landes besitzt, bekommt einen Bonus, der mit der Anzahl wächst.</p>
+        <ul class="fa-regel-liste">
+          <li>🇮🇹 <strong>Italien</strong> – Verteidigung +n</li>
+          <li>🇫🇷 <strong>Frankreich</strong> – Geschwindigkeit +n</li>
+          <li>🇦🇷 <strong>Argentinien</strong> – Schuss +n</li>
+          <li>🇹🇷 <strong>Türkei</strong> – Pass +n</li>
+          <li>🇧🇷 <strong>Brasilien</strong> – Technik +n</li>
+          <li>🇯🇵 <strong>Japan</strong> – Spielverständnis +n</li>
+          <li>🇩🇪 <strong>Deutschland</strong> – n−1 Fähigkeitspunkte frei verteilen; die Gesamtwertung steigt zusätzlich um n−1</li>
+          <li>🇳🇬 <strong>Nigeria</strong> – Münzen-Rückerstattung beim 2. (20 %), 3. (40 %), 4. (60 %) und 5. (80 %) Nigerianer</li>
+        </ul>
+        <p class="fa-regel-hinweis">n = Anzahl deiner Spieler dieses Landes (ab 2)</p>
+      </div>
     </div>
     <p id="fa-spieleranzahl-hinweis" class="hinweis-text"></p>
     <p id="fa-setup-fehler" class="fehler-text"></p>
@@ -214,11 +226,13 @@ export async function starten(uebergebeneApi) {
   verdrahteBedienelemente();
   starteListener();
 
-  // Anleitung: beim allerersten Öffnen automatisch (nur im Setup, damit keine
-  // laufende Auktion mit Timern verdeckt wird), sonst über den Knopf oben.
-  const anleitungOeffnen = () => zeigeAnleitung({ kartenHtml: (id, opt) => kartenKachelHtml(karte(id), opt) });
+  // Anleitung: automatisch, sobald man (nach Spieler- und Farbwahl) im Raum bei
+  // diesem Spiel ankommt - einmal pro Raum und Gerät, und nur im Setup, damit
+  // keine laufende Auktion mit Timern verdeckt wird. Sonst über den Knopf oben.
+  const anleitungOeffnen = () => zeigeAnleitung({ kartenHtml: (id, opt) => kartenKachelHtml(karte(id), opt), raumCode: api.code });
   $("fa-anleitung-btn").addEventListener("click", anleitungOeffnen);
-  if (!anleitungSchonGesehen() && !api.raum?.faStatus) setTimeout(anleitungOeffnen, 400);
+  const startStatus = api.raum?.faStatus ?? null;
+  if ((startStatus === null || startStatus === "setup") && !anleitungFuerRaumGezeigt(api.code)) setTimeout(anleitungOeffnen, 400);
 
   if (api.istLeiter && !api.raum?.faStatus) {
     await updateDoc(api.raumRef(), { faStatus: "setup" });
