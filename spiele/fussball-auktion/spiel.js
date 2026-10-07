@@ -31,13 +31,13 @@ import {
   BONUS_MUENZEN_SPIELPHASE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
-} from "./logik.js?v=263";
+} from "./logik.js?v=264";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=263";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=263";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=264";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=264";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
@@ -47,7 +47,7 @@ const VORLAGE = `
         <h3>🪙 Auktion</h3>
         <p>Jeder startet mit <strong>${STARTMUENZEN} Münzen</strong>.</p>
         <p>In ${ANZAHL_GEBOTSRUNDEN} Gebotsrunden bietest du verdeckt auf Fußballkarten.</p>
-        <p>Maximal <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> pro Spieler.</p>
+        <p>Maximal <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> pro Spieler. Karten, die am Ende niemand ersteigert hat, werden zufällig verteilt – jeder hat danach genau ${MAX_KARTEN_PRO_SPIELER}.</p>
       </div>
       <div class="fa-regel-block">
         <h3>🎯 Spielrunden</h3>
@@ -118,6 +118,7 @@ const VORLAGE = `
     <h2>Spielrunde <span id="fa-runde-index"></span>/${ANZAHL_SPIELRUNDEN}</h2>
     <p class="hinweis-text">Münzen: <strong id="fa-runde-muenzen"></strong></p>
     <p id="fa-runde-de-hinweis" class="hinweis-text" hidden></p>
+    <p id="fa-runde-zufall-hinweis" class="hinweis-text" hidden></p>
     <p id="fa-runde-keine-karte-hinweis" class="hinweis-text" hidden>Du hast keine Karte mehr für diese Runde.</p>
     <p id="fa-runde-schritt" class="fa-runde-schritt"></p>
     <div id="fa-runde-karten" class="fa-karten-grid"></div>
@@ -420,7 +421,7 @@ async function spielStarten() {
       faAuktionRunde: 1,
       faAuktionKarten: reihenfolge.slice(0, anzahl),
       faAuktionErgebnis: null,
-      faUnvergebeneKarten: [],
+      faUnvergebeneKarten: [], faZufallsKarten: {},
       faAuktionOffeneKarten: [], faAuktionKapazitaet: {}, faAuktionGeboteSnapshot: {}, faAuktionZwischenergebnis: {},
       faStechenKarte: null, faStechenSpieler: [], faStechenGebote: {}, faStechenAblaufZeit: null,
       faRundenIndex: 0,
@@ -447,7 +448,7 @@ export async function vorZurueck() {
   ));
   await updateDoc(api.raumRef(), {
     faStatus: null, faKartenReihenfolge: [], faAuktionRunde: 0, faAuktionKarten: [],
-    faAuktionErgebnis: null, faUnvergebeneKarten: [],
+    faAuktionErgebnis: null, faUnvergebeneKarten: [], faZufallsKarten: {},
     faAuktionOffeneKarten: [], faAuktionKapazitaet: {}, faAuktionGeboteSnapshot: {}, faAuktionZwischenergebnis: {},
     faStechenKarte: null, faStechenSpieler: [], faStechenGebote: {}, faStechenAblaufZeit: null,
     faRundenIndex: 0, faRundenKategorien: [], faRundenErgebnis: null
@@ -959,6 +960,20 @@ function zeigeAuktionErgebnis() {
 }
 
 async function starteSpielphase() {
+  // Garantie: Jeder hat 5 Karten. Karten, die auch nach der Bonusrunde unverkauft
+  // sind (kein Gebot / keine Münzen mehr), werden zufällig auf Spieler mit
+  // weniger als 5 Karten verteilt - ohne Kosten.
+  const zufallsKarten = {};
+  const uebrig = mische([...(raum.faUnvergebeneKarten ?? [])]);
+  const bedarf = mische(spielerListe.flatMap((s) =>
+    Array.from({ length: Math.max(0, MAX_KARTEN_PRO_SPIELER - (s.faKarten?.length ?? 0)) }, () => s.id)));
+  while (uebrig.length > 0 && bedarf.length > 0) {
+    const id = bedarf.pop();
+    (zufallsKarten[id] ??= []).push(uebrig.pop());
+  }
+  await Promise.all(Object.entries(zufallsKarten).map(([id, ids]) =>
+    updateDoc(api.spielerRef(id), { faKarten: arrayUnion(...ids) })
+  ));
   // Übrige Auktionsmünzen bleiben erhalten, dazu gibt es für alle den Bonus.
   await Promise.all(spielerListe.map((s) =>
     updateDoc(api.spielerRef(s.id), { faMuenzen: increment(BONUS_MUENZEN_SPIELPHASE) })
@@ -967,7 +982,9 @@ async function starteSpielphase() {
     faStatus: "runde_spielen",
     faRundenIndex: 0,
     faRundenKategorien: [],
-    faRundenErgebnis: null
+    faRundenErgebnis: null,
+    faZufallsKarten: zufallsKarten,
+    faUnvergebeneKarten: []
   });
 }
 
@@ -1084,6 +1101,12 @@ function zeigeRunde() {
   const eigenerZug = alleSpielzuege.find((z) => z.spielerId === api.spielerId && z.rundenIndex === rundenIndex);
   const einsatzAbgegeben = alleEinsaetze.some((e) => e.spielerId === api.spielerId && e.rundenIndex === rundenIndex);
   const schritt = verfuegbar.length === 0 ? 0 : !eigenerZug ? 1 : !einsatzAbgegeben ? 2 : 3;
+
+  const zufall = (raum.faZufallsKarten ?? {})[api.spielerId] ?? [];
+  const zufallHinweis = $("fa-runde-zufall-hinweis");
+  zufallHinweis.hidden = zufall.length === 0 || rundenIndex !== 0;
+  zufallHinweis.textContent = zufallHinweis.hidden ? "" :
+    `🎲 Zufällig zugeteilt, weil in der Auktion nicht genug Karten zusammenkamen: ${zufall.map((id) => karte(id)?.name ?? id).join(", ")}`;
 
   const deAnzahl = zaehleNationen(eigener.faKarten ?? [], kartenNachId).Deutschland ?? 0;
   const deHinweis = $("fa-runde-de-hinweis");

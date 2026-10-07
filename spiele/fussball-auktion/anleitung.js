@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE
-} from "./logik.js?v=263";
+} from "./logik.js?v=264";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -95,7 +95,7 @@ function szenen(kh) {
     },
     {
       titel: "Wer bekommt die Karte?",
-      dauer: 15000,
+      dauer: 17000,
       html: () => `
         <p ${ein(0)}>Das <strong>höchste Gebot</strong> gewinnt die Karte und zahlt genau diesen Betrag.</p>
         <div ${ein(0.8, "fa-anl-stechen")}>
@@ -109,6 +109,7 @@ function szenen(kh) {
           <li ${ein(2.0)}>Gleichstand bei <strong>0 Münzen</strong>: niemand hat geboten, die Karte bleibt übrig.</li>
           <li ${ein(2.8)}>Wer schon <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> hat, bietet nicht mehr mit.</li>
           <li ${ein(3.6)}>Nach Runde ${ANZAHL_GEBOTSRUNDEN} kommen alle <strong>unverkauften Karten</strong> noch einmal in eine Bonusrunde.</li>
+          <li ${ein(4.4)}>Bleibt danach noch etwas übrig, wird es <strong>zufällig verteilt</strong> - am Ende hat jeder genau ${MAX_KARTEN_PRO_SPIELER} Karten.</li>
         </ul>`
     },
     {
