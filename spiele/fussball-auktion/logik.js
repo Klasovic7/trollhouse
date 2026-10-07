@@ -275,3 +275,56 @@ export function berechneNigeriaErstattung(bisherAnzahl, gewonnen) {
   });
   return ergebnis;
 }
+
+// ============================================================================
+//  Spielphase: Münzen entscheiden, welche Fähigkeiten zählen
+// ============================================================================
+// Zusätzliche Münzen, die jeder Spieler beim Start der Spielphase bekommt
+// (zu seinen übrig gebliebenen Auktionsmünzen).
+export const BONUS_MUENZEN_SPIELPHASE = 15;
+
+// Einsatz = { SCH: n, PAS: n, ... } - Münzen eines Spielers auf die 6 Fähigkeiten.
+export function pruefeEinsatz(einsatz, muenzen) {
+  let summe = 0;
+  for (const kat of KATEGORIEN) {
+    const wert = einsatz?.[kat] ?? 0;
+    if (!Number.isInteger(wert) || wert < 0) return "Ungültiger Einsatz.";
+    summe += wert;
+  }
+  if (summe > muenzen) return `Du hast nur ${muenzen} Münzen.`;
+  return null;
+}
+
+// Bestimmt die entscheidenden Fähigkeiten einer Spielrunde.
+// einsaetze: { spielerId: Einsatz }. Gewinner sind die zwei Fähigkeiten mit den
+// meisten Münzen; Gleichstand um Platz 2 (oder Platz 1) zählt für ALLE
+// gleichauf liegenden - es können also mehr als zwei entscheiden.
+// Hat weniger als zwei Fähigkeiten überhaupt Münzen bekommen, wird zufällig aus
+// den Fähigkeiten ohne Münzen aufgefüllt (dort wird nichts bezahlt).
+// Rückgabe: { summen, kategorien (nach Münzen absteigend), zufaellig: [Kategorien] }
+export function bestimmeRundenKategorien(einsaetze, zufaelligFn = Math.random) {
+  const summen = Object.fromEntries(KATEGORIEN.map((k) => [k, 0]));
+  for (const einsatz of Object.values(einsaetze ?? {})) {
+    for (const kat of KATEGORIEN) summen[kat] += einsatz?.[kat] ?? 0;
+  }
+  const sortiert = [...KATEGORIEN].sort((a, b) => summen[b] - summen[a] || KATEGORIEN.indexOf(a) - KATEGORIEN.indexOf(b));
+  const schwelle = summen[sortiert[1]];
+  const kategorien = sortiert.filter((k) => summen[k] >= schwelle && summen[k] > 0);
+  const zufaellig = [];
+  const rest = sortiert.filter((k) => !kategorien.includes(k));
+  while (kategorien.length + zufaellig.length < 2 && rest.length > 0) {
+    const i = Math.floor(zufaelligFn() * rest.length);
+    zufaellig.push(rest.splice(i, 1)[0]);
+  }
+  return { summen, kategorien: [...kategorien, ...zufaellig], zufaellig };
+}
+
+// Bezahlt wird nur, was auf gewinnende Fähigkeiten gesetzt wurde.
+// Rückgabe: { spielerId: Münzen }
+export function berechneEinsatzZahlungen(einsaetze, kategorien) {
+  const zahlungen = {};
+  for (const [spielerId, einsatz] of Object.entries(einsaetze ?? {})) {
+    zahlungen[spielerId] = kategorien.reduce((s, k) => s + (einsatz?.[k] ?? 0), 0);
+  }
+  return zahlungen;
+}

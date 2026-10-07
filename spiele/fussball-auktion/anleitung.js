@@ -11,8 +11,8 @@
 //  lässt sich per "Pause" alles gemeinsam anhalten (CSS animation-play-state).
 // ============================================================================
 import {
-  STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI
-} from "./logik.js?v=259";
+  STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE
+} from "./logik.js?v=260";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -65,7 +65,7 @@ function szenen(kh) {
     },
     {
       titel: "Münzen und Karten",
-      dauer: 11000,
+      dauer: 14000,
       html: () => `
         <div ${ein(0, "fa-anl-muenzen")}>
           <div class="fa-anl-muenze">🪙</div>
@@ -76,7 +76,8 @@ function szenen(kh) {
           ${Array.from({ length: MAX_KARTEN_PRO_SPIELER }, (_, i) => `<span class="fa-anl-slot" style="animation-delay:${1.2 + i * 0.5}s">${i + 1}</span>`).join("")}
         </div>
         <p ${ein(1.0)}>Du kannst höchstens <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> besitzen.</p>
-        <p ${ein(3.2)}>Die Auktion hat <strong>${ANZAHL_GEBOTSRUNDEN} Gebotsrunden</strong>. In jeder Runde liegen so viele Karten zur Auswahl, wie Spieler mitmachen.</p>`
+        <p ${ein(3.2)}>Die Auktion hat <strong>${ANZAHL_GEBOTSRUNDEN} Gebotsrunden</strong>. In jeder Runde liegen so viele Karten zur Auswahl, wie Spieler mitmachen.</p>
+        <p ${ein(4.6)}>Was du nicht ausgibst, <strong>nimmst du mit</strong> in die Spielrunden - dort bekommt jeder noch <strong>+${BONUS_MUENZEN_SPIELPHASE} Münzen</strong> dazu.</p>`
     },
     {
       titel: "Verdeckt bieten",
@@ -158,7 +159,7 @@ function szenen(kh) {
       dauer: 14000,
       html: () => `
         <p ${ein(0)}>Mit <strong>n deutschen Karten</strong> (ab 2) bekommt in <strong>jeder Spielrunde jede deutsche Karte +(n − 1)</strong> - automatisch, du musst nichts auswählen.</p>
-        <p ${ein(0.8)}>Der Bonus landet auf einer der beiden gezogenen Fähigkeiten. Beispiel: 3 deutsche Karten = <strong>+2</strong> pro Karte, hier in einer Runde mit <strong>Schuss + Pass</strong>:</p>
+        <p ${ein(0.8)}>Der Bonus landet auf der entscheidenden Fähigkeit mit den <strong>meisten Münzen</strong>. Beispiel: 3 deutsche Karten = <strong>+2</strong> pro Karte, hier in einer Runde mit <strong>Schuss + Pass</strong> (Schuss hat die meisten Münzen):</p>
         <div class="fa-anl-vorher-nachher">
           <div class="fa-anl-paar fa-anl-vorher">
             ${karte(kh, "de-3", { markierteKategorien: ["SCH", "PAS"] }, 92)}${karte(kh, "de-4", { markierteKategorien: ["SCH", "PAS"] }, 92)}${karte(kh, "de-5", { markierteKategorien: ["SCH", "PAS"] }, 92)}
@@ -172,7 +173,7 @@ function szenen(kh) {
     },
     {
       titel: "Bonus Nigeria",
-      dauer: 15000,
+      dauer: 16000,
       html: () => `
         <p ${ein(0)}>Nigerianische Karten machen sich <strong>teilweise bezahlt</strong>: Du bekommst Münzen zurück - ein Anteil des Preises, den du für die Karte bezahlt hast.</p>
         <table ${ein(0.8, "fa-anl-tabelle")}>
@@ -190,22 +191,46 @@ function szenen(kh) {
           <li ${ein(3.4)}>Gezählt wird nach <strong>Besitz</strong>: Der 2. Nigerianer, den du besitzt, bringt 20 %.</li>
           <li ${ein(4.2)}>Gewinnst du zwei in einer Runde, bekommt die <strong>teurere</strong> Karte die höhere Stufe.</li>
           <li ${ein(5.0)}>Es wird <strong>kaufmännisch gerundet</strong>: 20 % von 13 sind 2,6 → 3 Münzen.</li>
+          <li ${ein(5.8)}>Zurückbekommene Münzen sind auch in den <strong>Spielrunden</strong> nützlich - dort setzt du sie auf Fähigkeiten.</li>
         </ul>`
     },
     {
       titel: "Die Spielrunden",
-      dauer: 13000,
+      dauer: 14000,
       html: () => `
-        <p ${ein(0)}>Jetzt spielst du deine Karten aus - <strong>${ANZAHL_SPIELRUNDEN} Runden</strong> lang.</p>
-        <p ${ein(0.6)}>In jeder Runde werden <strong>zwei zufällige Fähigkeiten</strong> gezogen:</p>
-        <div ${ein(1.2, "fa-anl-kategorien")}>
-          <span class="fa-anl-kat">Schuss</span><span class="fa-anl-plus">+</span><span class="fa-anl-kat">Pass</span>
-        </div>
+        <p ${ein(0)}>Jetzt geht es in <strong>${ANZAHL_SPIELRUNDEN} Spielrunden</strong> um die Punkte. Jede Runde hat zwei Schritte.</p>
+        <p ${ein(0.7)}><strong>① Erst die Karte:</strong> Jeder wählt <strong>verdeckt</strong> eine Karte, die er noch nicht gespielt hat.</p>
         <div class="fa-anl-spielkarten">
-          ${karte(kh, "br-2", { markierteKategorien: ["SCH", "PAS"] }, 108)}
-          ${karte(kh, "ng-3", { markierteKategorien: ["SCH", "PAS"] }, 108)}
+          ${karte(kh, "br-2", {}, 108)}
+          ${karte(kh, "ng-3", {}, 108)}
         </div>
-        <p ${ein(2.4)}>Jeder spielt <strong>verdeckt eine Karte</strong>, die er noch nicht gespielt hat. Es zählt die <strong>Summe der beiden Werte</strong> - inklusive Länderboni.</p>`
+        <p ${ein(2.6)}><strong>② Dann die Münzen:</strong> Du setzt deine Münzen auf die 6 Fähigkeiten. So bestimmen alle gemeinsam, worauf es in dieser Runde ankommt.</p>
+        <p ${ein(3.8, "fa-anl-klein")}>Zum Start der Spielrunden hast du deine übrigen Auktionsmünzen <strong>plus ${BONUS_MUENZEN_SPIELPHASE}</strong>.</p>`
+    },
+    {
+      titel: "Münzen setzen",
+      dauer: 18000,
+      html: () => `
+        <p ${ein(0)}>Die <strong>zwei Fähigkeiten mit den meisten Münzen</strong> entscheiden die Runde. Beispiel - alle Einsätze zusammen:</p>
+        <div class="fa-anl-rang">
+          ${[
+            ["Schuss", 14, true], ["Pass", 9, true], ["Technik", 9, true],
+            ["Verteidigung", 4, false], ["Tempo", 2, false], ["Spielverst.", 0, false]
+          ].map(([n, s, w], i) => `
+            <div class="fa-anl-rang-zeile fa-anl-faeh ${w ? "fa-anl-top" : ""}" style="animation-delay:${0.6 + i * 0.5}s">
+              <span class="fa-anl-rang-nr"></span>
+              <span class="fa-anl-rang-name">${n}</span>
+              <span class="fa-anl-balken"><i style="--b:${s * 6.5}%;animation-delay:${0.8 + i * 0.5}s"></i></span>
+              <span class="fa-anl-rang-sum">${s}</span>
+              <span class="fa-anl-rang-pkt">${w ? "✓" : ""}</span>
+            </div>`).join("")}
+        </div>
+        <ul class="fa-anl-liste">
+          <li ${ein(4.0)}><strong>Gleichstand um Platz 2?</strong> Dann zählen <strong>alle</strong> gleichauf liegenden Fähigkeiten - hier also drei.</li>
+          <li ${ein(5.0)}>Für jede Karte zählt die <strong>Summe aller entscheidenden Fähigkeiten</strong> - inklusive Länderboni.</li>
+          <li ${ein(6.0)}><strong>Bezahlt</strong> werden nur die Münzen auf entscheidenden Fähigkeiten. Münzen auf den anderen bekommst du <strong>zurück</strong>.</li>
+          <li ${ein(7.0)}>Du kannst nie mehr setzen, als du hast.</li>
+        </ul>`
     },
     {
       titel: "Punkte pro Runde",
@@ -241,10 +266,10 @@ function szenen(kh) {
         <div ${ein(0, "fa-anl-pokal")}>🏆</div>
         <p ${ein(0.6)}>Nach der letzten Runde gewinnt, wer die <strong>meisten Punkte</strong> gesammelt hat.</p>
         <ul class="fa-anl-liste">
-          <li ${ein(1.4)}><strong>Teile deine Münzen ein.</strong> Sie müssen für alle ${ANZAHL_GEBOTSRUNDEN} Gebotsrunden reichen.</li>
+          <li ${ein(1.4)}><strong>Teile deine Münzen ein.</strong> Sie müssen für alle ${ANZAHL_GEBOTSRUNDEN} Gebotsrunden <em>und</em> die Spielrunden reichen. Nach der letzten Runde sind sie nichts mehr wert.</li>
           <li ${ein(2.2)}><strong>Denk in Ländern.</strong> Zwei passende Karten können mehr wert sein als eine einzelne Superkarte.</li>
-          <li ${ein(3.0)}><strong>Auch Schwache zählen.</strong> Mit einem guten Länderbonus werden sie plötzlich stark.</li>
-          <li ${ein(3.8)}><strong>Beobachte die anderen.</strong> Wer Italiener sammelt, will vermutlich Verteidigung.</li>
+          <li ${ein(3.0)}><strong>Münzen sind Mitspracherecht.</strong> Wer viele setzt, lenkt die Runde auf die Fähigkeiten seiner Karte.</li>
+          <li ${ein(3.8)}><strong>Beobachte die anderen.</strong> Wer Italiener sammelt, setzt vermutlich auf Verteidigung.</li>
         </ul>
         <p ${ein(4.8, "fa-anl-klein")}>Diese Anleitung findest du jederzeit über „Spielanleitung“.</p>`
     }

@@ -3,8 +3,9 @@
 // ----------------------------------------------------------------------------
 //  Ablauf: 1) Auktionsphase - 5 Gebotsrunden, in denen verdeckt auf Karten
 //  geboten wird (maximal 5 Karten pro Spieler). 2) Spielphase - 5 Runden, in
-//  denen jeder eine seiner Karten verdeckt ausspielt; entscheidend sind zwei
-//  je Runde zufällig bestimmte Fähigkeiten.
+//  denen jeder erst verdeckt eine Karte wählt und dann Münzen auf die 6
+//  Fähigkeiten setzt; die zwei Fähigkeiten mit den meisten Münzen (bei
+//  Gleichstand mehr) entscheiden, bezahlt werden nur deren Münzen.
 //
 //  Alle Felder dieses Spiels im Raum-Dokument beginnen mit "fa".
 //
@@ -27,16 +28,16 @@ import {
   ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN,
   kartenSumme, pruefeGebote, berechneRundenpunkte,
   kartenBearbeitungsreihenfolge, aufloesenEineKarte,
-  zufaelligeRundenKategorien, mische,
+  BONUS_MUENZEN_SPIELPHASE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=259";
+} from "./logik.js?v=260";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=259";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=259";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=260";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=260";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
@@ -50,8 +51,9 @@ const VORLAGE = `
       </div>
       <div class="fa-regel-block">
         <h3>🎯 Spielrunden</h3>
-        <p>Danach spielt jeder in ${ANZAHL_SPIELRUNDEN} Runden verdeckt eine seiner Karten aus.</p>
-        <p>Entscheidend sind zwei je Runde neu bestimmte Fähigkeiten.</p>
+        <p>Deine <strong>übrigen Münzen</strong> nimmst du mit – dazu gibt es <strong>+${BONUS_MUENZEN_SPIELPHASE} Münzen</strong> für jeden.</p>
+        <p>In ${ANZAHL_SPIELRUNDEN} Runden wählst du <strong>erst verdeckt eine Karte</strong>, dann setzt du Münzen auf die 6 Fähigkeiten.</p>
+        <p>Die <strong>zwei Fähigkeiten mit den meisten Münzen</strong> entscheiden (bei Gleichstand zählen alle). Bezahlt werden nur die Münzen auf diesen Fähigkeiten – der Rest bleibt dir.</p>
       </div>
       <div class="fa-regel-block">
         <h3>🌍 Länderboni</h3>
@@ -63,7 +65,7 @@ const VORLAGE = `
           <li>🇹🇷 <strong>Türkei</strong> – Pass +n</li>
           <li>🇧🇷 <strong>Brasilien</strong> – Technik +n</li>
           <li>🇯🇵 <strong>Japan</strong> – Spielverständnis +n</li>
-          <li>🇩🇪 <strong>Deutschland</strong> – in jeder Spielrunde bekommt jede deutsche Karte automatisch +(n−1) auf eine der beiden gezogenen Fähigkeiten</li>
+          <li>🇩🇪 <strong>Deutschland</strong> – in jeder Spielrunde bekommt jede deutsche Karte bekommt automatisch +(n−1) auf die Fähigkeit mit den meisten Münzen</li>
           <li>🇳🇬 <strong>Nigeria</strong> – Münzen-Rückerstattung beim 2. (20 %), 3. (40 %), 4. (60 %) und 5. (80 %) Nigerianer</li>
         </ul>
         <p class="fa-regel-hinweis">n = Anzahl deiner Spieler dieses Landes (ab 2)</p>
@@ -114,16 +116,26 @@ const VORLAGE = `
 
   <div id="fa-runde-screen" class="bildschirm-karte" hidden>
     <h2>Spielrunde <span id="fa-runde-index"></span>/${ANZAHL_SPIELRUNDEN}</h2>
-    <p class="hinweis-text">Entscheidend: <strong id="fa-runde-kategorien"></strong></p>
+    <p class="hinweis-text">Münzen: <strong id="fa-runde-muenzen"></strong></p>
     <p id="fa-runde-de-hinweis" class="hinweis-text" hidden></p>
     <p id="fa-runde-keine-karte-hinweis" class="hinweis-text" hidden>Du hast keine Karte mehr für diese Runde.</p>
+    <p id="fa-runde-schritt" class="fa-runde-schritt"></p>
     <div id="fa-runde-karten" class="fa-karten-grid"></div>
+    <div id="fa-runde-einsatz" class="fa-einsatz" hidden>
+      <div id="fa-runde-einsatz-zeilen"></div>
+      <p class="hinweis-text">Noch frei: <strong id="fa-einsatz-rest"></strong> Münzen</p>
+      <p class="fa-regel-hinweis">Die zwei Fähigkeiten mit den meisten Münzen entscheiden die Runde. Bezahlt werden nur die Münzen auf den entscheidenden Fähigkeiten – alles andere bekommst du zurück.</p>
+      <p id="fa-einsatz-fehler" class="fehler-text"></p>
+      <p><button id="fa-einsatz-bestaetigen" class="btn-primaer"></button></p>
+    </div>
     <div id="fa-runde-status" class="warten-block"></div>
   </div>
 
   <div id="fa-runde-ergebnis-screen" class="bildschirm-karte" hidden>
     <h2>Ergebnis Spielrunde <span id="fa-runde-erg-index"></span>/${ANZAHL_SPIELRUNDEN}</h2>
     <p class="hinweis-text">Entscheidend war: <strong id="fa-runde-erg-kategorien"></strong></p>
+    <div id="fa-runde-erg-summen" class="fa-erg-summen"></div>
+    <p id="fa-runde-erg-notiz" class="fa-regel-hinweis" hidden></p>
     <div id="fa-runde-erg-liste"></div>
     <p><button id="fa-runde-weiter" class="btn-primaer" hidden></button></p>
     <p id="fa-runde-erg-warten" hidden><em>Der Spielleiter macht gleich weiter …</em></p>
@@ -147,6 +159,10 @@ let alleGebote = [];          // alle Dokumente aus fa_gebote (ungefiltert)
 let alleSpielzuege = [];      // alle Dokumente aus fa_spielzuege (ungefiltert)
 let geboteUnsub = null;
 let spielzuegeUnsub = null;
+let alleEinsaetze = [];       // alle Dokumente aus fa_einsaetze (ungefiltert)
+let einsaetzeUnsub = null;
+let eigenerEinsatz = {};      // lokaler Entwurf { KAT: n } der laufenden Spielrunde
+let einsatzUiRunde = -1;      // für welche Runde das Einsatz-Formular gebaut ist
 
 let status = null;
 let auktionRunde = 0;
@@ -230,6 +246,7 @@ function verdrahteBedienelemente() {
   $("fa-gebote-bestaetigen").addEventListener("click", geboteBestaetigen);
   $("fa-auktion-weiter").addEventListener("click", auktionWeiter);
   $("fa-runde-weiter").addEventListener("click", rundeWeiter);
+  $("fa-einsatz-bestaetigen").addEventListener("click", einsatzBestaetigen);
   $("fa-stechen-erhoehen-btn").addEventListener("click", () => {
     const wert = parseInt($("fa-stechen-eingabe").value, 10);
     stechenGebotErhoehen(wert);
@@ -245,7 +262,12 @@ function starteListener() {
   spielzuegeUnsub = onSnapshot(collection(api.db, "raeume", api.code, "fa_spielzuege"), (snap) => {
     alleSpielzuege = [];
     snap.forEach((d) => alleSpielzuege.push(d.data()));
-    if (status === "runde_spielen") { aktualisiereRundenStatus(); pruefeRundenPhase(); }
+    if (status === "runde_spielen") { zeigeRunde(); pruefeRundenPhase(); }
+  });
+  einsaetzeUnsub = onSnapshot(collection(api.db, "raeume", api.code, "fa_einsaetze"), (snap) => {
+    alleEinsaetze = [];
+    snap.forEach((d) => alleEinsaetze.push(d.data()));
+    if (status === "runde_spielen") { zeigeRunde(); pruefeRundenPhase(); }
   });
 }
 
@@ -253,10 +275,12 @@ export function beenden() {
   bereitSystem = null;
   if (geboteUnsub) { geboteUnsub(); geboteUnsub = null; }
   if (spielzuegeUnsub) { spielzuegeUnsub(); spielzuegeUnsub = null; }
+  if (einsaetzeUnsub) { einsaetzeUnsub(); einsaetzeUnsub = null; }
   if (timerId) { clearInterval(timerId); timerId = null; }
   el = {};
   raum = {};
-  alleGebote = []; alleSpielzuege = [];
+  alleGebote = []; alleSpielzuege = []; alleEinsaetze = [];
+  eigenerEinsatz = {}; einsatzUiRunde = -1;
   status = null; auktionRunde = 0; auktionKarten = []; auktionErgebnis = null;
   rundenIndex = 0; rundenKategorien = []; rundenErgebnis = null;
   eigeneGebote = {}; geboteAbgeschickt = false;
@@ -299,7 +323,10 @@ export function raumDaten(daten) {
   if (neuerRundenIndex !== rundenIndex) {
     rundenIndex = neuerRundenIndex;
     rundeAufloesungAusgeloest = false;
+    eigenerEinsatz = {};
+    einsatzUiRunde = -1;
   }
+  if (status !== "runde_spielen") einsatzUiRunde = -1;
   rundenKategorien = daten.faRundenKategorien ?? [];
   rundenErgebnis = daten.faRundenErgebnis ?? null;
 
@@ -407,7 +434,7 @@ async function spielStarten() {
 }
 
 async function raeumeSpieldatenAuf() {
-  for (const name of ["fa_gebote", "fa_spielzuege"]) {
+  for (const name of ["fa_gebote", "fa_spielzuege", "fa_einsaetze"]) {
     const snap = await getDocs(collection(api.db, "raeume", api.code, name));
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   }
@@ -517,7 +544,7 @@ function boniTexte(spielerObj) {
     const regel = LAENDER_BONI[nation];
     if (!regel || n < 2) continue;
     if (regel.typ === "stat") texte.push(`${nation} ×${n}: ${KATEGORIE_NAMEN[regel.kat]} +${n}`);
-    else if (regel.typ === "frei") texte.push(`${nation} ×${n}: in jeder Spielrunde +${n - 1} auf eine der gezogenen Fähigkeiten`);
+    else if (regel.typ === "frei") texte.push(`${nation} ×${n}: in jeder Spielrunde +${n - 1} auf die Fähigkeit mit den meisten Münzen`);
     else if (regel.typ === "rabatt") texte.push(`${nation} ×${n}: Münzen-Rückerstattung bis ${Math.min(80, (n - 1) * 20)} %`);
   }
   return texte;
@@ -932,10 +959,14 @@ function zeigeAuktionErgebnis() {
 }
 
 async function starteSpielphase() {
+  // Übrige Auktionsmünzen bleiben erhalten, dazu gibt es für alle den Bonus.
+  await Promise.all(spielerListe.map((s) =>
+    updateDoc(api.spielerRef(s.id), { faMuenzen: increment(BONUS_MUENZEN_SPIELPHASE) })
+  ));
   await updateDoc(api.raumRef(), {
     faStatus: "runde_spielen",
     faRundenIndex: 0,
-    faRundenKategorien: zufaelligeRundenKategorien(),
+    faRundenKategorien: [],
     faRundenErgebnis: null
   });
 }
@@ -988,36 +1019,104 @@ function relevanteSpielerFuerRunde() {
   return spielerListe.filter((s) => eigeneVerfuegbareKarten(s).length > 0);
 }
 
+function eigeneEinsatzSumme() {
+  return KATEGORIEN.reduce((summe, kat) => summe + (eigenerEinsatz[kat] ?? 0), 0);
+}
+
+// Setzt den Einsatz auf eine Fähigkeit, begrenzt auf die noch freien Münzen.
+function setzeEinsatz(kat, wert) {
+  const muenzen = eigenerSpieler()?.faMuenzen ?? 0;
+  const frei = muenzen - (eigeneEinsatzSumme() - (eigenerEinsatz[kat] ?? 0));
+  eigenerEinsatz[kat] = Math.max(0, Math.min(Number.isFinite(wert) ? wert : 0, frei));
+  aktualisiereEinsatzUi();
+}
+
+function aktualisiereEinsatzUi() {
+  const muenzen = eigenerSpieler()?.faMuenzen ?? 0;
+  const rest = muenzen - eigeneEinsatzSumme();
+  $("fa-einsatz-rest").textContent = String(rest);
+  $("fa-runde-einsatz-zeilen").querySelectorAll(".fa-einsatz-zeile").forEach((zeile) => {
+    const kat = zeile.dataset.kat;
+    const eingabe = zeile.querySelector("input");
+    if (document.activeElement !== eingabe) eingabe.value = String(eigenerEinsatz[kat] ?? 0);
+    zeile.querySelector('[data-d="1"]').disabled = rest <= 0;
+    zeile.querySelector('[data-d="-1"]').disabled = (eigenerEinsatz[kat] ?? 0) <= 0;
+    zeile.classList.toggle("fa-einsatz-aktiv", (eigenerEinsatz[kat] ?? 0) > 0);
+  });
+  $("fa-einsatz-bestaetigen").textContent = eigeneEinsatzSumme() === 0 ? "Ohne Münzen weiter" : `${eigeneEinsatzSumme()} Münzen setzen`;
+}
+
+function baueEinsatzUi() {
+  const box = $("fa-runde-einsatz-zeilen");
+  box.innerHTML = "";
+  KATEGORIEN.forEach((kat) => {
+    const zeile = document.createElement("div");
+    zeile.className = "fa-einsatz-zeile";
+    zeile.dataset.kat = kat;
+    zeile.innerHTML =
+      `<span class="fa-einsatz-name">${escapeHtml(KATEGORIE_NAMEN[kat])}</span>` +
+      `<button type="button" class="fa-einsatz-btn" data-d="-1" aria-label="weniger">−</button>` +
+      `<input type="number" min="0" step="1" inputmode="numeric" class="fa-einsatz-eingabe" value="0" aria-label="Münzen auf ${escapeHtml(KATEGORIE_NAMEN[kat])}">` +
+      `<button type="button" class="fa-einsatz-btn" data-d="1" aria-label="mehr">+</button>`;
+    const eingabe = zeile.querySelector("input");
+    zeile.querySelectorAll(".fa-einsatz-btn").forEach((b) =>
+      b.addEventListener("click", () => setzeEinsatz(kat, (eigenerEinsatz[kat] ?? 0) + parseInt(b.dataset.d, 10)))
+    );
+    eingabe.addEventListener("input", () => {
+      const wert = parseInt(eingabe.value, 10);
+      setzeEinsatz(kat, Number.isNaN(wert) ? 0 : wert);
+      if (eingabe.value !== "" && String(eigenerEinsatz[kat]) !== eingabe.value) eingabe.value = String(eigenerEinsatz[kat]);
+    });
+    eingabe.addEventListener("blur", () => { eingabe.value = String(eigenerEinsatz[kat] ?? 0); });
+    box.appendChild(zeile);
+  });
+}
+
 function zeigeRunde() {
   const eigener = eigenerSpieler();
-  if (!eigener) return;
+  if (!eigener || !el.wurzel) return;
   $("fa-runde-index").textContent = String(rundenIndex + 1);
-  $("fa-runde-kategorien").textContent = rundenKategorien.map((k) => KATEGORIE_NAMEN[k] ?? k).join(" + ");
+  $("fa-runde-muenzen").textContent = String(eigener.faMuenzen ?? 0);
 
   const verfuegbar = eigeneVerfuegbareKarten(eigener);
   $("fa-runde-keine-karte-hinweis").hidden = verfuegbar.length > 0;
 
-  const bereitsGespielt = alleSpielzuege.some((z) => z.spielerId === api.spielerId && z.rundenIndex === rundenIndex);
+  const eigenerZug = alleSpielzuege.find((z) => z.spielerId === api.spielerId && z.rundenIndex === rundenIndex);
+  const einsatzAbgegeben = alleEinsaetze.some((e) => e.spielerId === api.spielerId && e.rundenIndex === rundenIndex);
+  const schritt = verfuegbar.length === 0 ? 0 : !eigenerZug ? 1 : !einsatzAbgegeben ? 2 : 3;
+
+  const deAnzahl = zaehleNationen(eigener.faKarten ?? [], kartenNachId).Deutschland ?? 0;
+  const deHinweis = $("fa-runde-de-hinweis");
+  deHinweis.hidden = deAnzahl < 2 || verfuegbar.length === 0;
+  deHinweis.textContent = deHinweis.hidden ? "" : `🇩🇪 Deutschland-Bonus: jede deutsche Karte bekommt +${deAnzahl - 1} auf die Fähigkeit mit den meisten Münzen`;
+
+  $("fa-runde-schritt").textContent =
+    schritt === 1 ? "① Wähle deine Karte für diese Runde – danach setzt du Münzen auf die Fähigkeiten." :
+    schritt === 2 ? "② Setze Münzen auf die Fähigkeiten, die für deine Karte stark sind." :
+    schritt === 3 ? "Fertig – warte auf die anderen." : "";
 
   const grid = $("fa-runde-karten");
   grid.innerHTML = "";
-  const eigeneBoni = bonusFuerSpieler(eigener, rundenKategorien);
-  const deAnzahl = zaehleNationen(eigener.faKarten ?? [], kartenNachId).Deutschland ?? 0;
-  const deHinweis = $("fa-runde-de-hinweis");
-  deHinweis.hidden = deAnzahl < 2 || rundenKategorien.length === 0;
-  deHinweis.textContent = deHinweis.hidden ? "" : `🇩🇪 Deutschland-Bonus: +${deAnzahl - 1} auf ${KATEGORIE_NAMEN[rundenKategorien[0]]} bei jeder deutschen Karte`;
-  verfuegbar.forEach((kartenId) => {
+  const eigeneBoni = bonusFuerSpieler(eigener, []);
+  const anzuzeigen = schritt === 1 ? verfuegbar : (eigenerZug && schritt > 1 ? [eigenerZug.kartenId] : []);
+  anzuzeigen.forEach((kartenId) => {
     const k = karte(kartenId);
     if (!k) return;
     const div = document.createElement("div");
-    div.className = "fa-karte fa-karte-waehlbar";
-    div.innerHTML = kartenKachelHtml(k, { markierteKategorien: rundenKategorien, bonus: eigeneBoni[kartenId] }) +
-      (bereitsGespielt ? "" : `<button type="button" class="btn-flach fa-karte-spielen-btn">Diese Karte spielen</button>`);
-    if (!bereitsGespielt) {
-      div.querySelector(".fa-karte-spielen-btn").addEventListener("click", () => karteSpielen(kartenId));
-    }
+    div.className = "fa-karte" + (schritt === 1 ? " fa-karte-waehlbar" : "");
+    div.innerHTML = kartenKachelHtml(k, { bonus: eigeneBoni[kartenId] }) +
+      (schritt === 1 ? `<button type="button" class="btn-flach fa-karte-spielen-btn">Diese Karte spielen</button>` : "");
+    if (schritt === 1) div.querySelector(".fa-karte-spielen-btn").addEventListener("click", () => karteSpielen(kartenId));
     grid.appendChild(div);
   });
+
+  $("fa-runde-einsatz").hidden = schritt !== 2;
+  if (schritt === 2) {
+    if (einsatzUiRunde !== rundenIndex) { baueEinsatzUi(); einsatzUiRunde = rundenIndex; }
+    aktualisiereEinsatzUi();
+  } else {
+    einsatzUiRunde = -1;
+  }
 
   aktualisiereRundenStatus();
 }
@@ -1033,51 +1132,93 @@ async function karteSpielen(kartenId) {
   }
 }
 
+async function einsatzBestaetigen() {
+  const eigener = eigenerSpieler();
+  if (!eigener) return;
+  $("fa-einsatz-fehler").textContent = "";
+  const einsatz = Object.fromEntries(KATEGORIEN.map((k) => [k, eigenerEinsatz[k] ?? 0]));
+  const fehler = pruefeEinsatz(einsatz, eigener.faMuenzen ?? 0);
+  if (fehler) { $("fa-einsatz-fehler").textContent = fehler; return; }
+  $("fa-einsatz-bestaetigen").disabled = true;
+  try {
+    await setDoc(doc(api.db, "raeume", api.code, "fa_einsaetze", `${api.spielerId}_${rundenIndex}`), {
+      spielerId: api.spielerId, rundenIndex, einsatz, zeitpunkt: serverTimestamp()
+    });
+    zeigeRunde();
+  } catch (e) {
+    zeigeDebug("Fehler beim Setzen der Münzen: " + e.message);
+  }
+  $("fa-einsatz-bestaetigen").disabled = false;
+}
+
 function aktualisiereRundenStatus() {
   if (!el.wurzel || status !== "runde_spielen") return;
   const relevant = relevanteSpielerFuerRunde();
-  const gespielt = new Set(
+  const fertig = new Set(
     alleSpielzuege.filter((z) => z.rundenIndex === rundenIndex).map((z) => z.spielerId)
+      .filter((id) => alleEinsaetze.some((e) => e.spielerId === id && e.rundenIndex === rundenIndex))
   );
-  renderWarteAvatare($("fa-runde-status"), relevant.filter((s) => !gespielt.has(s.id)));
+  renderWarteAvatare($("fa-runde-status"), relevant.filter((s) => !fertig.has(s.id)));
 }
 
 async function pruefeRundenPhase() {
   if (!api?.istLeiter || status !== "runde_spielen" || rundeAufloesungAusgeloest) return;
   const relevant = relevanteSpielerFuerRunde();
-  const zuegeDieserRunde = alleSpielzuege.filter((z) => z.rundenIndex === rundenIndex);
-  if (relevant.length > 0 && zuegeDieserRunde.length < relevant.length) return;
+  const zuege = alleSpielzuege.filter((z) => z.rundenIndex === rundenIndex);
+  const einsatzDocs = alleEinsaetze.filter((e) => e.rundenIndex === rundenIndex);
+  const alleFertig = relevant.every((s) =>
+    zuege.some((z) => z.spielerId === s.id) && einsatzDocs.some((e) => e.spielerId === s.id));
+  if (!alleFertig) return;
 
   rundeAufloesungAusgeloest = true;
   try {
-    const [kat1, kat2] = rundenKategorien;
-    const eintraege = zuegeDieserRunde.map((z) => {
+    const zuegeRelevant = zuege.filter((z) => relevant.some((s) => s.id === z.spielerId));
+
+    // Einsätze einlesen (ungültige -> 0)
+    const einsaetze = {};
+    relevant.forEach((s) => {
+      const roh = einsatzDocs.find((e) => e.spielerId === s.id)?.einsatz ?? {};
+      const einsatz = Object.fromEntries(KATEGORIEN.map((k) => [k, Number.isInteger(roh[k]) && roh[k] > 0 ? roh[k] : 0]));
+      einsaetze[s.id] = pruefeEinsatz(einsatz, s.faMuenzen ?? 0) ? Object.fromEntries(KATEGORIEN.map((k) => [k, 0])) : einsatz;
+    });
+    const bestimmung = bestimmeRundenKategorien(einsaetze);
+    const kategorien = bestimmung.kategorien;
+    const zahlungen = berechneEinsatzZahlungen(einsaetze, kategorien);
+
+    const eintraege = zuegeRelevant.map((z) => {
       const k = karte(z.kartenId);
-      const bonus = bonusFuerSpieler(spielerListe.find((x) => x.id === z.spielerId), rundenKategorien)[z.kartenId];
+      const bonus = bonusFuerSpieler(spielerListe.find((x) => x.id === z.spielerId), kategorien)[z.kartenId];
       const werte = k ? effektiveFaehigkeiten(k, bonus) : {};
-      const summe = (werte[kat1] ?? 0) + (werte[kat2] ?? 0);
+      const summe = kategorien.reduce((sum, kat) => sum + (werte[kat] ?? 0), 0);
       return { spielerId: z.spielerId, kartenId: z.kartenId, summe, gesamt: k ? effektiveGesamt(k, bonus) : 0 };
     });
-    const punkte = relevant.length > 0 ? berechneRundenpunkte(eintraege) : {};
+    const punkte = eintraege.length > 0 ? berechneRundenpunkte(eintraege) : {};
 
-    await Promise.all(eintraege.map((eintrag) =>
-      Promise.all([
-        updateDoc(api.spielerRef(eintrag.spielerId), {
-          punkte: increment(punkte[eintrag.spielerId] ?? 0),
-          faGespielt: arrayUnion(eintrag.kartenId)
-        })
-      ])
-    ));
+    await Promise.all(eintraege.map((eintrag) => {
+      const aenderung = {
+        punkte: increment(punkte[eintrag.spielerId] ?? 0),
+        faGespielt: arrayUnion(eintrag.kartenId)
+      };
+      if ((zahlungen[eintrag.spielerId] ?? 0) > 0) aenderung.faMuenzen = increment(-zahlungen[eintrag.spielerId]);
+      return updateDoc(api.spielerRef(eintrag.spielerId), aenderung);
+    }));
 
-    const ergebnisAnzeige = {};
+    const spielerAnzeige = {};
     eintraege.forEach((eintrag) => {
-      ergebnisAnzeige[eintrag.spielerId] = {
+      const eingesetzt = KATEGORIEN.reduce((sum, kat) => sum + einsaetze[eintrag.spielerId][kat], 0);
+      const bezahlt = zahlungen[eintrag.spielerId] ?? 0;
+      spielerAnzeige[eintrag.spielerId] = {
         kartenId: eintrag.kartenId, summe: eintrag.summe, gesamt: eintrag.gesamt,
-        punkte: punkte[eintrag.spielerId] ?? 0
+        punkte: punkte[eintrag.spielerId] ?? 0,
+        einsatz: einsaetze[eintrag.spielerId], bezahlt, zurueck: eingesetzt - bezahlt
       };
     });
 
-    await updateDoc(api.raumRef(), { faStatus: "runde_ergebnis", faRundenErgebnis: ergebnisAnzeige });
+    await updateDoc(api.raumRef(), {
+      faStatus: "runde_ergebnis",
+      faRundenKategorien: kategorien,
+      faRundenErgebnis: { spieler: spielerAnzeige, summen: bestimmung.summen, zufaellig: bestimmung.zufaellig }
+    });
   } catch (e) {
     rundeAufloesungAusgeloest = false;
     zeigeDebug("Fehler bei der Rundenauswertung: " + e.message);
@@ -1092,8 +1233,25 @@ function zeigeRundenErgebnis() {
   $("fa-runde-erg-index").textContent = String(rundenIndex + 1);
   $("fa-runde-erg-kategorien").textContent = rundenKategorien.map((k) => KATEGORIE_NAMEN[k] ?? k).join(" + ");
 
-  const eintraege = Object.entries(rundenErgebnis ?? {});
-  const sortiert = eintraege.sort((a, b) => b[1].summe - a[1].summe);
+  const erg = rundenErgebnis ?? {};
+  const spielerErg = erg.spieler ?? {};
+  const summen = erg.summen ?? {};
+
+  const summenBox = $("fa-runde-erg-summen");
+  summenBox.innerHTML = [...KATEGORIEN]
+    .sort((a, b) => (summen[b] ?? 0) - (summen[a] ?? 0) || KATEGORIEN.indexOf(a) - KATEGORIEN.indexOf(b))
+    .map((kat) => `<span class="fa-erg-summe${rundenKategorien.includes(kat) ? " fa-erg-summe-gewonnen" : ""}">` +
+      `${escapeHtml(KATEGORIE_NAMEN[kat])} <strong>${summen[kat] ?? 0}</strong> 🪙</span>`)
+    .join("");
+
+  const notizen = [];
+  if (rundenKategorien.length > 2 && !(erg.zufaellig?.length)) notizen.push("Gleichstand um Platz 2 – alle gleichauf liegenden Fähigkeiten zählen.");
+  if (erg.zufaellig?.length) notizen.push(`Zu wenige Münzen gesetzt – ${erg.zufaellig.map((k) => KATEGORIE_NAMEN[k]).join(" + ")} zufällig ergänzt.`);
+  const notiz = $("fa-runde-erg-notiz");
+  notiz.hidden = notizen.length === 0;
+  notiz.textContent = notizen.join(" ");
+
+  const sortiert = Object.entries(spielerErg).sort((a, b) => b[1].summe - a[1].summe);
 
   const liste = $("fa-runde-erg-liste");
   liste.innerHTML = "";
@@ -1101,14 +1259,16 @@ function zeigeRundenErgebnis() {
     const s = spielerListe.find((x) => x.id === spielerId);
     if (!s) return;
     const k = karte(daten.kartenId);
+    const muenzenText = daten.bezahlt > 0 || daten.zurueck > 0
+      ? ` · −${daten.bezahlt} 🪙${daten.zurueck > 0 ? ` (${daten.zurueck} zurück)` : ""}` : "";
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(
       s.name, s.farbe, s.icon, formatiertePunkte(daten.punkte),
-      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}`, punkteRechts: s.punkte ?? 0 }
+      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}${muenzenText}`, punkteRechts: s.punkte ?? 0 }
     );
     liste.appendChild(li);
   });
-  const ausgesetzt = spielerListe.filter((s) => !rundenErgebnis?.[s.id]);
+  const ausgesetzt = spielerListe.filter((s) => !spielerErg[s.id]);
   if (ausgesetzt.length > 0) {
     const hinweis = document.createElement("p");
     hinweis.className = "hinweis-text";
@@ -1133,7 +1293,7 @@ async function rundeWeiter() {
       await updateDoc(api.raumRef(), {
         faStatus: "runde_spielen",
         faRundenIndex: naechste,
-        faRundenKategorien: zufaelligeRundenKategorien(),
+        faRundenKategorien: [],
         faRundenErgebnis: null
       });
     }
