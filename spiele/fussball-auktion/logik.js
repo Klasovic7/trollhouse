@@ -135,8 +135,11 @@ export function loeseGebotsrundeAuf(kartenIds, geboteProSpieler, kapazitaetProSp
 //  - niedrigste Summe: -2 Punkte
 //  - zweitniedrigste ("Vorletzter"): 1 Punkt
 //  - jede Position weiter nach oben: +1 Punkt mehr
-//  - höchste Summe: zusätzlich +3 Bonuspunkte
+//  - höchste Summe: zusätzlich +2 Bonuspunkte
 //  - Gleichstand bei der Summe: höhere Gesamtsumme (alle 6 Fähigkeiten) gewinnt den Rang
+// Zusatzpunkte für die höchste Summe einer Runde.
+export const BONUS_BESTER_PLATZ = 2;
+
 export function berechneRundenpunkte(eintraege) {
   const sortiert = [...eintraege].sort((a, b) =>
     a.summe !== b.summe ? a.summe - b.summe : a.gesamt - b.gesamt
@@ -148,7 +151,7 @@ export function berechneRundenpunkte(eintraege) {
     let punkte;
     if (rang === 1) punkte = -2;
     else punkte = rang - 1;
-    if (rang === n && n > 1) punkte += 3;
+    if (rang === n && n > 1) punkte += BONUS_BESTER_PLATZ;
     ergebnis[eintrag.spielerId] = punkte;
   });
   return ergebnis;

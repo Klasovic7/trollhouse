@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE
-} from "./logik.js?v=267";
+} from "./logik.js?v=268";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -240,7 +240,7 @@ function szenen(kh) {
         <p ${ein(0)}>Alle Karten werden aufgedeckt und nach ihrer Summe sortiert. Beispiel mit vier Spielern:</p>
         <div class="fa-anl-rang">
           ${[
-            ["Spieler A", 19, "+6", "fa-anl-top"],
+            ["Spieler A", 19, "+5", "fa-anl-top"],
             ["Spieler B", 14, "+2", ""],
             ["Spieler C", 12, "+1", ""],
             ["Spieler D", 9, "−2", "fa-anl-minus"]
@@ -255,7 +255,7 @@ function szenen(kh) {
         </div>
         <ul class="fa-anl-liste">
           <li ${ein(3.8)}>Letzter Platz: <strong>−2</strong>. Der Vorletzte bekommt <strong>1</strong>, jeder Platz weiter oben <strong>einen Punkt mehr</strong>.</li>
-          <li ${ein(4.6)}>Der Beste bekommt zusätzlich <strong>+3 Bonuspunkte</strong>.</li>
+          <li ${ein(4.6)}>Der Beste bekommt zusätzlich <strong>+2 Bonuspunkte</strong>.</li>
           <li ${ein(5.4)}>Gleiche Summe? Dann gewinnt die Karte mit der höheren <strong>Gesamtstärke</strong>.</li>
         </ul>`
     },
