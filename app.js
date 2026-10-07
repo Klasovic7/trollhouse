@@ -13,9 +13,9 @@ import {
 // WICHTIG: bei jedem Versionssprung hier UND in spiele/register.js
 // (SPIEL_VERSION) mit hochzaehlen, sonst bekommen manche Geraete
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
-import { SPIELE, spielInfo } from "./spiele/register.js?v=271";
+import { SPIELE, spielInfo } from "./spiele/register.js?v=272";
 
-export const APP_VERSION = "v271";
+export const APP_VERSION = "v272";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -32,6 +32,7 @@ const spielKopfName = document.getElementById("spiel-kopf-name");
 const spielKopfFortschritt = document.getElementById("spiel-kopf-fortschritt");
 const btnLobbyVerlassen = document.getElementById("btn-lobby-verlassen");
 const raumVerlassenDialog = document.getElementById("raum-verlassen-dialog");
+const uebenDialog = document.getElementById("ueben-dialog");
 const btnRaumVerlassenNein = document.getElementById("btn-raum-verlassen-nein");
 const btnRaumVerlassenJa = document.getElementById("btn-raum-verlassen-ja");
 
@@ -548,6 +549,11 @@ async function waehleSpiel(id) {
   if (!zustand.istLeiter || !zustand.code) return;
   const info = spielInfo(id);
   if (!info || info.kommtBald) return;
+  // Alleine im Raum: kein Spiel startbar, stattdessen der Hinweis-Dialog.
+  if (zustand.spieler.length <= 1) {
+    uebenDialog.hidden = false;
+    return;
+  }
   if (zustand.spieler.length < info.minSpieler) {
     lobbyFehler.textContent = `Für ${info.name} braucht ihr mindestens ${info.minSpieler} Spieler.`;
     return;
@@ -570,7 +576,8 @@ function renderSpieleAuswahl() {
   SPIELE.forEach((spiel) => {
     const div = document.createElement("div");
     const zuWenige = zustand.spieler.length < spiel.minSpieler;
-    const klickbar = zustand.istLeiter && !zuWenige && !spiel.kommtBald;
+    const alleine = zustand.spieler.length <= 1;
+    const klickbar = zustand.istLeiter && (!zuWenige || alleine) && !spiel.kommtBald;
     div.className = "spiel-kachel" + (klickbar ? "" : " passiv") + (spiel.kommtBald ? " kommt-bald" : "");
     if (spiel.farbe) div.style.setProperty("--spiel-farbe", spiel.farbe);
     div.innerHTML =
@@ -1146,7 +1153,7 @@ function reagiereAufRaum(daten) {
   }
 
   // Update-Hinweis (einmal pro Raum): jeder sieht ihn direkt nach der Profilwahl.
-  import("./kern/update-hinweis.js?v=271").then((m) => m.zeigeUpdateHinweis(zustand.code)).catch(() => {});
+  import("./kern/update-hinweis.js?v=272").then((m) => m.zeigeUpdateHinweis(zustand.code)).catch(() => {});
 
   const spielId = daten.aktuellesSpiel ?? null;
   // v198: kommt die Lobby gerade aus einem beendeten Spiel zurueck (vorher
@@ -1868,3 +1875,7 @@ if ("serviceWorker" in navigator) {
     window.location.reload();
   });
 }
+
+// Hinweis-Dialog "Üben ist verboten" (wenn jemand alleine im Raum ein Spiel anklickt)
+document.getElementById("btn-ueben-ok").addEventListener("click", () => { uebenDialog.hidden = true; });
+uebenDialog.addEventListener("click", (e) => { if (e.target === uebenDialog) uebenDialog.hidden = true; });

@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,800;1,800&family=Bungee&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="stil.css?v=271">
+  <link rel="stylesheet" href="stil.css?v=272">
 </head>
 <body>
 
@@ -39,7 +39,7 @@
   <div id="start-screen" class="bildschirm-karte">
     <div class="start-hero">
       <div class="start-icon">
-        <img src="bilder/logo-fuchs-transparent.png?v=271" width="102" height="102" alt="" class="app-icon">
+        <img src="bilder/logo-fuchs-transparent.png?v=272" width="102" height="102" alt="" class="app-icon">
       </div>
       <h1>Trollhouse</h1>
       <p class="start-tagline">Ein Raum, ein Abend, viele Spiele</p>
@@ -106,6 +106,17 @@
       <div class="raum-verlassen-aktionen">
         <button id="btn-raum-verlassen-nein" class="btn-sekundaer" type="button">Nein</button>
         <button id="btn-raum-verlassen-ja" class="btn-gefahr" type="button">Ja</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Hinweis: alleine im Raum ---------- -->
+  <div id="ueben-dialog" class="raum-verlassen-dialog" role="dialog" aria-modal="true"
+       aria-labelledby="ueben-titel" hidden>
+    <div class="raum-verlassen-dialog-inhalt">
+      <h2 id="ueben-titel">Üben ist verboten.<br>Such dir bitte Freunde.</h2>
+      <div class="raum-verlassen-aktionen">
+        <button id="btn-ueben-ok" class="btn-sekundaer" type="button">OK</button>
       </div>
     </div>
   </div>
@@ -192,11 +203,11 @@
   <div id="lobby-screen" class="bildschirm-karte" hidden>
     <div class="lobby-kopf">
       <div class="lobby-marke">
-        <span class="lobby-logo-badge"><img src="bilder/logo-fuchs-transparent.png?v=271" width="36" height="36" alt="" class="lobby-app-icon"></span>
+        <span class="lobby-logo-badge"><img src="bilder/logo-fuchs-transparent.png?v=272" width="36" height="36" alt="" class="lobby-app-icon"></span>
         <h1>Trollhouse</h1>
       </div>
       <button id="btn-lobby-verlassen" class="lobby-verlassen" type="button">
-        <img src="bilder/icon-raum-verlassen.svg?v=271" width="32" height="32" alt="">
+        <img src="bilder/icon-raum-verlassen.svg?v=272" width="32" height="32" alt="">
         <span class="nur-screenreader">Raum verlassen</span>
       </button>
     </div>
@@ -242,6 +253,6 @@
   <!-- ---------- Hierhin rendert das jeweils laufende Spiel ---------- -->
   <div id="spiel-wurzel"></div>
 
-  <script type="module" src="app.js?v=271"></script>
+  <script type="module" src="app.js?v=272"></script>
 </body>
 </html>

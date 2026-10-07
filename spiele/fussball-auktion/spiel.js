@@ -31,15 +31,15 @@ import {
   BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
-} from "./logik.js?v=271";
+} from "./logik.js?v=272";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
 const EINGABE_DAUER_MS = 30000;   // Zeitlimit für Gebote und Spielrunden
 const TIMER_WARNUNG_S = 5;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=271";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=271";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=272";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=272";
 
 const MUENZE = '<span class="fa-muenze" role="img" aria-label="Münzen"></span>';
 
