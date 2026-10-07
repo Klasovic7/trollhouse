@@ -31,15 +31,15 @@ import {
   BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
-} from "./logik.js?v=272";
+} from "./logik.js?v=273";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
 const EINGABE_DAUER_MS = 30000;   // Zeitlimit für Gebote und Spielrunden
 const TIMER_WARNUNG_S = 5;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=272";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=272";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=273";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=273";
 
 const MUENZE = '<span class="fa-muenze" role="img" aria-label="Münzen"></span>';
 
@@ -1401,7 +1401,7 @@ function zeigeRundenErgebnis() {
   notiz.hidden = notizen.length === 0;
   notiz.textContent = notizen.join(" ");
 
-  const sortiert = Object.entries(spielerErg).sort((a, b) => b[1].summe - a[1].summe);
+  const sortiert = Object.entries(spielerErg).sort((a, b) => b[1].summe - a[1].summe || (b[1].gesamt ?? 0) - (a[1].gesamt ?? 0));
 
   const liste = $("fa-runde-erg-liste");
   liste.innerHTML = "";
@@ -1409,10 +1409,12 @@ function zeigeRundenErgebnis() {
     const s = spielerListe.find((x) => x.id === spielerId);
     if (!s) return;
     const k = karte(daten.kartenId);
+    // Bei gleicher Summe entscheidet die Gesamtwertung der Karte (GW).
+    const gleichstand = sortiert.some(([id, d]) => id !== spielerId && d.summe === daten.summe);
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(
       s.name, s.farbe, s.icon, formatiertePunkte(daten.punkte),
-      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}`, punkteRechts: s.punkte ?? 0 }
+      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}${gleichstand ? ` (GW:${daten.gesamt ?? 0})` : ""}`, punkteRechts: s.punkte ?? 0 }
     ) + `<p class="fa-erg-muenzen">${MUENZE} ${daten.bezahlt} bezahlt${daten.zurueck > 0 ? `, ${daten.zurueck} zurück` : ""} · noch ${s.faMuenzen ?? 0}</p>`;
     liste.appendChild(li);
   });
