@@ -283,6 +283,8 @@ export function berechneNigeriaErstattung(bisherAnzahl, gewonnen) {
 // Zusätzliche Münzen, die jeder Spieler beim Start der Spielphase bekommt
 // (zu seinen übrig gebliebenen Auktionsmünzen).
 export const BONUS_MUENZEN_SPIELPHASE = 15;
+// Abzug vom Bonus pro Karte, die ein Spieler zufällig geschenkt bekommen hat.
+export const ABZUG_ZUFALLSKARTE = 2;
 
 // Einsatz = { SCH: n, PAS: n, ... } - Münzen eines Spielers auf die 6 Fähigkeiten.
 export function pruefeEinsatz(einsatz, muenzen) {

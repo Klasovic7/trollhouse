@@ -28,16 +28,16 @@ import {
   ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN,
   kartenSumme, pruefeGebote, berechneRundenpunkte,
   kartenBearbeitungsreihenfolge, aufloesenEineKarte,
-  BONUS_MUENZEN_SPIELPHASE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
+  BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
-} from "./logik.js?v=265";
+} from "./logik.js?v=266";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=265";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=265";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=266";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=266";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
@@ -47,7 +47,7 @@ const VORLAGE = `
         <h3>🪙 Auktion</h3>
         <p>Jeder startet mit <strong>${STARTMUENZEN} Münzen</strong>.</p>
         <p>In ${ANZAHL_GEBOTSRUNDEN} Gebotsrunden bietest du verdeckt auf Fußballkarten.</p>
-        <p>Maximal <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> pro Spieler. Karten, die am Ende niemand ersteigert hat, werden zufällig verteilt – jeder hat danach genau ${MAX_KARTEN_PRO_SPIELER}. Pro geschenkter Karte gibt es 1 Bonusmünze weniger in den Spielrunden.</p>
+        <p>Maximal <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> pro Spieler. Karten, die am Ende niemand ersteigert hat, werden zufällig verteilt – jeder hat danach genau ${MAX_KARTEN_PRO_SPIELER}. Pro geschenkter Karte gibt es ${ABZUG_ZUFALLSKARTE} Bonusmünzen weniger in den Spielrunden.</p>
       </div>
       <div class="fa-regel-block">
         <h3>🎯 Spielrunden</h3>
@@ -974,10 +974,10 @@ async function starteSpielphase() {
   await Promise.all(Object.entries(zufallsKarten).map(([id, ids]) =>
     updateDoc(api.spielerRef(id), { faKarten: arrayUnion(...ids) })
   ));
-  // Übrige Auktionsmünzen bleiben erhalten, dazu gibt es den Bonus - minus 1 Münze pro geschenkter Zufallskarte.
+  // Übrige Auktionsmünzen bleiben erhalten, dazu gibt es den Bonus - minus Abzug pro geschenkter Zufallskarte.
   await Promise.all(spielerListe.map((s) =>
     updateDoc(api.spielerRef(s.id), {
-      faMuenzen: increment(Math.max(0, BONUS_MUENZEN_SPIELPHASE - (zufallsKarten[s.id]?.length ?? 0)))
+      faMuenzen: increment(Math.max(0, BONUS_MUENZEN_SPIELPHASE - ABZUG_ZUFALLSKARTE * (zufallsKarten[s.id]?.length ?? 0)))
     })
   ));
   await updateDoc(api.raumRef(), {
@@ -1108,7 +1108,7 @@ function zeigeRunde() {
   const zufallHinweis = $("fa-runde-zufall-hinweis");
   zufallHinweis.hidden = zufall.length === 0 || rundenIndex !== 0;
   zufallHinweis.textContent = zufallHinweis.hidden ? "" :
-    `🎲 Zufällig zugeteilt: ${zufall.map((id) => karte(id)?.name ?? id).join(", ")} – dafür gibt es ${zufall.length} ${zufall.length === 1 ? "Münze" : "Münzen"} weniger Bonus (${Math.max(0, BONUS_MUENZEN_SPIELPHASE - zufall.length)} statt ${BONUS_MUENZEN_SPIELPHASE}).`;
+    `🎲 Zufällig zugeteilt: ${zufall.map((id) => karte(id)?.name ?? id).join(", ")} – dafür gibt es ${ABZUG_ZUFALLSKARTE * zufall.length} Münzen weniger Bonus (${Math.max(0, BONUS_MUENZEN_SPIELPHASE - ABZUG_ZUFALLSKARTE * zufall.length)} statt ${BONUS_MUENZEN_SPIELPHASE}).`;
 
   const deAnzahl = zaehleNationen(eigener.faKarten ?? [], kartenNachId).Deutschland ?? 0;
   const deHinweis = $("fa-runde-de-hinweis");

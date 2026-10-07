@@ -11,8 +11,8 @@
 //  lässt sich per "Pause" alles gemeinsam anhalten (CSS animation-play-state).
 // ============================================================================
 import {
-  STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE
-} from "./logik.js?v=265";
+  STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE
+} from "./logik.js?v=266";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -109,7 +109,7 @@ function szenen(kh) {
           <li ${ein(2.0)}>Gleichstand bei <strong>0 Münzen</strong>: niemand hat geboten, die Karte bleibt übrig.</li>
           <li ${ein(2.8)}>Wer schon <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> hat, bietet nicht mehr mit.</li>
           <li ${ein(3.6)}>Nach Runde ${ANZAHL_GEBOTSRUNDEN} kommen alle <strong>unverkauften Karten</strong> noch einmal in eine Bonusrunde.</li>
-          <li ${ein(4.4)}>Bleibt danach noch etwas übrig, wird es <strong>zufällig verteilt</strong> - am Ende hat jeder genau ${MAX_KARTEN_PRO_SPIELER} Karten. Dafür gibt es pro geschenkter Karte <strong>1 Bonusmünze weniger</strong> in den Spielrunden.</li>
+          <li ${ein(4.4)}>Bleibt danach noch etwas übrig, wird es <strong>zufällig verteilt</strong> - am Ende hat jeder genau ${MAX_KARTEN_PRO_SPIELER} Karten. Dafür gibt es pro geschenkter Karte <strong>${ABZUG_ZUFALLSKARTE} Bonusmünzen weniger</strong> in den Spielrunden.</li>
         </ul>`
     },
     {
