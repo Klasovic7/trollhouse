@@ -2993,3 +2993,7 @@ body.ank-offen { overflow: hidden; }
 .fa-erg-summe { padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: .9rem; }
 .fa-erg-summe-gewonnen { background: rgba(74,222,128,.25); }
 .fa-anl-faeh { grid-template-columns: 6px 98px 1fr 24px 22px; }
+
+.fa-erg-muenzen { margin: 2px 0 10px 6px; font-size: .82rem; opacity: .8; }
+
+#fa-runde-erg-liste > li { list-style: none; }

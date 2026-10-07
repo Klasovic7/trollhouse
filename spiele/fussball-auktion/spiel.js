@@ -31,13 +31,13 @@ import {
   BONUS_MUENZEN_SPIELPHASE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=261";
+} from "./logik.js?v=262";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=261";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=261";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=262";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=262";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
@@ -1259,13 +1259,11 @@ function zeigeRundenErgebnis() {
     const s = spielerListe.find((x) => x.id === spielerId);
     if (!s) return;
     const k = karte(daten.kartenId);
-    const muenzenText = daten.bezahlt > 0 || daten.zurueck > 0
-      ? ` · −${daten.bezahlt} 🪙${daten.zurueck > 0 ? ` (${daten.zurueck} zurück)` : ""}` : "";
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(
       s.name, s.farbe, s.icon, formatiertePunkte(daten.punkte),
-      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}${muenzenText}`, punkteRechts: s.punkte ?? 0 }
-    );
+      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}`, punkteRechts: s.punkte ?? 0 }
+    ) + `<p class="fa-erg-muenzen">🪙 ${daten.bezahlt} bezahlt${daten.zurueck > 0 ? `, ${daten.zurueck} zurück` : ""} · noch ${s.faMuenzen ?? 0}</p>`;
     liste.appendChild(li);
   });
   const ausgesetzt = spielerListe.filter((s) => !spielerErg[s.id]);
