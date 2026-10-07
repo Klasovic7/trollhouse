@@ -31,13 +31,15 @@ import {
   BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
-} from "./logik.js?v=270";
+} from "./logik.js?v=271";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=270";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=270";
+const EINGABE_DAUER_MS = 30000;   // Zeitlimit für Gebote und Spielrunden
+const TIMER_WARNUNG_S = 5;
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=271";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=271";
 
 const MUENZE = '<span class="fa-muenze" role="img" aria-label="Münzen"></span>';
 
@@ -82,10 +84,11 @@ const VORLAGE = `
 
   <div id="fa-auktion-screen" class="bildschirm-karte" hidden>
     <h2 id="fa-auktion-titel"></h2>
-    <p class="hinweis-text fa-kopfzeile"><span class="fa-muenze" role="img" aria-label="Münzen"></span> <strong id="fa-eigene-muenzen"></strong> <span class="fa-trenn">·</span> Karten: <strong id="fa-eigene-kartenanzahl"></strong>/${MAX_KARTEN_PRO_SPIELER}</p>
+    <p class="hinweis-text fa-kopfzeile"><span class="fa-muenze" role="img" aria-label="Münzen"></span> <strong id="fa-eigene-muenzen"></strong> <span class="fa-trenn">·</span> Karten: <strong><span id="fa-eigene-kartenanzahl"></span> / ${MAX_KARTEN_PRO_SPIELER}</strong></p>
     <div id="fa-eigene-karten-auktion" class="fa-eigene-karten" hidden></div>
     <p id="fa-eigene-boni" class="hinweis-text" hidden></p>
-    <p id="fa-auktion-inaktiv-hinweis" class="hinweis-text" hidden>Du hast bereits ${MAX_KARTEN_PRO_SPIELER} Karten - in dieser Runde bietest du nicht mit.</p>
+    <div id="fa-timer-auktion" class="fa-timer" hidden><div class="fa-timer-balken"><div class="fa-timer-fuellung"></div></div><span class="fa-timer-zahl"></span></div>
+        <p id="fa-auktion-inaktiv-hinweis" class="hinweis-text" hidden>Du hast bereits ${MAX_KARTEN_PRO_SPIELER} Karten - in dieser Runde bietest du nicht mit.</p>
     <div id="fa-auktion-karten" class="fa-karten-grid"></div>
     <p id="fa-auktion-fehler" class="fehler-text"></p>
     <p><button id="fa-gebote-bestaetigen" class="btn-primaer" hidden>Gebote bestätigen</button></p>
@@ -125,7 +128,8 @@ const VORLAGE = `
     <p id="fa-runde-zufall-hinweis" class="hinweis-text" hidden></p>
     <p id="fa-runde-keine-karte-hinweis" class="hinweis-text" hidden>Du hast keine Karte mehr für diese Runde.</p>
     <p id="fa-runde-schritt" class="fa-runde-schritt"></p>
-    <div id="fa-eigene-karten-runde" class="fa-eigene-karten" hidden></div>
+    <div id="fa-timer-runde" class="fa-timer" hidden><div class="fa-timer-balken"><div class="fa-timer-fuellung"></div></div><span class="fa-timer-zahl"></span></div>
+        <div id="fa-eigene-karten-runde" class="fa-eigene-karten" hidden></div>
     <div id="fa-runde-karten" class="fa-karten-grid"></div>
     <div id="fa-runde-einsatz" class="fa-einsatz" hidden>
       <div id="fa-runde-einsatz-zeilen"></div>
@@ -190,6 +194,9 @@ let stechenGebote = {};
 let stechenAblaufZeit = null;
 let stechenAufloesungAusgeloest = false;
 let timerId = null;
+let fristKey = null;          // identifiziert die Eingabephase, für die der 30-s-Timer läuft
+let fristEnde = 0;
+let fristAbgelaufenAusgeloest = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
@@ -244,15 +251,15 @@ export async function starten(uebergebeneApi) {
     await updateDoc(api.raumRef(), { faStatus: "setup" });
   }
 
-  timerId = setInterval(() => { aktualisiereStechenCountdown(); pruefeStechenAblauf(); }, 300);
+  timerId = setInterval(() => { aktualisiereStechenCountdown(); pruefeStechenAblauf(); eingabeTimerTick(); }, 250);
 }
 
 function verdrahteBedienelemente() {
   $("fa-starten").addEventListener("click", spielStarten);
-  $("fa-gebote-bestaetigen").addEventListener("click", geboteBestaetigen);
+  $("fa-gebote-bestaetigen").addEventListener("click", () => geboteBestaetigen());
   $("fa-auktion-weiter").addEventListener("click", auktionWeiter);
   $("fa-runde-weiter").addEventListener("click", rundeWeiter);
-  $("fa-einsatz-bestaetigen").addEventListener("click", einsatzBestaetigen);
+  $("fa-einsatz-bestaetigen").addEventListener("click", () => einsatzBestaetigen());
   $("fa-stechen-erhoehen-btn").addEventListener("click", () => {
     const wert = parseInt($("fa-stechen-eingabe").value, 10);
     stechenGebotErhoehen(wert);
@@ -287,6 +294,7 @@ export function beenden() {
   raum = {};
   alleGebote = []; alleSpielzuege = []; alleEinsaetze = [];
   eigenerEinsatz = {}; einsatzUiRunde = -1;
+  fristKey = null; fristEnde = 0; fristAbgelaufenAusgeloest = false;
   status = null; auktionRunde = 0; auktionKarten = []; auktionErgebnis = null;
   rundenIndex = 0; rundenKategorien = []; rundenErgebnis = null;
   eigeneGebote = {}; geboteAbgeschickt = false;
@@ -579,6 +587,79 @@ function zeigeEigeneKarten(containerId, spielerObj) {
     }).join("") + `</div>`;
 }
 
+// ---------------------------------------------------------------------------
+//  30-Sekunden-Timer für Gebotsrunden und Spielrunden
+// ---------------------------------------------------------------------------
+function aktuelleFristPhase() {
+  const eigener = eigenerSpieler();
+  if (!eigener || !api) return null;
+  if (status === "auktion_gebot") {
+    if (!istAktiverBieter(eigener)) return null;
+    if (alleGebote.some((g) => g.spielerId === api.spielerId && g.runde === auktionRunde)) return null;
+    return { key: `a${auktionRunde}`, timerId: "fa-timer-auktion" };
+  }
+  if (status === "runde_spielen") {
+    if (eigeneVerfuegbareKarten(eigener).length === 0) return null;
+    const zug = alleSpielzuege.some((z) => z.spielerId === api.spielerId && z.rundenIndex === rundenIndex);
+    const einsatz = alleEinsaetze.some((e) => e.spielerId === api.spielerId && e.rundenIndex === rundenIndex);
+    if (zug && einsatz) return null;
+    return { key: `r${rundenIndex}`, timerId: "fa-timer-runde" };
+  }
+  return null;
+}
+
+function eingabeTimerTick() {
+  if (!el.wurzel) return;
+  const phase = aktuelleFristPhase();
+  ["fa-timer-auktion", "fa-timer-runde"].forEach((id) => {
+    const box = $(id);
+    if (box && (!phase || phase.timerId !== id)) box.hidden = true;
+  });
+  if (!phase) { fristKey = null; return; }
+  if (phase.key !== fristKey) {
+    fristKey = phase.key;
+    fristEnde = Date.now() + EINGABE_DAUER_MS;
+    fristAbgelaufenAusgeloest = false;
+  }
+  const rest = Math.max(0, fristEnde - Date.now());
+  const sek = Math.ceil(rest / 1000);
+  const box = $(phase.timerId);
+  box.hidden = false;
+  box.classList.toggle("fa-timer-knapp", sek <= TIMER_WARNUNG_S);
+  box.querySelector(".fa-timer-zahl").textContent = `${sek}`;
+  box.querySelector(".fa-timer-fuellung").style.width = `${(rest / EINGABE_DAUER_MS) * 100}%`;
+  if (rest <= 0 && !fristAbgelaufenAusgeloest) {
+    fristAbgelaufenAusgeloest = true;
+    fristAbgelaufen(phase.key);
+  }
+}
+
+// Zeit ist um: das, was bisher eingetragen ist, wird automatisch abgeschickt.
+async function fristAbgelaufen(key) {
+  try {
+    if (key.startsWith("a")) {
+      await geboteBestaetigen(true);
+    } else {
+      const eigener = eigenerSpieler();
+      if (!eigener) return;
+      const hatZug = alleSpielzuege.some((z) => z.spielerId === api.spielerId && z.rundenIndex === rundenIndex);
+      if (!hatZug) {
+        const verfuegbar = eigeneVerfuegbareKarten(eigener);
+        if (verfuegbar.length === 0) return;
+        const kartenId = verfuegbar[Math.floor(Math.random() * verfuegbar.length)];
+        await setDoc(doc(api.db, "raeume", api.code, "fa_spielzuege", `${api.spielerId}_${rundenIndex}`), {
+          spielerId: api.spielerId, rundenIndex, kartenId, zeitpunkt: serverTimestamp()
+        });
+      }
+      const hatEinsatz = alleEinsaetze.some((e) => e.spielerId === api.spielerId && e.rundenIndex === rundenIndex);
+      if (!hatEinsatz) await einsatzBestaetigen(true);
+      zeigeRunde();
+    }
+  } catch (e) {
+    zeigeDebug("Fehler beim automatischen Abschicken: " + e.message);
+  }
+}
+
 function zeigeAuktion() {
   const eigener = eigenerSpieler();
   if (!eigener) return;
@@ -625,7 +706,7 @@ function zeigeAuktion() {
   aktualisiereAuktionStatus();
 }
 
-async function geboteBestaetigen() {
+async function geboteBestaetigen(erzwingen = false) {
   const eigener = eigenerSpieler();
   if (!eigener) return;
   $("fa-auktion-fehler").textContent = "";
@@ -634,8 +715,13 @@ async function geboteBestaetigen() {
   auktionKarten.forEach((id) => { gebote[id] = eigeneGebote[id] ?? 0; });
   const fehler = pruefeGebote(gebote, auktionKarten, eigener.faMuenzen ?? STARTMUENZEN);
   if (fehler) {
-    $("fa-auktion-fehler").textContent = fehler;
-    return;
+    if (erzwingen === true) {
+      // Zeit abgelaufen mit ungültigen Geboten: nichts bieten.
+      auktionKarten.forEach((id) => { gebote[id] = 0; });
+    } else {
+      $("fa-auktion-fehler").textContent = fehler;
+      return;
+    }
   }
 
   $("fa-gebote-bestaetigen").disabled = true;
@@ -1182,13 +1268,17 @@ async function karteSpielen(kartenId) {
   }
 }
 
-async function einsatzBestaetigen() {
+async function einsatzBestaetigen(erzwingen = false) {
   const eigener = eigenerSpieler();
   if (!eigener) return;
   $("fa-einsatz-fehler").textContent = "";
-  const einsatz = Object.fromEntries(KATEGORIEN.map((k) => [k, eigenerEinsatz[k] ?? 0]));
+  const entwurf = einsatzUiRunde === rundenIndex ? eigenerEinsatz : {};
+  let einsatz = Object.fromEntries(KATEGORIEN.map((k) => [k, entwurf[k] ?? 0]));
   const fehler = pruefeEinsatz(einsatz, eigener.faMuenzen ?? 0);
-  if (fehler) { $("fa-einsatz-fehler").textContent = fehler; return; }
+  if (fehler) {
+    if (erzwingen === true) einsatz = Object.fromEntries(KATEGORIEN.map((k) => [k, 0]));
+    else { $("fa-einsatz-fehler").textContent = fehler; return; }
+  }
   $("fa-einsatz-bestaetigen").disabled = true;
   try {
     await setDoc(doc(api.db, "raeume", api.code, "fa_einsaetze", `${api.spielerId}_${rundenIndex}`), {
@@ -1288,10 +1378,20 @@ function zeigeRundenErgebnis() {
   const summen = erg.summen ?? {};
 
   const summenBox = $("fa-runde-erg-summen");
+  const einsaetzeNachKat = (kat) => Object.entries(spielerErg)
+    .map(([id, d]) => ({ name: spielerListe.find((x) => x.id === id)?.name ?? "?", betrag: d.einsatz?.[kat] ?? 0 }))
+    .filter((e) => e.betrag > 0)
+    .sort((a, b) => b.betrag - a.betrag);
   summenBox.innerHTML = [...KATEGORIEN]
     .sort((a, b) => (summen[b] ?? 0) - (summen[a] ?? 0) || KATEGORIEN.indexOf(a) - KATEGORIEN.indexOf(b))
-    .map((kat) => `<span class="fa-erg-summe${rundenKategorien.includes(kat) ? " fa-erg-summe-gewonnen" : ""}">` +
-      `${escapeHtml(KATEGORIE_NAMEN[kat])} <strong>${summen[kat] ?? 0}</strong> ${MUENZE}</span>`)
+    .map((kat) => {
+      const gewonnen = rundenKategorien.includes(kat);
+      const gebote = einsaetzeNachKat(kat);
+      return `<div class="fa-erg-summe${gewonnen ? " fa-erg-summe-gewonnen" : ""}">` +
+        `<div class="fa-erg-summe-kopf"><span>${escapeHtml(KATEGORIE_NAMEN[kat])}</span><strong>${summen[kat] ?? 0} ${MUENZE}</strong></div>` +
+        `<div class="fa-erg-summe-gebote">${gebote.length ? gebote.map((e) => `${escapeHtml(e.name)} ${e.betrag}`).join(", ") : "keine Gebote"}</div>` +
+      `</div>`;
+    })
     .join("");
 
   const notizen = [];
