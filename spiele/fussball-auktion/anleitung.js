@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE
-} from "./logik.js?v=260";
+} from "./logik.js?v=261";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 

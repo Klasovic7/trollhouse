@@ -18,14 +18,14 @@
     "name": "Luka Spessart",
     "nation": "Deutschland",
     "faehigkeiten": {
-      "SCH": 4,
-      "PAS": 2,
-      "TEC": 6,
-      "VER": 9,
-      "GES": 6,
-      "SPI": 5
+      "SCH": 3,
+      "PAS": 5,
+      "TEC": 5,
+      "VER": 1,
+      "GES": 4,
+      "SPI": 7
     },
-    "gesamt": 32
+    "gesamt": 25
   },
   {
     "id": "de-3",
@@ -33,27 +33,27 @@
     "nation": "Deutschland",
     "faehigkeiten": {
       "SCH": 7,
-      "PAS": 10,
-      "TEC": 7,
+      "PAS": 4,
+      "TEC": 8,
       "VER": 3,
       "GES": 4,
-      "SPI": 4
+      "SPI": 10
     },
-    "gesamt": 35
+    "gesamt": 36
   },
   {
     "id": "de-4",
     "name": "Norbert Muckel",
     "nation": "Deutschland",
     "faehigkeiten": {
-      "SCH": 9,
+      "SCH": 10,
       "PAS": 8,
-      "TEC": 7,
+      "TEC": 5,
       "VER": 3,
-      "GES": 4,
-      "SPI": 6
+      "GES": 7,
+      "SPI": 9
     },
-    "gesamt": 37
+    "gesamt": 42
   },
   {
     "id": "de-5",
@@ -63,39 +63,39 @@
       "SCH": 10,
       "PAS": 2,
       "TEC": 10,
-      "VER": 6,
-      "GES": 7,
-      "SPI": 9
+      "VER": 7,
+      "GES": 8,
+      "SPI": 10
     },
-    "gesamt": 44
+    "gesamt": 47
   },
   {
     "id": "it-1",
     "name": "Kevino Hofaccio",
     "nation": "Italien",
     "faehigkeiten": {
-      "SCH": 1,
-      "PAS": 1,
+      "SCH": 5,
+      "PAS": 4,
       "TEC": 1,
-      "VER": 5,
-      "GES": 4,
-      "SPI": 3
+      "VER": 1,
+      "GES": 7,
+      "SPI": 1
     },
-    "gesamt": 15
+    "gesamt": 19
   },
   {
     "id": "it-2",
     "name": "Luca Spezzotto",
     "nation": "Italien",
     "faehigkeiten": {
-      "SCH": 5,
+      "SCH": 6,
       "PAS": 3,
-      "TEC": 5,
-      "VER": 5,
+      "TEC": 6,
+      "VER": 6,
       "GES": 3,
       "SPI": 4
     },
-    "gesamt": 25
+    "gesamt": 28
   },
   {
     "id": "it-3",
@@ -103,13 +103,13 @@
     "nation": "Italien",
     "faehigkeiten": {
       "SCH": 2,
-      "PAS": 7,
-      "TEC": 8,
-      "VER": 7,
+      "PAS": 8,
+      "TEC": 9,
+      "VER": 8,
       "GES": 5,
-      "SPI": 8
+      "SPI": 9
     },
-    "gesamt": 37
+    "gesamt": 41
   },
   {
     "id": "it-4",
@@ -121,9 +121,9 @@
       "TEC": 3,
       "VER": 7,
       "GES": 6,
-      "SPI": 9
+      "SPI": 8
     },
-    "gesamt": 38
+    "gesamt": 37
   },
   {
     "id": "it-5",
@@ -144,84 +144,84 @@
     "name": "Nadir Mouchel",
     "nation": "Frankreich",
     "faehigkeiten": {
-      "SCH": 2,
-      "PAS": 5,
+      "SCH": 1,
+      "PAS": 2,
       "TEC": 2,
       "VER": 4,
       "GES": 4,
-      "SPI": 1
+      "SPI": 4
     },
-    "gesamt": 18
+    "gesamt": 17
   },
   {
     "id": "fr-2",
     "name": "Siméon Martel",
     "nation": "Frankreich",
     "faehigkeiten": {
-      "SCH": 7,
-      "PAS": 4,
-      "TEC": 7,
-      "VER": 6,
-      "GES": 4,
-      "SPI": 5
+      "SCH": 3,
+      "PAS": 6,
+      "TEC": 4,
+      "VER": 5,
+      "GES": 6,
+      "SPI": 3
     },
-    "gesamt": 33
+    "gesamt": 27
   },
   {
     "id": "fr-3",
     "name": "Kévin Houfard",
     "nation": "Frankreich",
     "faehigkeiten": {
-      "SCH": 7,
-      "PAS": 8,
-      "TEC": 5,
-      "VER": 3,
-      "GES": 6,
-      "SPI": 6
+      "SCH": 10,
+      "PAS": 10,
+      "TEC": 8,
+      "VER": 4,
+      "GES": 7,
+      "SPI": 8
     },
-    "gesamt": 35
+    "gesamt": 47
   },
   {
     "id": "fr-4",
     "name": "Luc Épissot",
     "nation": "Frankreich",
     "faehigkeiten": {
-      "SCH": 7,
-      "PAS": 9,
+      "SCH": 8,
+      "PAS": 10,
       "TEC": 4,
       "VER": 10,
       "GES": 6,
       "SPI": 6
     },
-    "gesamt": 42
+    "gesamt": 44
   },
   {
     "id": "fr-5",
     "name": "Nicolas Trollet",
     "nation": "Frankreich",
     "faehigkeiten": {
-      "SCH": 4,
-      "PAS": 7,
-      "TEC": 9,
-      "VER": 7,
-      "GES": 8,
-      "SPI": 9
+      "SCH": 3,
+      "PAS": 6,
+      "TEC": 7,
+      "VER": 6,
+      "GES": 6,
+      "SPI": 7
     },
-    "gesamt": 44
+    "gesamt": 35
   },
   {
     "id": "ar-1",
     "name": "Sinón Martín",
     "nation": "Argentinien",
     "faehigkeiten": {
-      "SCH": 5,
-      "PAS": 3,
-      "TEC": 4,
-      "VER": 4,
-      "GES": 4,
-      "SPI": 1
+      "SCH": 10,
+      "PAS": 7,
+      "TEC": 10,
+      "VER": 9,
+      "GES": 9,
+      "SPI": 3
     },
-    "gesamt": 21
+    "gesamt": 48
   },
   {
     "id": "ar-2",
@@ -229,69 +229,69 @@
     "nation": "Argentinien",
     "faehigkeiten": {
       "SCH": 4,
-      "PAS": 4,
-      "TEC": 5,
+      "PAS": 5,
+      "TEC": 3,
       "VER": 3,
-      "GES": 3,
-      "SPI": 6
+      "GES": 4,
+      "SPI": 5
     },
-    "gesamt": 25
+    "gesamt": 24
   },
   {
     "id": "ar-3",
     "name": "Kevin Herrera",
     "nation": "Argentinien",
     "faehigkeiten": {
-      "SCH": 7,
-      "PAS": 7,
-      "TEC": 6,
-      "VER": 4,
-      "GES": 10,
-      "SPI": 2
+      "SCH": 9,
+      "PAS": 3,
+      "TEC": 9,
+      "VER": 5,
+      "GES": 8,
+      "SPI": 10
     },
-    "gesamt": 36
+    "gesamt": 44
   },
   {
     "id": "ar-4",
     "name": "Nicolás Troilo",
     "nation": "Argentinien",
     "faehigkeiten": {
-      "SCH": 4,
-      "PAS": 7,
-      "TEC": 5,
+      "SCH": 3,
+      "PAS": 6,
+      "TEC": 4,
       "VER": 8,
-      "GES": 10,
-      "SPI": 8
+      "GES": 6,
+      "SPI": 6
     },
-    "gesamt": 42
+    "gesamt": 33
   },
   {
     "id": "ar-5",
     "name": "Nahuel Maquieira",
     "nation": "Argentinien",
     "faehigkeiten": {
-      "SCH": 4,
-      "PAS": 10,
-      "TEC": 9,
-      "VER": 7,
-      "GES": 9,
-      "SPI": 7
+      "SCH": 2,
+      "PAS": 5,
+      "TEC": 3,
+      "VER": 3,
+      "GES": 4,
+      "SPI": 4
     },
-    "gesamt": 46
+    "gesamt": 21
   },
   {
     "id": "es-1",
     "name": "Sinan Mert",
     "nation": "Türkei",
     "faehigkeiten": {
-      "SCH": 4,
+      "SCH": 3,
       "PAS": 3,
       "TEC": 1,
       "VER": 4,
-      "GES": 6,
-      "SPI": 3
+      "GES": 3,
+      "SPI": 5
     },
-    "gesamt": 21
+    "gesamt": 19
   },
   {
     "id": "es-2",
@@ -299,55 +299,55 @@
     "nation": "Türkei",
     "faehigkeiten": {
       "SCH": 5,
-      "PAS": 4,
-      "TEC": 7,
+      "PAS": 6,
+      "TEC": 4,
       "VER": 4,
       "GES": 5,
       "SPI": 6
     },
-    "gesamt": 31
+    "gesamt": 30
   },
   {
     "id": "es-3",
     "name": "Kenan Hocıoğlu",
     "nation": "Türkei",
     "faehigkeiten": {
-      "SCH": 4,
-      "PAS": 8,
-      "TEC": 6,
-      "VER": 8,
-      "GES": 5,
-      "SPI": 3
+      "SCH": 6,
+      "PAS": 10,
+      "TEC": 8,
+      "VER": 10,
+      "GES": 7,
+      "SPI": 4
     },
-    "gesamt": 34
+    "gesamt": 45
   },
   {
     "id": "es-4",
     "name": "Ulaş Sesoğlu",
     "nation": "Türkei",
     "faehigkeiten": {
-      "SCH": 10,
+      "SCH": 9,
       "PAS": 4,
-      "TEC": 9,
+      "TEC": 8,
       "VER": 8,
-      "GES": 8,
+      "GES": 9,
       "SPI": 3
     },
-    "gesamt": 42
+    "gesamt": 41
   },
   {
     "id": "es-5",
     "name": "Nadir Malkoç",
     "nation": "Türkei",
     "faehigkeiten": {
-      "SCH": 7,
-      "PAS": 8,
-      "TEC": 6,
-      "VER": 10,
+      "SCH": 5,
+      "PAS": 5,
+      "TEC": 5,
+      "VER": 8,
       "GES": 6,
-      "SPI": 7
+      "SPI": 6
     },
-    "gesamt": 44
+    "gesamt": 35
   },
   {
     "id": "jp-1",
@@ -356,26 +356,26 @@
     "faehigkeiten": {
       "SCH": 2,
       "PAS": 3,
-      "TEC": 1,
-      "VER": 5,
-      "GES": 5,
+      "TEC": 6,
+      "VER": 6,
+      "GES": 1,
       "SPI": 2
     },
-    "gesamt": 18
+    "gesamt": 20
   },
   {
     "id": "jp-2",
     "name": "Naderu Mukai",
     "nation": "Japan",
     "faehigkeiten": {
-      "SCH": 3,
+      "SCH": 9,
       "PAS": 5,
-      "TEC": 7,
-      "VER": 3,
-      "GES": 8,
+      "TEC": 3,
+      "VER": 7,
+      "GES": 3,
       "SPI": 2
     },
-    "gesamt": 28
+    "gesamt": 29
   },
   {
     "id": "jp-3",
@@ -384,9 +384,9 @@
     "faehigkeiten": {
       "SCH": 8,
       "PAS": 7,
-      "TEC": 4,
+      "TEC": 5,
       "VER": 4,
-      "GES": 5,
+      "GES": 4,
       "SPI": 6
     },
     "gesamt": 34
@@ -396,98 +396,98 @@
     "name": "Shinan Marutin",
     "nation": "Japan",
     "faehigkeiten": {
-      "SCH": 10,
+      "SCH": 9,
       "PAS": 7,
       "TEC": 5,
       "VER": 4,
       "GES": 7,
-      "SPI": 9
+      "SPI": 8
     },
-    "gesamt": 42
+    "gesamt": 40
   },
   {
     "id": "jp-5",
     "name": "Naoki Toru",
     "nation": "Japan",
     "faehigkeiten": {
-      "SCH": 10,
+      "SCH": 6,
       "PAS": 7,
-      "TEC": 6,
+      "TEC": 10,
       "VER": 6,
-      "GES": 8,
-      "SPI": 9
+      "GES": 9,
+      "SPI": 10
     },
-    "gesamt": 46
+    "gesamt": 48
   },
   {
     "id": "br-1",
     "name": "Kevyn Hofaça",
     "nation": "Brasilien",
     "faehigkeiten": {
-      "SCH": 5,
-      "PAS": 6,
-      "TEC": 3,
+      "SCH": 6,
+      "PAS": 8,
+      "TEC": 6,
       "VER": 1,
-      "GES": 5,
+      "GES": 4,
       "SPI": 1
     },
-    "gesamt": 21
+    "gesamt": 26
   },
   {
     "id": "br-2",
     "name": "Lucca Speixoto",
     "nation": "Brasilien",
     "faehigkeiten": {
-      "SCH": 9,
-      "PAS": 4,
-      "TEC": 4,
-      "VER": 4,
+      "SCH": 7,
+      "PAS": 10,
+      "TEC": 7,
+      "VER": 10,
       "GES": 7,
-      "SPI": 4
+      "SPI": 7
     },
-    "gesamt": 32
+    "gesamt": 48
   },
   {
     "id": "br-3",
     "name": "Nico Trolão",
     "nation": "Brasilien",
     "faehigkeiten": {
-      "SCH": 4,
+      "SCH": 6,
       "PAS": 5,
       "TEC": 5,
-      "VER": 7,
-      "GES": 9,
+      "VER": 8,
+      "GES": 4,
       "SPI": 6
     },
-    "gesamt": 36
+    "gesamt": 34
   },
   {
     "id": "br-4",
     "name": "Nasser Mucalhães",
     "nation": "Brasilien",
     "faehigkeiten": {
-      "SCH": 7,
+      "SCH": 6,
       "PAS": 10,
-      "TEC": 6,
-      "VER": 7,
+      "TEC": 7,
+      "VER": 8,
       "GES": 4,
-      "SPI": 7
+      "SPI": 8
     },
-    "gesamt": 41
+    "gesamt": 43
   },
   {
     "id": "br-5",
     "name": "Simão Marins",
     "nation": "Brasilien",
     "faehigkeiten": {
-      "SCH": 5,
-      "PAS": 10,
-      "TEC": 6,
-      "VER": 10,
-      "GES": 7,
-      "SPI": 8
+      "SCH": 2,
+      "PAS": 3,
+      "TEC": 3,
+      "VER": 4,
+      "GES": 4,
+      "SPI": 3
     },
-    "gesamt": 46
+    "gesamt": 19
   },
   {
     "id": "ng-1",
@@ -508,10 +508,10 @@
     "name": "Sani Martins",
     "nation": "Nigeria",
     "faehigkeiten": {
-      "SCH": 4,
-      "PAS": 4,
-      "TEC": 3,
-      "VER": 7,
+      "SCH": 3,
+      "PAS": 7,
+      "TEC": 4,
+      "VER": 4,
       "GES": 6,
       "SPI": 3
     },
@@ -523,13 +523,13 @@
     "nation": "Nigeria",
     "faehigkeiten": {
       "SCH": 3,
-      "PAS": 7,
+      "PAS": 8,
       "TEC": 4,
-      "VER": 9,
-      "GES": 9,
+      "VER": 8,
+      "GES": 7,
       "SPI": 5
     },
-    "gesamt": 37
+    "gesamt": 35
   },
   {
     "id": "ng-4",
@@ -550,13 +550,13 @@
     "name": "Nadir Mukasa",
     "nation": "Nigeria",
     "faehigkeiten": {
-      "SCH": 10,
+      "SCH": 8,
       "PAS": 4,
-      "TEC": 10,
-      "VER": 10,
+      "TEC": 9,
+      "VER": 9,
       "GES": 9,
-      "SPI": 7
+      "SPI": 6
     },
-    "gesamt": 50
+    "gesamt": 45
   }
 ]
