@@ -132,13 +132,15 @@ export function loeseGebotsrundeAuf(kartenIds, geboteProSpieler, kapazitaetProSp
 // Karte ist und "gesamt" deren Gesamtsumme über alle 6 Fähigkeiten (Tiebreak).
 //
 // Regeln (vom Nutzer bestätigt):
-//  - niedrigste Summe: -2 Punkte
+//  - niedrigste Summe: -1 Punkt
 //  - zweitniedrigste ("Vorletzter"): 1 Punkt
 //  - jede Position weiter nach oben: +1 Punkt mehr
 //  - höchste Summe: zusätzlich +2 Bonuspunkte
 //  - Gleichstand bei der Summe: höhere Gesamtsumme (alle 6 Fähigkeiten) gewinnt den Rang
 // Zusatzpunkte für die höchste Summe einer Runde.
 export const BONUS_BESTER_PLATZ = 2;
+// Punkte für die niedrigste Summe einer Runde.
+export const PUNKTE_LETZTER_PLATZ = -1;
 
 export function berechneRundenpunkte(eintraege) {
   const sortiert = [...eintraege].sort((a, b) =>
@@ -149,7 +151,7 @@ export function berechneRundenpunkte(eintraege) {
   sortiert.forEach((eintrag, i) => {
     const rang = i + 1; // 1 = niedrigste Summe
     let punkte;
-    if (rang === 1) punkte = -2;
+    if (rang === 1) punkte = PUNKTE_LETZTER_PLATZ;
     else punkte = rang - 1;
     if (rang === n && n > 1) punkte += BONUS_BESTER_PLATZ;
     ergebnis[eintrag.spielerId] = punkte;

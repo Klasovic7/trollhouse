@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE
-} from "./logik.js?v=268";
+} from "./logik.js?v=269";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -243,7 +243,7 @@ function szenen(kh) {
             ["Spieler A", 19, "+5", "fa-anl-top"],
             ["Spieler B", 14, "+2", ""],
             ["Spieler C", 12, "+1", ""],
-            ["Spieler D", 9, "−2", "fa-anl-minus"]
+            ["Spieler D", 9, "−1", "fa-anl-minus"]
           ].map(([n, s, p, k], i) => `
             <div class="fa-anl-rang-zeile ${k}" style="animation-delay:${0.8 + i * 0.7}s">
               <span class="fa-anl-rang-nr">${i + 1}.</span>
@@ -254,7 +254,7 @@ function szenen(kh) {
             </div>`).join("")}
         </div>
         <ul class="fa-anl-liste">
-          <li ${ein(3.8)}>Letzter Platz: <strong>−2</strong>. Der Vorletzte bekommt <strong>1</strong>, jeder Platz weiter oben <strong>einen Punkt mehr</strong>.</li>
+          <li ${ein(3.8)}>Letzter Platz: <strong>−1</strong>. Der Vorletzte bekommt <strong>1</strong>, jeder Platz weiter oben <strong>einen Punkt mehr</strong>.</li>
           <li ${ein(4.6)}>Der Beste bekommt zusätzlich <strong>+2 Bonuspunkte</strong>.</li>
           <li ${ein(5.4)}>Gleiche Summe? Dann gewinnt die Karte mit der höheren <strong>Gesamtstärke</strong>.</li>
         </ul>`
