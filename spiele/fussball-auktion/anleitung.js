@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE
-} from "./logik.js?v=262";
+} from "./logik.js?v=263";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -178,19 +178,19 @@ function szenen(kh) {
         <p ${ein(0)}>Nigerianische Karten machen sich <strong>teilweise bezahlt</strong>: Du bekommst Münzen zurück - ein Anteil des Preises, den du für die Karte bezahlt hast.</p>
         <table ${ein(0.8, "fa-anl-tabelle")}>
           <tr><th>Nigerianer</th><td>2.</td><td>3.</td><td>4.</td><td>5.</td></tr>
-          <tr><th>Erstattung</th><td>20 %</td><td>40 %</td><td>60 %</td><td>80 %</td></tr>
+          <tr><th>Erstattung</th><td>30 %</td><td>50 %</td><td>75 %</td><td>100 %</td></tr>
         </table>
         <div ${ein(1.8, "fa-anl-rueck")}>
           <span class="fa-anl-preis">Kartenpreis <strong>10</strong></span>
-          <span class="fa-anl-pfeil">→ 20 %</span>
-          <span class="fa-anl-muenze-fliegt">🪙</span><span class="fa-anl-muenze-fliegt fa-anl-m2">🪙</span>
-          <span class="fa-anl-preis"><strong>+2</strong> zurück</span>
+          <span class="fa-anl-pfeil">→ 30 %</span>
+          <span class="fa-anl-muenze-fliegt">🪙</span><span class="fa-anl-muenze-fliegt fa-anl-m2">🪙</span><span class="fa-anl-muenze-fliegt fa-anl-m2">🪙</span>
+          <span class="fa-anl-preis"><strong>+3</strong> zurück</span>
         </div>
         <ul class="fa-anl-liste">
           <li ${ein(2.6)}>Die Münzen kommen am <strong>Ende der Auktionsrunde</strong> zurück.</li>
-          <li ${ein(3.4)}>Gezählt wird nach <strong>Besitz</strong>: Der 2. Nigerianer, den du besitzt, bringt 20 %.</li>
+          <li ${ein(3.4)}>Gezählt wird nach <strong>Besitz</strong>: Der 2. Nigerianer, den du besitzt, bringt 30 %.</li>
           <li ${ein(4.2)}>Gewinnst du zwei in einer Runde, bekommt die <strong>teurere</strong> Karte die höhere Stufe.</li>
-          <li ${ein(5.0)}>Es wird <strong>kaufmännisch gerundet</strong>: 20 % von 13 sind 2,6 → 3 Münzen.</li>
+          <li ${ein(5.0)}>Es wird <strong>kaufmännisch gerundet</strong>: 30 % von 13 sind 3,9 → 4 Münzen.</li>
           <li ${ein(5.8)}>Zurückbekommene Münzen sind auch in den <strong>Spielrunden</strong> nützlich - dort setzt du sie auf Fähigkeiten.</li>
         </ul>`
     },

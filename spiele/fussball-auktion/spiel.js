@@ -30,14 +30,14 @@ import {
   kartenBearbeitungsreihenfolge, aufloesenEineKarte,
   BONUS_MUENZEN_SPIELPHASE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
-  effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung
-} from "./logik.js?v=262";
+  effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
+} from "./logik.js?v=263";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=262";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=262";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=263";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=263";
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
@@ -66,7 +66,7 @@ const VORLAGE = `
           <li>🇧🇷 <strong>Brasilien</strong> – Technik +n</li>
           <li>🇯🇵 <strong>Japan</strong> – Spielverständnis +n</li>
           <li>🇩🇪 <strong>Deutschland</strong> – in jeder Spielrunde bekommt jede deutsche Karte bekommt automatisch +(n−1) auf die Fähigkeit mit den meisten Münzen</li>
-          <li>🇳🇬 <strong>Nigeria</strong> – Münzen-Rückerstattung beim 2. (20 %), 3. (40 %), 4. (60 %) und 5. (80 %) Nigerianer</li>
+          <li>🇳🇬 <strong>Nigeria</strong> – Münzen-Rückerstattung beim 2. (30 %), 3. (50 %), 4. (75 %) und 5. (100 %) Nigerianer</li>
         </ul>
         <p class="fa-regel-hinweis">n = Anzahl deiner Spieler dieses Landes (ab 2)</p>
       </div>
@@ -545,7 +545,7 @@ function boniTexte(spielerObj) {
     if (!regel || n < 2) continue;
     if (regel.typ === "stat") texte.push(`${nation} ×${n}: ${KATEGORIE_NAMEN[regel.kat]} +${n}`);
     else if (regel.typ === "frei") texte.push(`${nation} ×${n}: in jeder Spielrunde +${n - 1} auf die Fähigkeit mit den meisten Münzen`);
-    else if (regel.typ === "rabatt") texte.push(`${nation} ×${n}: Münzen-Rückerstattung bis ${Math.min(80, (n - 1) * 20)} %`);
+    else if (regel.typ === "rabatt") texte.push(`${nation} ×${n}: Münzen-Rückerstattung bis ${nigeriaRabattProzent(Math.min(n, 5))} %`);
   }
   return texte;
 }
@@ -737,7 +737,7 @@ async function vergebeKarte(kartenId, spielerId, betrag) {
 
 // Nigeria-Rabatt: nach jeder Gebotsrunde bekommt ein Spieler für seine in dieser
 // Runde gewonnenen Nigerianer einen Teil des Kaufpreises zurück (2. Nigerianer
-// 20 %, 3. 40 %, 4. 60 %, 5. 80 %; bei mehreren in einer Runde gehört die
+// 30 %, 3. 50 %, 4. 75 %, 5. 100 %; bei mehreren in einer Runde gehört die
 // höhere Stufe zur teureren Karte). Kaufmännisch gerundet.
 async function wendeNigeriaErstattungAn(zwischenergebnis) {
   const proSpieler = {};

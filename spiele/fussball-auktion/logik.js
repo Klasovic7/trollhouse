@@ -252,9 +252,10 @@ export function effektiveGesamt(karte, bonus) {
 }
 
 // ---------- Nigeria: Preisnachlass ----------
-// Der k-te Nigerianer im Besitz: 1. 0 %, 2. 20 %, 3. 40 %, 4. 60 %, 5. 80 %.
+// Der k-te Nigerianer im Besitz: 1. 0 %, 2. 30 %, 3. 50 %, 4. 75 %, 5. 100 %.
+export const NIGERIA_STUFEN = [0, 30, 50, 75, 100]; // Index = Anzahl Nigerianer - 1
 export function nigeriaRabattProzent(nummer) {
-  return nummer <= 1 ? 0 : Math.min(80, (nummer - 1) * 20);
+  return nummer <= 1 ? 0 : NIGERIA_STUFEN[Math.min(nummer, NIGERIA_STUFEN.length) - 1];
 }
 
 // Kaufmännisch gerundeter Prozentanteil (x,5 wird aufgerundet) - rein ganzzahlig.
