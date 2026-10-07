@@ -12,7 +12,7 @@
 // ============================================================================
 import {
   STARTMUENZEN, MAX_KARTEN_PRO_SPIELER, ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN, LAENDER_BONI, BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE
-} from "./logik.js?v=269";
+} from "./logik.js?v=270";
 
 const SPEICHER_KEY = "fa_anleitung_raum";
 
@@ -68,7 +68,7 @@ function szenen(kh) {
       dauer: 14000,
       html: () => `
         <div ${ein(0, "fa-anl-muenzen")}>
-          <div class="fa-anl-muenze">🪙</div>
+          <div class="fa-anl-muenze"><span class="fa-muenze"></span></div>
           <div class="fa-anl-zahl">${STARTMUENZEN}</div>
         </div>
         <p ${ein(0.5)}>Jeder startet mit <strong>${STARTMUENZEN} Münzen</strong>. Das ist dein Budget für die <em>gesamte</em> Auktion - es gibt kein Nachfüllen.</p>
@@ -184,7 +184,7 @@ function szenen(kh) {
         <div ${ein(1.8, "fa-anl-rueck")}>
           <span class="fa-anl-preis">Kartenpreis <strong>10</strong></span>
           <span class="fa-anl-pfeil">→ 30 %</span>
-          <span class="fa-anl-muenze-fliegt">🪙</span><span class="fa-anl-muenze-fliegt fa-anl-m2">🪙</span><span class="fa-anl-muenze-fliegt fa-anl-m2">🪙</span>
+          <span class="fa-anl-muenze-fliegt"><span class="fa-muenze"></span></span><span class="fa-anl-muenze-fliegt fa-anl-m2"><span class="fa-muenze"></span></span><span class="fa-anl-muenze-fliegt fa-anl-m2"><span class="fa-muenze"></span></span>
           <span class="fa-anl-preis"><strong>+3</strong> zurück</span>
         </div>
         <ul class="fa-anl-liste">

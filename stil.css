@@ -2802,14 +2802,42 @@
 .fa-gebot-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
 .fa-gebot-name { flex: 1; }
 .fa-gebot-betrag { opacity: .9; display: inline-flex; align-items: center; gap: 3px; }
-.fa-goldmuenze {
+.fa-muenze {
   display: inline-block;
-  width: 12px; height: 12px;
+  position: relative;
+  flex: none;
+  width: 1.15em; height: 1.15em;
+  vertical-align: -0.2em;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%, #fff6cf 0%, #ffd452 28%, #e8a317 62%, #a56a06 100%);
-  box-shadow: 0 0 0 1px rgba(120, 76, 0, .5) inset;
+  background: radial-gradient(circle at 34% 28%, #fff3b8 0%, #ffd34d 30%, #f0a91c 68%, #c27d08 100%);
+  border: .09em solid #9a5f00;
+  box-shadow: 0 .06em .12em rgba(0,0,0,.35), inset 0 0 0 .08em #ffe58a;
+  font-size: 1em;
 }
+.fa-muenze::before {
+  content: "";
+  position: absolute; inset: .2em;
+  border-radius: 50%;
+  border: .06em solid rgba(122, 74, 0, .55);
+}
+.fa-muenze::after {
+  content: "\2605";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .62em; line-height: 1;
+  color: #8a5300;
+  text-shadow: 0 .05em 0 rgba(255,240,170,.8);
+}
+.fa-gebot-betrag .fa-muenze { font-size: .95em; }
+.fa-kopfzeile { display: flex; align-items: center; justify-content: center; gap: .35em; flex-wrap: wrap; }
+.fa-kopfzeile .fa-muenze { font-size: 1.1em; vertical-align: 0; }
+.fa-trenn { opacity: .6; }
+.fa-eigene-karten { margin: 8px 0 10px; }
+.fa-eigene-karten-titel { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; opacity: .7; margin-bottom: 4px; }
+.fa-eigene-karten-reihe { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.fa-eigene-karte { flex: 0 0 190px; zoom: .5; }
+.fa-eigene-karte .fa-karte { max-width: none; margin: 0; }
+.fa-eigene-gespielt { opacity: .45; }
 
 /* ===== Fußball-Auktion: Spielanleitung (v253) ===== */
 .fa-anl-knopf {

@@ -31,20 +31,22 @@ import {
   BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
-} from "./logik.js?v=269";
+} from "./logik.js?v=270";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=269";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=269";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=270";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=270";
+
+const MUENZE = '<span class="fa-muenze" role="img" aria-label="Münzen"></span>';
 
 const VORLAGE = `
   <button id="fa-anleitung-btn" type="button" class="fa-anl-knopf">📖 Spielanleitung</button>
   <div id="fa-setup" class="bildschirm-karte" hidden>
     <div class="fa-regeln">
       <div class="fa-regel-block">
-        <h3>🪙 Auktion</h3>
+        <h3><span class="fa-muenze" role="img" aria-label="Münzen"></span> Auktion</h3>
         <p>Jeder startet mit <strong>${STARTMUENZEN} Münzen</strong>.</p>
         <p>In ${ANZAHL_GEBOTSRUNDEN} Gebotsrunden bietest du verdeckt auf Fußballkarten.</p>
         <p>Maximal <strong>${MAX_KARTEN_PRO_SPIELER} Karten</strong> pro Spieler. Karten, die am Ende niemand ersteigert hat, werden zufällig verteilt – jeder hat danach genau ${MAX_KARTEN_PRO_SPIELER}. Pro geschenkter Karte gibt es ${ABZUG_ZUFALLSKARTE} Bonusmünzen weniger in den Spielrunden.</p>
@@ -65,7 +67,7 @@ const VORLAGE = `
           <li>🇹🇷 <strong>Türkei</strong> – Pass +n</li>
           <li>🇧🇷 <strong>Brasilien</strong> – Technik +n</li>
           <li>🇯🇵 <strong>Japan</strong> – Spielverständnis +n</li>
-          <li>🇩🇪 <strong>Deutschland</strong> – in jeder Spielrunde bekommt jede deutsche Karte bekommt automatisch +(n−1) auf die Fähigkeit mit den meisten Münzen</li>
+          <li>🇩🇪 <strong>Deutschland</strong> – in jeder Spielrunde bekommt jede deutsche Karte automatisch +(n−1) auf die Fähigkeit mit den meisten Münzen</li>
           <li>🇳🇬 <strong>Nigeria</strong> – Münzen-Rückerstattung beim 2. (30 %), 3. (50 %), 4. (75 %) und 5. (100 %) Nigerianer</li>
         </ul>
         <p class="fa-regel-hinweis">n = Anzahl deiner Spieler dieses Landes (ab 2)</p>
@@ -80,7 +82,8 @@ const VORLAGE = `
 
   <div id="fa-auktion-screen" class="bildschirm-karte" hidden>
     <h2 id="fa-auktion-titel"></h2>
-    <p class="hinweis-text">Münzen: <strong id="fa-eigene-muenzen"></strong> · Karten: <strong id="fa-eigene-kartenanzahl"></strong>/${MAX_KARTEN_PRO_SPIELER}</p>
+    <p class="hinweis-text fa-kopfzeile"><span class="fa-muenze" role="img" aria-label="Münzen"></span> <strong id="fa-eigene-muenzen"></strong> <span class="fa-trenn">·</span> Karten: <strong id="fa-eigene-kartenanzahl"></strong>/${MAX_KARTEN_PRO_SPIELER}</p>
+    <div id="fa-eigene-karten-auktion" class="fa-eigene-karten" hidden></div>
     <p id="fa-eigene-boni" class="hinweis-text" hidden></p>
     <p id="fa-auktion-inaktiv-hinweis" class="hinweis-text" hidden>Du hast bereits ${MAX_KARTEN_PRO_SPIELER} Karten - in dieser Runde bietest du nicht mit.</p>
     <div id="fa-auktion-karten" class="fa-karten-grid"></div>
@@ -94,6 +97,7 @@ const VORLAGE = `
     <p class="hinweis-text">Gleichstand bei dieser Karte - wer zuerst erhöht, liegt vorn. Läuft der
       Timer ohne neues Gebot ab, entscheidet das Los unter den aktuell Führenden.</p>
     <div id="fa-stechen-karte" class="fa-karten-grid"></div>
+    <div id="fa-eigene-karten-stechen" class="fa-eigene-karten" hidden></div>
     <p class="wi-countdown" id="fa-stechen-countdown"></p>
     <div id="fa-stechen-gebote-liste" class="fa-gebote-liste"></div>
     <div id="fa-stechen-erhoehen-bereich" hidden>
@@ -116,15 +120,16 @@ const VORLAGE = `
 
   <div id="fa-runde-screen" class="bildschirm-karte" hidden>
     <h2>Spielrunde <span id="fa-runde-index"></span>/${ANZAHL_SPIELRUNDEN}</h2>
-    <p class="hinweis-text">Münzen: <strong id="fa-runde-muenzen"></strong></p>
+    <p class="hinweis-text fa-kopfzeile"><span class="fa-muenze" role="img" aria-label="Münzen"></span> <strong id="fa-runde-muenzen"></strong></p>
     <p id="fa-runde-de-hinweis" class="hinweis-text" hidden></p>
     <p id="fa-runde-zufall-hinweis" class="hinweis-text" hidden></p>
     <p id="fa-runde-keine-karte-hinweis" class="hinweis-text" hidden>Du hast keine Karte mehr für diese Runde.</p>
     <p id="fa-runde-schritt" class="fa-runde-schritt"></p>
+    <div id="fa-eigene-karten-runde" class="fa-eigene-karten" hidden></div>
     <div id="fa-runde-karten" class="fa-karten-grid"></div>
     <div id="fa-runde-einsatz" class="fa-einsatz" hidden>
       <div id="fa-runde-einsatz-zeilen"></div>
-      <p class="hinweis-text">Noch frei: <strong id="fa-einsatz-rest"></strong> Münzen</p>
+      <p class="hinweis-text fa-kopfzeile">Noch frei: <span class="fa-muenze" role="img" aria-label="Münzen"></span> <strong id="fa-einsatz-rest"></strong></p>
       <p class="fa-regel-hinweis">Die zwei Fähigkeiten mit den meisten Münzen entscheiden die Runde. Bezahlt werden nur die Münzen auf den entscheidenden Fähigkeiten – alles andere bekommst du zurück.</p>
       <p id="fa-einsatz-fehler" class="fehler-text"></p>
       <p><button id="fa-einsatz-bestaetigen" class="btn-primaer"></button></p>
@@ -558,9 +563,26 @@ function zeigeEigeneBoniZeile(eigener) {
   p.textContent = texte.length ? "Länderboni: " + texte.join(" · ") : "";
 }
 
+// Kleine Übersicht der bereits gewonnenen Karten (gespielte Karten blasser).
+function zeigeEigeneKarten(containerId, spielerObj) {
+  const box = $(containerId);
+  if (!box) return;
+  const ids = spielerObj?.faKarten ?? [];
+  box.hidden = ids.length === 0;
+  if (ids.length === 0) { box.innerHTML = ""; return; }
+  const boni = bonusFuerSpieler(spielerObj, []);
+  const gespielt = new Set(spielerObj.faGespielt ?? []);
+  box.innerHTML = `<span class="fa-eigene-karten-titel">Deine Karten</span><div class="fa-eigene-karten-reihe">` +
+    ids.map((id) => {
+      const k = karte(id);
+      return k ? `<div class="fa-eigene-karte${gespielt.has(id) ? " fa-eigene-gespielt" : ""}">${kartenKachelHtml(k, { bonus: boni[id] })}</div>` : "";
+    }).join("") + `</div>`;
+}
+
 function zeigeAuktion() {
   const eigener = eigenerSpieler();
   if (!eigener) return;
+  zeigeEigeneKarten("fa-eigene-karten-auktion", eigener);
   $("fa-auktion-titel").textContent = auktionRunde > ANZAHL_GEBOTSRUNDEN
     ? "Bonusrunde - unvergebene Karten"
     : `Gebotsrunde ${auktionRunde}/${ANZAHL_GEBOTSRUNDEN}`;
@@ -821,6 +843,7 @@ function zeigeStechen() {
   if (!k) return;
 
   $("fa-stechen-karte").innerHTML = `<div class="fa-karte">${kartenKachelHtml(k)}</div>`;
+  zeigeEigeneKarten("fa-eigene-karten-stechen", eigenerSpieler());
 
   const hoechstesGebot = Math.max(0, ...Object.values(stechenGebote));
   const liste = $("fa-stechen-gebote-liste");
@@ -832,7 +855,7 @@ function zeigeStechen() {
     return `<div class="fa-gebot-eintrag${fuehrt ? " fa-gebot-gewinner" : ""}" style="--spieler-farbe:${escapeHtml(s.farbe ?? "#22c55e")}">` +
       avatarHtml(s.icon, "fa-gebot-avatar") +
       `<span class="fa-gebot-name">${escapeHtml(s.name)}</span>` +
-      `<strong class="fa-gebot-betrag">${betrag} <span class="fa-goldmuenze" aria-hidden="true"></span></strong>` +
+      `<strong class="fa-gebot-betrag">${betrag} <span class="fa-muenze" aria-hidden="true"></span></strong>` +
     `</div>`;
   }).join("");
 
@@ -926,14 +949,14 @@ function zeigeAuktionErgebnis() {
       return `<div class="fa-gebot-eintrag${hatGewonnen ? " fa-gebot-gewinner" : ""}" style="--spieler-farbe:${escapeHtml(s.farbe ?? "#22c55e")}">` +
         avatarHtml(s.icon, "fa-gebot-avatar") +
         `<span class="fa-gebot-name">${escapeHtml(s.name)}</span>` +
-        `<strong class="fa-gebot-betrag">${angezeigterBetrag} <span class="fa-goldmuenze" aria-hidden="true"></span></strong>` +
+        `<strong class="fa-gebot-betrag">${angezeigterBetrag} <span class="fa-muenze" aria-hidden="true"></span></strong>` +
         (hatGewonnen ? `<span class="fa-gebot-sieger-abzeichen" title="Hat die Karte bekommen">🏆</span>` : "") +
       `</div>`;
     }).join("");
 
     const erg = raum.faAuktionErgebnis?.[kartenId];
     const rabattHtml = erg?.prozent > 0
-      ? `<div class="fa-rabatt-zeile">🇳🇬 Nigeria-Rabatt ${erg.prozent} %: <strong>${erg.erstattung}</strong> <span class="fa-goldmuenze" aria-hidden="true"></span> zurück</div>`
+      ? `<div class="fa-rabatt-zeile">🇳🇬 Nigeria-Rabatt ${erg.prozent} %: <strong>${erg.erstattung}</strong> <span class="fa-muenze" aria-hidden="true"></span> zurück</div>`
       : "";
     const div = document.createElement("div");
     div.className = "fa-karte fa-karte-ergebnis";
@@ -1062,7 +1085,7 @@ function aktualisiereEinsatzUi() {
     zeile.querySelector('[data-d="-1"]').disabled = (eigenerEinsatz[kat] ?? 0) <= 0;
     zeile.classList.toggle("fa-einsatz-aktiv", (eigenerEinsatz[kat] ?? 0) > 0);
   });
-  $("fa-einsatz-bestaetigen").textContent = eigeneEinsatzSumme() === 0 ? "Ohne Münzen weiter" : `${eigeneEinsatzSumme()} Münzen setzen`;
+  $("fa-einsatz-bestaetigen").innerHTML = eigeneEinsatzSumme() === 0 ? "Ohne Münzen weiter" : `${MUENZE} ${eigeneEinsatzSumme()} setzen`;
 }
 
 function baueEinsatzUi() {
@@ -1135,6 +1158,8 @@ function zeigeRunde() {
     grid.appendChild(div);
   });
 
+  if (schritt >= 2) zeigeEigeneKarten("fa-eigene-karten-runde", eigener);
+  else $("fa-eigene-karten-runde").hidden = true;
   $("fa-runde-einsatz").hidden = schritt !== 2;
   if (schritt === 2) {
     if (einsatzUiRunde !== rundenIndex) { baueEinsatzUi(); einsatzUiRunde = rundenIndex; }
@@ -1266,7 +1291,7 @@ function zeigeRundenErgebnis() {
   summenBox.innerHTML = [...KATEGORIEN]
     .sort((a, b) => (summen[b] ?? 0) - (summen[a] ?? 0) || KATEGORIEN.indexOf(a) - KATEGORIEN.indexOf(b))
     .map((kat) => `<span class="fa-erg-summe${rundenKategorien.includes(kat) ? " fa-erg-summe-gewonnen" : ""}">` +
-      `${escapeHtml(KATEGORIE_NAMEN[kat])} <strong>${summen[kat] ?? 0}</strong> 🪙</span>`)
+      `${escapeHtml(KATEGORIE_NAMEN[kat])} <strong>${summen[kat] ?? 0}</strong> ${MUENZE}</span>`)
     .join("");
 
   const notizen = [];
@@ -1288,7 +1313,7 @@ function zeigeRundenErgebnis() {
     li.innerHTML = spielerKarte(
       s.name, s.farbe, s.icon, formatiertePunkte(daten.punkte),
       { extra: `${k ? k.name : "?"} - Summe ${daten.summe}`, punkteRechts: s.punkte ?? 0 }
-    ) + `<p class="fa-erg-muenzen">🪙 ${daten.bezahlt} bezahlt${daten.zurueck > 0 ? `, ${daten.zurueck} zurück` : ""} · noch ${s.faMuenzen ?? 0}</p>`;
+    ) + `<p class="fa-erg-muenzen">${MUENZE} ${daten.bezahlt} bezahlt${daten.zurueck > 0 ? `, ${daten.zurueck} zurück` : ""} · noch ${s.faMuenzen ?? 0}</p>`;
     liste.appendChild(li);
   });
   const ausgesetzt = spielerListe.filter((s) => !spielerErg[s.id]);
