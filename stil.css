@@ -2997,3 +2997,15 @@ body.ank-offen { overflow: hidden; }
 .fa-erg-muenzen { margin: 2px 0 10px 6px; font-size: .82rem; opacity: .8; }
 
 #fa-runde-erg-liste > li { list-style: none; }
+
+/* Anleitung: kein Aufbau - jede Seite zeigt sofort alles (nur Dauer-Animationen wie Münzdrehung bleiben) */
+.fa-anl .fa-anl-ein, .fa-anl .fa-anl-kachel, .fa-anl .fa-anl-rang-zeile { opacity: 1; animation: none; transform: none; }
+.fa-anl .fa-anl-faecher .fa-anl-karte { opacity: 1; animation: none; transform: translateX(var(--w)) rotate(var(--r)); }
+.fa-anl .fa-anl-slot { opacity: 1; animation: none; background: rgba(34,197,94,.35); border-style: solid; border-color: #4ade80; }
+.fa-anl .fa-anl-balken i { width: var(--b); animation: none; }
+.fa-anl .fa-anl-pokal { animation: fa-anl-wippe 2.4s ease-in-out infinite; }
+.fa-anl .fa-anl-muenze-fliegt { animation-delay: 0s; }
+.fa-anl .fa-anl-m2 { animation-delay: .4s; }
+.fa-anl .fa-anl-vorher-nachher { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.fa-anl .fa-anl-vorher, .fa-anl .fa-anl-nachher { opacity: 1; animation: none; display: flex; flex-wrap: wrap; }
+.fa-anl .fa-anl-vorher::after { content: "\2193"; flex-basis: 100%; text-align: center; font-size: 1.4rem; font-weight: 900; color: #fcd34d; line-height: 1; margin-top: 4px; }
