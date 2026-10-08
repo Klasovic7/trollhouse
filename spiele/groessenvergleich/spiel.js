@@ -62,9 +62,9 @@ const VORLAGE = `
   <div id="gv-runde-screen" class="bildschirm-karte" hidden>
     <p class="kategorie">Größenvergleich</p>
     <h2 id="gv-frage"></h2>
+    <div class="gv-chips"><span class="gv-chip gv-chip-ref" id="gv-chip-ref"></span><span class="gv-chip gv-chip-ziel" id="gv-chip-ziel"></span></div>
     <div id="gv-timer" class="gv-timer" aria-hidden="true"><i></i></div>
     <svg id="gv-szene" class="gv-szene" viewBox="0 0 ${SZ_B} ${SZ_H}" role="img" aria-label="Größenvergleich"></svg>
-    <div class="gv-schaetzung">Deine Schätzung: <strong id="gv-wert">–</strong></div>
     <div class="gv-regler-zeile">
       <button id="gv-minus" class="gv-fein" type="button" aria-label="Kleiner">−</button>
       <input id="gv-regler" class="gv-regler" type="range" min="0" max="${SLIDER_MAX}" step="1" value="500">
@@ -174,10 +174,12 @@ function ausdehnungBei(o, meter) {
   return { b: e.b * k, h: e.h * k };
 }
 
-function layoutFuer(paar) {
+// Die Szene passt sich immer so an, dass beide Silhouetten ins Bild passen:
+// wird die rote größer, schrumpft die blaue optisch (und umgekehrt).
+function layoutFuer(paar, meterListe) {
   const ref = OBJEKT_NACH_ID[paar.ref], ziel = OBJEKT_NACH_ID[paar.ziel];
   const eR = ausdehnung(ref);
-  const eZ = ausdehnungBei(ziel, paar.hi);
+  const eZ = ausdehnungBei(ziel, Math.max(...meterListe));
   const verfuegbarB = SZ_B - SZ_RAND_L - SZ_RAND_R - SZ_LUECKE;
   const sB = verfuegbarB / (eR.b + eZ.b);
   const sH = (SZ_BODEN - SZ_OBEN) / Math.max(eR.h, eZ.h);
@@ -229,12 +231,8 @@ function bodenLinie() {
 }
 
 function zeichneRundenSzene(paar, meter) {
-  const L = layoutFuer(paar);
-  $("gv-szene").innerHTML =
-    bodenLinie() + refGruppe(L) +
-    masslinie(L.ref, L.ref.m, L.refX, "#2563eb", L.s) +
-    zielGruppe(L, meter, "#ef4444") +
-    masslinie(L.ziel, meter, L.zielX, "#dc2626", L.s);
+  const L = layoutFuer(paar, [meter]);
+  $("gv-szene").innerHTML = bodenLinie() + refGruppe(L) + zielGruppe(L, meter, "#ef4444");
 }
 
 function formatPlusMinus(verhaeltnis) {
@@ -242,10 +240,8 @@ function formatPlusMinus(verhaeltnis) {
   return `${p > 0 ? "+" : p < 0 ? "−" : "±"}${Math.abs(p)} %`;
 }
 
-function frageText(paar) {
-  const z = OBJEKT_NACH_ID[paar.ziel];
-  const wort = z.art === "hoch" ? "hoch" : z.art === "lang" ? "lang" : "breit";
-  return `Wie ${wort} ist ${z.artikel} ${z.name}?`;
+function frageText() {
+  return "Zieh die rote Silhouette auf die richtige Größe";
 }
 function refText(paar) {
   const r = OBJEKT_NACH_ID[paar.ref];
@@ -467,6 +463,10 @@ function bereiteRundeVor() {
   const paar = paare[rundenIndex];
   if (!paar) return;
   $("gv-frage").textContent = frageText(paar);
+  const r = OBJEKT_NACH_ID[paar.ref], z = OBJEKT_NACH_ID[paar.ziel];
+  const mass = (o) => (o.art === "hoch" ? "Höhe" : o.art === "lang" ? "Länge" : "Breite");
+  $("gv-chip-ref").innerHTML = `<small>Referenz</small><b>${escapeHtml(r.name)}</b><em>${mass(r)} ?</em>`;
+  $("gv-chip-ziel").innerHTML = `<small>Größe anpassen</small><b>${escapeHtml(z.name)}</b><em>${mass(z)} ?</em>`;
   $("gv-regler").disabled = false;
   $("gv-minus").disabled = false;
   $("gv-plus").disabled = false;
@@ -474,7 +474,6 @@ function bereiteRundeVor() {
   $("gv-senden").hidden = false;
   sliderWert = paar.start;
   $("gv-regler").value = String(sliderWert);
-  zeigeSchaetzung(paar);
   zeichneRundenSzene(paar, meterAusSlider(paar, sliderWert));
   $("gv-status").innerHTML = "";
   aktualisiereTimer();
@@ -486,14 +485,9 @@ function reglerGeaendert(neu) {
   if (!paar) return;
   sliderWert = Math.max(0, Math.min(SLIDER_MAX, Math.round(neu)));
   $("gv-regler").value = String(sliderWert);
-  zeigeSchaetzung(paar);
   zeichneRundenSzene(paar, meterAusSlider(paar, sliderWert));
 }
 
-function zeigeSchaetzung(paar) {
-  const m = meterAusSlider(paar, sliderWert);
-  $("gv-wert").textContent = `${formatMeter(m)} m`;
-}
 
 function restzeitMs() {
   return DAUER_MS - (Date.now() - rundeStart);
@@ -659,7 +653,7 @@ function zeigeErgebnisInhalt(pos) {
   const antworten = antwortenDieserRunde(pos);
   const punkte = berechneRundenpunkte(pos);
 
-  const L = layoutFuer(paar);
+  const L = layoutFuer(paar, [z.m, ...antworten.filter((a) => a.meter > 0).map((a) => a.meter)]);
   let svg = bodenLinie() + refGruppe(L) + masslinie(L.ref, L.ref.m, L.refX, "#2563eb", L.s);
   svg += zielGruppe(L, z.m, "#22c55e", { deckkraft: 0.85 });
   svg += masslinie(L.ziel, z.m, L.zielX, "#16a34a", L.s);
