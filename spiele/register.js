@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "275";
+const SPIEL_VERSION = "276";
 
 export const SPIELE = [
   {
@@ -155,6 +155,15 @@ export const SPIELE = [
     beschreibung: "Ersteigere Spielerkarten und gewinne mit der besten Kombination",
     minSpieler: 2,
     laden: () => import(`./fussball-auktion/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "groessenvergleich",
+    name: "Größenvergleich",
+    emoji: "📏",
+    farbe: "#38bdf8",
+    beschreibung: "Zieh die rote Silhouette auf die richtige Größe",
+    minSpieler: 2,
+    laden: () => import(`./groessenvergleich/spiel.js?v=${SPIEL_VERSION}`)
   }
 ];
 
