@@ -28,14 +28,13 @@ const STANDARD_ANZAHL = 10;
 // zu sehen ist, bevor der Spielleiter automatisch weiterschaltet.
 const RUNDENERGEBNIS_ANZEIGE_MS = 3500;
 // Die Runden-Zeit ist fest an die Buchstaben-Hinweise gekoppelt (nicht mehr
-// einstellbar): 15s nach Rundenstart erscheint der erste (zufällige)
-// Buchstabe des Landesnamens, nach weiteren 10s ein zweiter - danach bleiben
-// allen noch einmal 10s zum Tippen, ohne dass ein dritter Buchstabe
-// erscheint. Macht in Summe 35s Rundenzeit.
-const ERSTE_AUFDECKUNG_MS = 15000;
-const AUFDECK_ABSTAND_MS = 10000;
-const MAX_AUFDECKUNGEN = 2;
-const ZEIT_NACH_LETZTER_AUFDECKUNG_MS = 10000;
+// einstellbar): 12s nach Rundenstart erscheint der erste (zufällige)
+// Buchstabe des Landesnamens, danach alle 7s ein weiterer (bis zu 4) - nach dem
+// letzten bleiben allen noch einmal 12s zum Tippen. Macht in Summe 45s Rundenzeit.
+const ERSTE_AUFDECKUNG_MS = 12000;
+const AUFDECK_ABSTAND_MS = 7000;
+const MAX_AUFDECKUNGEN = 4;
+const ZEIT_NACH_LETZTER_AUFDECKUNG_MS = 12000;
 const GESAMT_ZEIT_MS = ERSTE_AUFDECKUNG_MS + (MAX_AUFDECKUNGEN - 1) * AUFDECK_ABSTAND_MS + ZEIT_NACH_LETZTER_AUFDECKUNG_MS;
 
 let alleLaender = [];
@@ -88,7 +87,7 @@ function mischeArray(werte) {
   return kopie;
 }
 
-// Höchstens MAX_AUFDECKUNGEN (2) Buchstaben werden aufgedeckt - und nie mehr,
+// Höchstens MAX_AUFDECKUNGEN (4) Buchstaben werden aufgedeckt - und nie mehr,
 // als das Wort überhaupt hat (bei sehr kurzen Namen bleibt mindestens einer
 // verdeckt, damit sich das Rätsel nicht von allein auflöst).
 function maxAufdeckAnzahl(name) {
@@ -105,8 +104,8 @@ const VORLAGE = `
   <div id="lu-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Nur der Umriss ist zu sehen - welches Land ist das? Tippt den Namen per
       Texteingabe; Groß-/Kleinschreibung ist egal und sowohl Deutsch als auch Englisch zählt. Nach
-      15 Sekunden erscheint ein Buchstabe, nach weiteren 10 Sekunden ein zweiter - dann bleiben noch
-      10 Sekunden zum Tippen. Richtig bringt einen Punkt, am schnellsten richtig einen Bonuspunkt dazu.</p>
+      12 Sekunden erscheint ein Buchstabe, danach alle 7 Sekunden ein weiterer (bis zu 4) - am Ende bleiben noch
+      12 Sekunden zum Tippen. Richtig bringt einen Punkt, am schnellsten richtig einen Bonuspunkt dazu.</p>
 
     <div id="lu-anzahl-zeile" class="setup-anzahlblock" hidden>
       <div class="setup-anzahl-zeile">

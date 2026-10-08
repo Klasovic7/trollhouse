@@ -31,15 +31,15 @@ import {
   BONUS_MUENZEN_SPIELPHASE, ABZUG_ZUFALLSKARTE, pruefeEinsatz, bestimmeRundenKategorien, berechneEinsatzZahlungen, mische,
   LAENDER_BONI, zaehleNationen, berechneKartenBoni,
   effektiveFaehigkeiten, effektiveGesamt, berechneNigeriaErstattung, nigeriaRabattProzent
-} from "./logik.js?v=274";
+} from "./logik.js?v=275";
 
 // Stechen (Tiebreak bei Gleichstand): 10 Sekunden Zeit zum Erhöhen, jedes
 // Erhöhen setzt den Timer zurück (siehe loeseAuktionsrundeAuf/pruefeStechenAblauf).
 const STECHEN_DAUER_MS = 10000;
-const EINGABE_DAUER_MS = 30000;   // Zeitlimit für Gebote und Spielrunden
+const EINGABE_DAUER_MS = 60000;   // Zeitlimit für Gebote und Spielrunden
 const TIMER_WARNUNG_S = 5;
-import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=274";
-import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=274";
+import { zeigeAnleitung, anleitungFuerRaumGezeigt } from "./anleitung.js?v=275";
+import { nationDesign, PORTRAET_BILDER, PORTRAET_VERSATZ, PORTRAET_GROESSE } from "./design.js?v=275";
 
 const MUENZE = '<span class="fa-muenze" role="img" aria-label="Münzen"></span>';
 
@@ -255,6 +255,17 @@ export async function starten(uebergebeneApi) {
 }
 
 function verdrahteBedienelemente() {
+  // Zahlenfelder: beim Antippen wird der Inhalt (z. B. die 0) komplett markiert,
+  // damit man sofort lostippen kann.
+  const markiereZahlenfeld = (e) => {
+    const feld = e.target;
+    if (feld?.tagName === "INPUT" && feld.type === "number" && !feld.disabled) {
+      feld.select();
+      setTimeout(() => { try { feld.select(); } catch (_) { /* egal */ } }, 0);
+    }
+  };
+  el.wurzel.addEventListener("focusin", markiereZahlenfeld);
+  el.wurzel.addEventListener("click", markiereZahlenfeld);
   $("fa-starten").addEventListener("click", spielStarten);
   $("fa-gebote-bestaetigen").addEventListener("click", () => geboteBestaetigen());
   $("fa-auktion-weiter").addEventListener("click", auktionWeiter);
@@ -588,7 +599,7 @@ function zeigeEigeneKarten(containerId, spielerObj) {
 }
 
 // ---------------------------------------------------------------------------
-//  30-Sekunden-Timer für Gebotsrunden und Spielrunden
+//  60-Sekunden-Timer für Gebotsrunden und Spielrunden
 // ---------------------------------------------------------------------------
 function aktuelleFristPhase() {
   const eigener = eigenerSpieler();
