@@ -187,8 +187,8 @@ export function bewerte(ctx) {
   if (verliererAugen < 30) add("Keine 30", 1);
   if (verliererStiche === 0) add("Schwarz", 1);
   if (!reGewinnt && !solo && normalRegeln) add("Gegen die Alten", 1);
-  if (aRe >= 1) add("Re angesagt", 2);
-  if (aKo >= 1) add("Kontra angesagt", 2);
+  if (aRe >= 1) add("Re angesagt", 1);
+  if (aKo >= 1) add("Kontra angesagt", 1);
   for (let s = 2; s <= aRe; s++) add(`Re: ${ANSAGE_NAMEN[s]} angesagt`, 1);
   for (let s = 2; s <= aKo; s++) add(`Kontra: ${ANSAGE_NAMEN[s]} angesagt`, 1);
 
