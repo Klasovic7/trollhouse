@@ -173,6 +173,15 @@ export const SPIELE = [
     beschreibung: "Streichhölzer in der Faust - tippt die Gesamtzahl, wer richtig liegt, ist raus",
     minSpieler: 2,
     laden: () => import(`./knobeln/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "doppelkopf",
+    name: "Doppelkopf",
+    emoji: "🃏",
+    farbe: "#16a34a",
+    beschreibung: "Das Kartenspiel zu viert (oder fünft) mit Re/Kontra, Hochzeit und Solo",
+    minSpieler: 4,
+    laden: () => import(`./doppelkopf/spiel.js?v=${SPIEL_VERSION}`)
   }
 ];
 
