@@ -37,7 +37,7 @@ const BOT_INFO = {
 const BOT_IDS = Object.keys(BOT_INFO);
 const isBot = (id) => typeof id === "string" && id.startsWith("bot");
 const OPT_DEF = {
-  dulle: false, sau: false, super: false, schmeissen: false, pflicht: false, armut: false,
+  dulle: false, sau: false, super: false, schmeissen: false, pflicht: false, armut: false, bock: false,
   solo: true, fuchs: true, karlchen: true, doppelkopf: true
 };
 const INFO = {
@@ -48,6 +48,7 @@ const INFO = {
   schmeissen: "Wer 5 oder mehr Neunen auf der Hand hat, darf schmeißen: Die Karten werden eingesammelt und der Geber gibt neu. Die Runde zählt nicht.",
   pflicht: "Das erste Solo jedes Spielers ist ein Pflichtsolo: Der Solospieler kommt selbst raus, die Partie zählt nicht als Runde und derselbe Geber gibt nochmal. Bei vier Pflichtsoli gibt es also vier Partien mehr.",
   armut: "Wer höchstens 3 Trümpfe hat (Füchse zählen nicht mit), kann Armut ansagen und gibt alle seine Trümpfe an den ersten Mitspieler, der annimmt. Der gibt gleich viele Karten zurück, und beide spielen zusammen. Nimmt niemand an, wird neu gegeben. Bots nehmen erst ab 7 Trümpfen an.",
+  bock: "Endet eine Partie mit 0 Punkten für alle, zählen die nächsten 4 Partien doppelt (bei 5 Spielern die nächsten 5). Weitere 0:0-Partien verlängern die Bockrunde.",
   solo: "Wenn aus: Es gibt keine Solos (Kreuz-, Pik-, Herz-, Karo-, Damen-, Buben-Solo, Fleischlos). Gut für Einsteiger.",
   fuchs: "Wer den Karo-Ass (Fuchs) der Gegner im Stich fängt, bekommt einen Sonderpunkt. Nur im Normalspiel.",
   karlchen: "Gewinnt der Kreuz-Bube (Karlchen) den letzten Stich, gibt es einen Sonderpunkt. Nur im Normalspiel.",
@@ -63,6 +64,7 @@ const OPT_ZEILEN = [
   { k: "schmeissen", titel: "Schmeißen bei 5 Neunern", werte: NJ },
   { k: "pflicht", titel: "Pflichtsolo", werte: NJ },
   { k: "armut", titel: "Armut", werte: NJ },
+  { k: "bock", titel: "Bockrunde", werte: NJ },
   { k: "solo", titel: "Solos erlaubt", werte: JN },
   { k: "fuchs", titel: "Fuchs fangen zählt", werte: JN },
   { k: "karlchen", titel: "Karlchen zählt", werte: JN },
@@ -180,6 +182,8 @@ let pflicht = false;          // aktuelle Partie ist ein Pflichtsolo
 let pflichtErledigt = [];
 let armut = null;
 let hinweis = "";
+let bock = 0;                 // so viele kommende Partien zählen noch doppelt
+let bockAktiv = false;        // aktuelle Partie zählt doppelt
 let armutAuswahl = new Set();
 
 let gewaehlt = null;          // lokal angetippte Karte
@@ -253,7 +257,7 @@ export async function starten(uebergebeneApi) {
       dkPhaseStart: 0, dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
       dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
       dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkPunkte: {}, dkRang: null,
-      dkOpt: { ...OPT_DEF }, dkSau: null, dkRunde: 0, dkPflicht: false, dkPflichtErledigt: [], dkArmut: null, dkHinweis: ""
+      dkOpt: { ...OPT_DEF }, dkSau: null, dkRunde: 0, dkPflicht: false, dkPflichtErledigt: [], dkArmut: null, dkHinweis: "", dkBock: 0, dkBockAktiv: false
     });
   }
   tickId = setInterval(tick, 200);
@@ -312,6 +316,8 @@ export function raumDaten(daten) {
   pflichtErledigt = daten.dkPflichtErledigt ?? [];
   armut = daten.dkArmut ?? null;
   hinweis = daten.dkHinweis ?? "";
+  bock = daten.dkBock ?? 0;
+  bockAktiv = Boolean(daten.dkBockAktiv);
   if (partie !== altePartie || status !== alterStatus) { gewaehlt = null; zeigeLetzten = false; armutAuswahl = new Set(); }
   if (stiche.length !== alteStiche) zeigeLetzten = false;
   schreibt = false;
@@ -415,7 +421,7 @@ async function spielStarten() {
     await Promise.all(spielerListe.map((s) => updateDoc(api.spielerRef(s.id), { punkte: 0 })));
     const ids = [...spielerListe.map((s) => s.id), ...BOT_IDS.slice(0, n < 4 ? 4 - n : 0)];
     const punkte = Object.fromEntries(ids.map((id) => [id, 0]));
-    await partieAusteilen(0, 0, ids, { dkAlle: ids, dkAnzahl: gueltigeAnzahl(), dkPunkte: punkte, dkRang: null, dkPflichtErledigt: [] });
+    await partieAusteilen(0, 0, ids, { dkAlle: ids, dkAnzahl: gueltigeAnzahl(), dkPunkte: punkte, dkRang: null, dkPflichtErledigt: [], dkBock: 0 });
   } catch (e) {
     zeigeDebug("Fehler beim Start: " + e.message);
   }
@@ -437,7 +443,7 @@ async function partieAusteilen(index, rundenIdx, alleIds, extra = {}) {
     dkStatus: "vorbehalt", dkPartie: index, dkRunde: rundenIdx, dkGeber: alleIds[geberIdx], dkSpieler: reihe, dkVorbehalt: {},
     dkPhaseStart: Date.now(), dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
     dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
-    dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkSau: null, dkPflicht: false, dkArmut: null, dkHinweis: "",
+    dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkSau: null, dkPflicht: false, dkArmut: null, dkHinweis: "", dkBockAktiv: false,
     ...extra
   });
   await batch.commit();
@@ -569,8 +575,9 @@ async function vorbehaltAufloesen() {
 async function spielBeginnen(upd, karten, start) {
   const normal = upd.dkSpielart === "normal";
   const sauId = normal && opt.sau ? sp.find((id) => karten[id].filter((k) => R.basis(k) === "DA").length === 2) ?? null : null;
+  const bockJetzt = opt.bock && bock > 0;
   await updateDoc(api.raumRef(), {
-    ...upd, dkSau: sauId, dkStatus: "spielen", dkAmZug: start, dkZugStart: Date.now(), dkStich: [], dkStichZeit: 0,
+    ...upd, dkSau: sauId, dkBockAktiv: bockJetzt, dkBock: bockJetzt ? bock - 1 : bock, dkStatus: "spielen", dkAmZug: start, dkZugStart: Date.now(), dkStich: [], dkStichZeit: 0,
     dkStiche: [], dkKlaerung: 0, dkAnsagen: { re: 0, kontra: 0 }
   });
 }
@@ -747,6 +754,7 @@ function zeigeSpiel() {
   if (ansagen.kontra) chips.push(`<span class="dk-chip dk-chip-ko">${escapeHtml(ansageText("kontra"))}</span>`);
   const gespielt = [...stiche.flatMap((x) => x.karten), ...stich];
   const zeigt = (code) => gespielt.find((x) => R.basis(x.karte) === code);
+  if (bockAktiv) chips.push(`<span class="dk-chip dk-chip-bock">Bockrunde: doppelte Punkte</span>`);
   if (sau && zeigt("DA")) chips.push(`<span class="dk-chip">Sau: ${escapeHtml(name(zeigt("DA").spielerId))}</span>`);
   if (sau && opt.super && sauGespielt()) chips.push(`<span class="dk-chip">Super-Sau aktiv: Karo-9 sticht</span>`);
   if (art === "armut" && armut) chips.push(`<span class="dk-chip">Armut: ${escapeHtml(name(armut.arm))} + ${escapeHtml(name(armut.annehmer))}${armut.zurueck != null ? ` (${armut.zurueck} Trumpf zurück)` : ""}</span>`);
@@ -1064,13 +1072,21 @@ async function stichAbschliessen() {
   }
   // Partie vorbei -> auswerten
   const res = R.bewerte({ typ: spielart, art: neueArt, re: neueRe, spielerIds: sp, stiche: neueStiche, ansagen, opt, sau: Boolean(sau) });
+  if (bockAktiv) {
+    res.wert *= 2;
+    Object.keys(res.punkte).forEach((id) => { res.punkte[id] *= 2; });
+  }
+  // 0 Punkte: die nächsten 4 (bei 5 Spielern 5) Partien zählen doppelt
+  const neuBock = opt.bock && res.wert === 0 ? (alle.length === 5 ? 5 : 4) : 0;
+  res.bock = bockAktiv;
+  res.neuBock = neuBock;
   const neu = { ...punkteSumme };
   alle.forEach((id) => { neu[id] = (neu[id] ?? 0) + (res.punkte[id] ?? 0); });
   const batch = writeBatch(api.db);
   echte(alle).forEach((id) => batch.update(api.spielerRef(id), { punkte: neu[id] ?? 0 }));
   batch.update(api.raumRef(), {
     ...upd, dkStatus: "ergebnis", dkAmZug: null,
-    dkErgebnis: { ...res, typ: spielart, art: neueArt, re: neueRe }, dkPunkte: neu
+    dkErgebnis: { ...res, typ: spielart, art: neueArt, re: neueRe }, dkPunkte: neu, dkBock: bock + neuBock
   });
   await batch.commit();
 }
@@ -1088,6 +1104,8 @@ function zeigeErgebnis() {
   e.details.forEach((d) => det.push(`<li><span>${escapeHtml(d.text)}</span><b>${d.punkte > 0 ? "+" : ""}${d.punkte}</b></li>`));
   const sonder = (liste, team) => liste.forEach((d) => det.push(`<li><span>${team}: ${escapeHtml(d.text)}</span><b>${team === "Re" ? "+" : "−"}1</b></li>`));
   sonder(e.sonderRe, "Re"); sonder(e.sonderKontra, "Kontra");
+  if (e.bock) det.push(`<li><span>Bockrunde: alle Punkte doppelt</span><b>×2</b></li>`);
+  if (e.neuBock) det.push(`<li><span>0 Punkte - die nächsten ${e.neuBock} Partien zählen doppelt (Bock)</span><b>×2</b></li>`);
   $("dk-erg-details").innerHTML = det.join("");
   const liste = $("dk-erg-liste");
   liste.innerHTML = "";

@@ -3181,3 +3181,4 @@ body.ank-offen { overflow: hidden; }
 .dk-info.offen { background: var(--akzent, #7c3aed); border-color: transparent; color: #fff; opacity: 1; }
 .dk-info:focus-visible { outline: 2px solid #facc15; outline-offset: 2px; }
 .dk-info-text { margin: -2px 0 6px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.07); font-size: .85rem; }
+.dk-chip-bock { background: rgba(250,204,21,.3); }
