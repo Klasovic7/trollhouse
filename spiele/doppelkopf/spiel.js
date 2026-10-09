@@ -40,6 +40,20 @@ const OPT_DEF = {
   dulle: false, sau: false, super: false, schmeissen: false, pflicht: false, armut: false,
   solo: true, fuchs: true, karlchen: true, doppelkopf: true
 };
+const INFO = {
+  anzahl: "So viele Runden werden gespielt. Am Ende gewinnt, wer die meisten Spielpunkte hat. Mit Pflichtsolo kommen zusätzliche Partien dazu.",
+  dulle: "Normalerweise gewinnt bei zwei Herz-Zehnen (Dulle) im selben Stich die zuerst gespielte. Mit dieser Regel sticht die zweite Dulle die erste.",
+  sau: "Wer beide Karo-Asse (Füchse) auf der Hand hat, hat die Sau: Beide Asse sind dann die höchsten Trümpfe, sogar über der Dulle. Gilt nur im Normalspiel. Mit Sau zählen Füchse nicht als Sonderpunkt.",
+  super: "Nur zusammen mit der Sau: Sobald eine Sau gespielt wurde, stechen die beiden Karo-Neunen sogar die Sau. Vorher sind sie ganz normale Karo-Neunen.",
+  schmeissen: "Wer 5 oder mehr Neunen auf der Hand hat, darf schmeißen: Die Karten werden eingesammelt und der Geber gibt neu. Die Runde zählt nicht.",
+  pflicht: "Das erste Solo jedes Spielers ist ein Pflichtsolo: Der Solospieler kommt selbst raus, die Partie zählt nicht als Runde und derselbe Geber gibt nochmal. Bei vier Pflichtsoli gibt es also vier Partien mehr.",
+  armut: "Wer höchstens 3 Trümpfe hat (Füchse zählen nicht mit), kann Armut ansagen und gibt alle seine Trümpfe an den ersten Mitspieler, der annimmt. Der gibt gleich viele Karten zurück, und beide spielen zusammen. Nimmt niemand an, wird neu gegeben. Bots nehmen erst ab 7 Trümpfen an.",
+  solo: "Wenn aus: Es gibt keine Solos (Kreuz-, Pik-, Herz-, Karo-, Damen-, Buben-Solo, Fleischlos). Gut für Einsteiger.",
+  fuchs: "Wer den Karo-Ass (Fuchs) der Gegner im Stich fängt, bekommt einen Sonderpunkt. Nur im Normalspiel.",
+  karlchen: "Gewinnt der Kreuz-Bube (Karlchen) den letzten Stich, gibt es einen Sonderpunkt. Nur im Normalspiel.",
+  doppelkopf: "Ein Stich mit mindestens 40 Augen ist ein Doppelkopf und bringt seiner Partei einen Sonderpunkt."
+};
+let offeneInfos = new Set();
 const NJ = [[false, "Nein"], [true, "Ja"]];
 const JN = [[true, "Ja"], [false, "Nein"]];
 const OPT_ZEILEN = [
@@ -57,16 +71,15 @@ const OPT_ZEILEN = [
 
 const VORLAGE = `
   <div id="dk-setup" class="bildschirm-karte" hidden>
-    <h1>Doppelkopf</h1>
     <p class="hinweis-text">Klassisches Doppelkopf nach Turnierregeln mit Re/Kontra, Hochzeit, Solos, Fuchs,
       Karlchen, Doppelkopf und Ansagen. Gespielt wird zu viert; sind fünf Leute dabei, setzt der Geber
       jeweils eine Partie aus; fehlen Mitspieler, spielen Bots mit. Nach der festgelegten Anzahl Partien gewinnt, wer die meisten Spielpunkte hat.</p>
     <div class="gv-modus-zeile">
-      <span>Anzahl Partien</span>
+      <span id="dk-anzahl-titel"></span>
       <span class="gv-modus-gruppe" id="dk-opt-anzahl"></span>
     </div>
+    <div id="dk-anzahl-info"></div>
     <div id="dk-opts"></div>
-    <p class="hinweis-text" id="dk-opt-regeln"></p>
     <p class="hinweis-text" id="dk-opt-hinweis"></p>
     <p class="hinweis-text dk-bot-hinweis" id="dk-bot-hinweis"></p>
     <p id="dk-setup-fehler" class="fehler-text"></p>
@@ -256,7 +269,7 @@ export function beenden() {
   spielart = "normal"; art = "normal"; solist = null; re = []; reBekannt = false; klaerung = 0;
   stich = []; stichZeit = 0; stiche = []; amZug = null; zugStart = 0; ansagen = { re: 0, kontra: 0 };
   ergebnis = null; punkteSumme = {}; rang = null; opt = { ...OPT_DEF }; sau = null;
-  runde = 0; pflicht = false; pflichtErledigt = []; armut = null; hinweis = ""; armutAuswahl = new Set();
+  runde = 0; pflicht = false; pflichtErledigt = []; armut = null; hinweis = ""; armutAuswahl = new Set(); offeneInfos = new Set();
   gewaehlt = null; zeigeLetzten = false; leiterBusy = false; schreibt = false;
 }
 
@@ -346,24 +359,29 @@ function zeigeSetup() {
     if (!api.istLeiter) return;
     updateDoc(api.raumRef(), { dkAnzahl: Number(b.dataset.n) }).catch(() => {});
   }));
+  const infoZeile = (k, titel) => `<span class="dk-regel">${titel}<sup class="dk-info${offeneInfos.has(k) ? " offen" : ""}" data-info="${k}" role="button" tabindex="0" aria-label="Erklärung zu ${titel}">i</sup></span>`;
+  const infoText = (k) => (offeneInfos.has(k) ? `<p class="hinweis-text dk-info-text">${INFO[k]}</p>` : "");
+  $("dk-anzahl-titel").innerHTML = infoZeile("anzahl", "Anzahl Partien");
+  $("dk-anzahl-info").innerHTML = infoText("anzahl");
   const box = $("dk-opts");
-  box.innerHTML = OPT_ZEILEN.map((z) => `<div class="gv-modus-zeile"><span>${z.titel}</span><span class="gv-modus-gruppe">` +
+  box.innerHTML = OPT_ZEILEN.map((z) => `<div class="gv-modus-zeile">${infoZeile(z.k, z.titel)}<span class="gv-modus-gruppe">` +
     z.werte.map(([v, t]) => `<button type="button" class="gv-modus-btn${opt[z.k] === v ? " aktiv" : ""}" data-ok="${z.k}" data-ov="${v}"${api.istLeiter ? "" : " disabled"}>${t}</button>`).join("") +
-    `</span></div>`).join("");
+    `</span></div>${infoText(z.k)}`).join("");
   box.querySelectorAll("[data-ok]").forEach((b) => b.addEventListener("click", () => {
     if (!api.istLeiter) return;
     const z = OPT_ZEILEN.find((x) => x.k === b.dataset.ok);
     const wert = z.werte.find(([v]) => String(v) === b.dataset.ov)[0];
     updateDoc(api.raumRef(), { ["dkOpt." + z.k]: wert }).catch(() => {});
   }));
-  const regeln = [];
-  if (opt.sau) regeln.push("Sau: Wer beide Karo-Asse hält, dessen Asse sind die höchsten Trümpfe (noch über der Dulle). Nur im Normalspiel; Füchse zählen dann nicht.");
-  if (opt.super) regeln.push(opt.sau ? "Super-Sau: Sobald eine Sau gespielt wurde, stechen die Karo-Neunen sogar die Sau. Vorher sind sie ganz normale Karo-Neunen." : "Super-Sau wirkt nur zusammen mit der Sau.");
-  if (opt.dulle) regeln.push("Die zweite Herz-Zehn sticht die erste.");
-  if (opt.schmeissen) regeln.push("Schmeißen: Wer 5 oder mehr Neunen hält, darf werfen - dann wird neu gegeben.");
-  if (opt.pflicht) regeln.push("Pflichtsolo: Das erste Solo jedes Spielers kommt selbst raus und zählt nicht als Runde - derselbe Geber gibt nochmal. Bei vier Pflichtsoli gibt es also vier Partien mehr.");
-  if (opt.armut) regeln.push("Armut: Wer höchstens 3 Trümpfe hat (Füchse nicht mitgezählt), kann Armut ansagen. Er gibt seine Trümpfe an den ersten Mitspieler, der annimmt; der gibt gleich viele Karten zurück und spielt mit ihm zusammen. Nimmt niemand an, wird neu gegeben.");
-  $("dk-opt-regeln").textContent = regeln.join(" ");
+  el.wurzel.querySelectorAll("#dk-setup [data-info]").forEach((x) => {
+    const umschalten = () => {
+      const k = x.dataset.info;
+      if (offeneInfos.has(k)) offeneInfos.delete(k); else offeneInfos.add(k);
+      zeigeSetup();
+    };
+    x.addEventListener("click", umschalten);
+    x.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); umschalten(); } });
+  });
   const n = echteAnz;
   $("dk-opt-hinweis").textContent = n === 5
     ? "Fünf Spieler: Der Geber setzt jede Partie aus. Bei 5, 10, 15 oder 20 Partien setzt jeder gleich oft aus."
@@ -897,7 +915,7 @@ async function armutTick() {
       const h = handVon(dran);
       if (!h) return;
       const r = R.regelnFuer("normal");
-      if (h.filter((k) => r.istTrumpf(k)).length >= 5) await armutAnnehmen(dran);
+      if (h.filter((k) => r.istTrumpf(k)).length >= 7) await armutAnnehmen(dran);
       else await updateDoc(api.raumRef(), { "dkArmut.idx": a.idx + 1, "dkArmut.start": Date.now() });
     } else if (!isBot(dran) && wartet > VORBEHALT_ZEIT_MS) {
       await updateDoc(api.raumRef(), { "dkArmut.idx": a.idx + 1, "dkArmut.start": Date.now() });

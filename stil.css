@@ -3175,3 +3175,9 @@ body.ank-offen { overflow: hidden; }
 .dk-hand-reihe { display: flex; justify-content: center; }
 #dk-ar-hand { padding-top: 24px; }
 .dk-hinweis { text-align: center; font-weight: 600; }
+.dk-regel { display: inline-flex; align-items: flex-start; gap: 3px; }
+.dk-info { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-top: -2px; border-radius: 50%;
+  border: 1px solid currentColor; font-size: .65rem; font-style: italic; font-weight: 700; line-height: 1; opacity: .7; cursor: pointer; vertical-align: super; }
+.dk-info.offen { background: var(--akzent, #7c3aed); border-color: transparent; color: #fff; opacity: 1; }
+.dk-info:focus-visible { outline: 2px solid #facc15; outline-offset: 2px; }
+.dk-info-text { margin: -2px 0 6px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.07); font-size: .85rem; }
