@@ -3110,3 +3110,5 @@ body.ank-offen { overflow: hidden; }
 .kn-erg-zeile.richtig { background: rgba(34,197,94,.28); }
 .kn-erg-tipp { white-space: nowrap; }
 .kn-verlierer { text-align: center; font-size: 1.05rem; }
+.kn-treffer { opacity: .7; font-size: .7rem; font-weight: 600; }
+.kn-erg-info { font-weight: 700; margin-top: 10px; }
