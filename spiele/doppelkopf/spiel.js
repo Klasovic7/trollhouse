@@ -172,6 +172,7 @@ let stiche = [];
 let amZug = null;
 let zugStart = 0;
 let ansagen = { re: 0, kontra: 0 };
+let ansagenVon = {};
 let ergebnis = null;
 let punkteSumme = {};
 let rang = null;
@@ -256,7 +257,7 @@ export async function starten(uebergebeneApi) {
       dkStatus: "setup", dkAnzahl: 8, dkPartie: 0, dkGeber: null, dkAlle: [], dkSpieler: [], dkVorbehalt: {},
       dkPhaseStart: 0, dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
       dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
-      dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkPunkte: {}, dkRang: null,
+      dkAnsagen: { re: 0, kontra: 0 }, dkAnsagenVon: {}, dkErgebnis: null, dkPunkte: {}, dkRang: null,
       dkOpt: { ...OPT_DEF }, dkSau: null, dkRunde: 0, dkPflicht: false, dkPflichtErledigt: [], dkArmut: null, dkHinweis: "", dkBock: 0, dkBockAktiv: false
     });
   }
@@ -271,7 +272,7 @@ export function beenden() {
   spielerListe = []; haende = [];
   status = null; anzahl = 8; partie = 0; geber = null; alle = []; sp = []; vorbehalt = {}; phaseStart = 0;
   spielart = "normal"; art = "normal"; solist = null; re = []; reBekannt = false; klaerung = 0;
-  stich = []; stichZeit = 0; stiche = []; amZug = null; zugStart = 0; ansagen = { re: 0, kontra: 0 };
+  stich = []; stichZeit = 0; stiche = []; amZug = null; zugStart = 0; ansagen = { re: 0, kontra: 0 }; ansagenVon = {};
   ergebnis = null; punkteSumme = {}; rang = null; opt = { ...OPT_DEF }; sau = null;
   runde = 0; pflicht = false; pflichtErledigt = []; armut = null; hinweis = ""; armutAuswahl = new Set(); offeneInfos = new Set();
   gewaehlt = null; zeigeLetzten = false; leiterBusy = false; schreibt = false;
@@ -306,6 +307,7 @@ export function raumDaten(daten) {
   amZug = daten.dkAmZug ?? null;
   zugStart = daten.dkZugStart ?? 0;
   ansagen = daten.dkAnsagen ?? { re: 0, kontra: 0 };
+  ansagenVon = daten.dkAnsagenVon ?? {};
   ergebnis = daten.dkErgebnis ?? null;
   punkteSumme = daten.dkPunkte ?? {};
   rang = daten.dkRang ?? null;
@@ -443,7 +445,7 @@ async function partieAusteilen(index, rundenIdx, alleIds, extra = {}) {
     dkStatus: "vorbehalt", dkPartie: index, dkRunde: rundenIdx, dkGeber: alleIds[geberIdx], dkSpieler: reihe, dkVorbehalt: {},
     dkPhaseStart: Date.now(), dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
     dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
-    dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkSau: null, dkPflicht: false, dkArmut: null, dkHinweis: "", dkBockAktiv: false,
+    dkAnsagen: { re: 0, kontra: 0 }, dkAnsagenVon: {}, dkErgebnis: null, dkSau: null, dkPflicht: false, dkArmut: null, dkHinweis: "", dkBockAktiv: false,
     ...extra
   });
   await batch.commit();
@@ -578,7 +580,7 @@ async function spielBeginnen(upd, karten, start) {
   const bockJetzt = opt.bock && bock > 0;
   await updateDoc(api.raumRef(), {
     ...upd, dkSau: sauId, dkBockAktiv: bockJetzt, dkBock: bockJetzt ? bock - 1 : bock, dkStatus: "spielen", dkAmZug: start, dkZugStart: Date.now(), dkStich: [], dkStichZeit: 0,
-    dkStiche: [], dkKlaerung: 0, dkAnsagen: { re: 0, kontra: 0 }
+    dkStiche: [], dkKlaerung: 0, dkAnsagen: { re: 0, kontra: 0 }, dkAnsagenVon: {}
   });
 }
 
@@ -767,12 +769,13 @@ function zeigeSpiel() {
   sp.forEach((id) => {
     const pos = platzierung(id);
     const s = spielerVon(id);
-    const rest = handVon(id)?.length ?? 0;
+    const anzSt = stiche.filter((x) => x.gewinner === id).length + (stich.length === 4 && stichGewinner() === id ? 1 : 0);
     const aktiv = amZug === id && stich.length < 4;
     const ich = id === api.spielerId;
     h += `<div class="dk-sitz dk-s${pos}${aktiv ? " aktiv" : ""}" style="--spieler-farbe:${s?.farbe ?? "#888"}">` +
       `${avatarHtml(s?.icon, "dk-av")}<span class="dk-sitz-name">${escapeHtml(ich ? "Du" : name(id))}</span>` +
-      `<span class="dk-sitz-info">${rest} Karten</span></div>`;
+      `<span class="dk-sitz-info">${anzSt} ${anzSt === 1 ? "Stich" : "Stiche"}</span>` +
+      (ansagenVon[id] ? `<span class="dk-blase dk-blase-${pos}">${escapeHtml(ansagenVon[id])}!</span>` : "") + `</div>`;
     const k = stich.find((x) => x.spielerId === id);
     if (k) {
       const gewinner = stich.length === 4 ? stichGewinner() : null;
@@ -852,11 +855,15 @@ function moeglicheAnsage(id = api.spielerId) {
   return { team, stufe: naechste, text };
 }
 
+function ansageKurz(team, stufe) {
+  return stufe === 1 ? (team === "re" ? "Re" : "Kontra") : R.ANSAGE_NAMEN[stufe];
+}
+
 async function ansageMachen() {
   const a = moeglicheAnsage();
   if (!a) return;
   try {
-    await updateDoc(api.raumRef(), { ["dkAnsagen." + a.team]: a.stufe });
+    await updateDoc(api.raumRef(), { ["dkAnsagen." + a.team]: a.stufe, ["dkAnsagenVon." + api.spielerId]: ansageKurz(a.team, a.stufe) });
   } catch (e) { zeigeDebug(e.message); }
 }
 
@@ -1013,21 +1020,50 @@ function botWaehle(id) {
   if (legal.length === 1) return legal[0];
   const augen = (k) => R.augenVon(k);
   const billig = (a, b) => augen(a) - augen(b) || r.staerke(a) - r.staerke(b);
+  const kostbar = (k) => ["HT", "CQ", "SQ", "HQ", "DQ", "DA"].includes(R.basis(k)) && r.istTrumpf(k);
   const team = teamVon(id);
   if (!stich.length) {
+    // Ausspielen: Fehl-Ass, sonst billigste Karte (nie die Dulle / Damen verschenken)
     const ass = legal.filter((k) => !r.istTrumpf(k) && R.rangVon(k) === "A");
     if (ass.length) return ass[0];
-    return [...legal].sort(billig)[0];
+    const unkostbar = legal.filter((k) => !kostbar(k));
+    return [...(unkostbar.length ? unkostbar : legal)].sort(billig)[0];
   }
   const gIdx = R.stichGewinnerIndex(stich, r);
   const rel = beziehung(id, stich[gIdx].spielerId, team);
+  const hinter = 3 - stich.length; // Spieler, die nach mir noch spielen
+  const gespielt = new Set([...stiche.flatMap((x) => x.karten), ...stich].map((x) => x.karte));
+  const unbekannt = R.kartenDeck().filter((k) => !gespielt.has(k) && !hand.includes(k));
+  const unschlagbar = hinter === 0 || !unbekannt.some((k) => R.stichGewinnerIndex([...stich, { spielerId: "?", karte: k }], r) === stich.length);
+  const punkte = stich.reduce((s, x) => s + augen(x.karte), 0);
+  const gewinnend = legal.filter((k) => R.stichGewinnerIndex([...stich, { spielerId: id, karte: k }], r) === stich.length)
+    .sort((a, b) => r.staerke(a) - r.staerke(b));
   if (rel === "partner") {
-    if (stich.length === 3) return [...legal].sort((a, b) => augen(b) - augen(a) || r.staerke(a) - r.staerke(b))[0];
-    return [...legal].sort(billig)[0];
+    if (unschlagbar) {
+      // Stich ist sicher: möglichst viele Augen draufgeben, aber Dulle/Damen/Sau behalten
+      const wert = (k) => augen(k) - (kostbar(k) ? 9 : 0);
+      return [...legal].sort((a, b) => wert(b) - wert(a) || r.staerke(a) - r.staerke(b))[0];
+    }
+    // Partner liegt vorn, kann aber noch überstochen werden
+    if (gewinnend.length && punkte >= 10) {
+      const bill = gewinnend.filter((k) => !kostbar(k));
+      return (bill.length ? bill : gewinnend)[0];
+    }
+    const wenig = legal.filter((k) => !kostbar(k));
+    return [...(wenig.length ? wenig : legal)].sort(billig)[0];
   }
-  const gewinnend = legal.filter((k) => R.stichGewinnerIndex([...stich, { spielerId: id, karte: k }], r) === stich.length);
-  if (gewinnend.length) return gewinnend.sort((a, b) => r.staerke(a) - r.staerke(b))[0];
-  return [...legal].sort(billig)[0];
+  if (gewinnend.length) {
+    const guenstig = gewinnend[0];
+    // Nicht mit Dulle/Dame/Sau einen fast leeren Stich holen, den noch jemand überstechen kann
+    if (kostbar(guenstig) && !unschlagbar && punkte < 10 && hinter > 0) {
+      const rest = legal.filter((k) => !kostbar(k));
+      if (rest.length) return [...rest].sort(billig)[0];
+    }
+    return guenstig;
+  }
+  // Nicht zu gewinnen: kleinste Karte, nichts Wertvolles verschenken
+  const wenig = legal.filter((k) => !kostbar(k));
+  return [...(wenig.length ? wenig : legal)].sort(billig)[0];
 }
 
 async function botZug() {
@@ -1036,7 +1072,7 @@ async function botZug() {
   if (!hand || !hand.length) return;
   const extra = {};
   const a = moeglicheAnsage(id);
-  if (a && a.stufe === 1 && botStaerke(id) >= (a.team === "re" ? 12 : 11)) extra["dkAnsagen." + a.team] = 1;
+  if (a && a.stufe === 1 && botStaerke(id) >= (a.team === "re" ? 12 : 11)) { extra["dkAnsagen." + a.team] = 1; extra["dkAnsagenVon." + id] = ansageKurz(a.team, 1); }
   await zugSchreiben(id, botWaehle(id), hand, extra);
 }
 

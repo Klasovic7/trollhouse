@@ -103,11 +103,13 @@ export function stichGewinnerIndex(stich, regeln) {
 }
 
 export function sortiereHand(hand, regeln) {
-  const reihenfolgeFarben = ["C", "H", "S", "D", "T"]; // Fehlfarben Kreuz, Herz, Pik, Karo - Trumpf ganz rechts
+  const reihenfolgeFarben = ["C", "H", "S", "D", "T"]; // Fehlfarben Kreuz, Herz, Pik, Karo (nur im Solo) - Trumpf ganz rechts
   return [...hand].sort((a, b) => {
     const fa = reihenfolgeFarben.indexOf(regeln.farbe(a)), fb = reihenfolgeFarben.indexOf(regeln.farbe(b));
     if (fa !== fb) return fa - fb;
-    return regeln.staerke(b) - regeln.staerke(a) || (a < b ? -1 : 1);
+    // Fehlfarben: hoch -> niedrig; Trumpf: niedrig -> hoch, damit die besten Karten ganz rechts liegen
+    const d = fa === reihenfolgeFarben.length - 1 ? regeln.staerke(a) - regeln.staerke(b) : regeln.staerke(b) - regeln.staerke(a);
+    return d || (a < b ? -1 : 1);
   });
 }
 
