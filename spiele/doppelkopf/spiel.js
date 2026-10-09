@@ -36,14 +36,23 @@ const BOT_INFO = {
 };
 const BOT_IDS = Object.keys(BOT_INFO);
 const isBot = (id) => typeof id === "string" && id.startsWith("bot");
-const OPT_DEF = { dulle: false, sau: 0, solo: true, fuchs: true, karlchen: true, doppelkopf: true };
+const OPT_DEF = {
+  dulle: false, sau: false, super: false, schmeissen: false, pflicht: false, armut: false,
+  solo: true, fuchs: true, karlchen: true, doppelkopf: true
+};
+const NJ = [[false, "Nein"], [true, "Ja"]];
+const JN = [[true, "Ja"], [false, "Nein"]];
 const OPT_ZEILEN = [
-  { k: "dulle", titel: "Zweite Dulle sticht die erste", werte: [[false, "Nein"], [true, "Ja"]] },
-  { k: "sau", titel: "Schweinchen", werte: [[0, "Aus"], [1, "Sau"], [2, "Sau + Super-Sau"]] },
-  { k: "solo", titel: "Solos erlaubt", werte: [[true, "Ja"], [false, "Nein"]] },
-  { k: "fuchs", titel: "Fuchs fangen zählt", werte: [[true, "Ja"], [false, "Nein"]] },
-  { k: "karlchen", titel: "Karlchen zählt", werte: [[true, "Ja"], [false, "Nein"]] },
-  { k: "doppelkopf", titel: "Doppelkopf (40+ Augen) zählt", werte: [[true, "Ja"], [false, "Nein"]] }
+  { k: "dulle", titel: "Zweite Dulle sticht die erste", werte: NJ },
+  { k: "sau", titel: "Sau (beide Karo-Asse)", werte: NJ },
+  { k: "super", titel: "Super-Sau (Karo-Neunen)", werte: NJ },
+  { k: "schmeissen", titel: "Schmeißen bei 5 Neunern", werte: NJ },
+  { k: "pflicht", titel: "Pflichtsolo", werte: NJ },
+  { k: "armut", titel: "Armut", werte: NJ },
+  { k: "solo", titel: "Solos erlaubt", werte: JN },
+  { k: "fuchs", titel: "Fuchs fangen zählt", werte: JN },
+  { k: "karlchen", titel: "Karlchen zählt", werte: JN },
+  { k: "doppelkopf", titel: "Doppelkopf (40+ Augen) zählt", werte: JN }
 ];
 
 const VORLAGE = `
@@ -69,11 +78,21 @@ const VORLAGE = `
   <div id="dk-vorbehalt-screen" class="bildschirm-karte dk-bildschirm" hidden>
     <p class="dk-label" id="dk-vb-label"></p>
     <h2 id="dk-vb-titel">Was spielst du?</h2>
+    <p id="dk-vb-hinweis" class="hinweis-text dk-hinweis"></p>
     <div id="dk-timer-vb" class="gv-timer" aria-hidden="true"><i></i></div>
     <div id="dk-vb-hand" class="dk-hand dk-hand-vb"></div>
     <div id="dk-vb-wahl" class="dk-vb-wahl"></div>
     <p id="dk-vb-info" class="hinweis-text"></p>
     <div id="dk-vb-status" class="warten-block"></div>
+  </div>
+
+  <div id="dk-armut-screen" class="bildschirm-karte dk-bildschirm" hidden>
+    <p class="dk-label" id="dk-ar-label"></p>
+    <h2 id="dk-ar-titel"></h2>
+    <div id="dk-timer-ar" class="gv-timer" aria-hidden="true"><i></i></div>
+    <p id="dk-ar-info" class="hinweis-text"></p>
+    <div id="dk-ar-hand" class="dk-hand dk-hand-vb"></div>
+    <div id="dk-ar-wahl" class="dk-vb-wahl"></div>
   </div>
 
   <div id="dk-spiel-screen" class="bildschirm-karte dk-bildschirm" hidden>
@@ -142,8 +161,13 @@ let ergebnis = null;
 let punkteSumme = {};
 let rang = null;
 let opt = { ...OPT_DEF };
-let sau = null;               // Id des Schweinchen-Halters (beide Karo-Asse) oder null
-let superSau = null;          // Id des Halters beider Karo-Könige oder null
+let sau = null;               // Id des Sau-Halters (beide Karo-Asse) oder null
+let runde = 0;                // gezählte Runde (Pflichtsoli und Neugeben zählen nicht)
+let pflicht = false;          // aktuelle Partie ist ein Pflichtsolo
+let pflichtErledigt = [];
+let armut = null;
+let hinweis = "";
+let armutAuswahl = new Set();
 
 let gewaehlt = null;          // lokal angetippte Karte
 let zeigeLetzten = false;
@@ -172,7 +196,15 @@ function handVon(id) {
   return h ? h.karten : null;
 }
 const meineKarten = () => handVon(api.spielerId) ?? [];
-const aktuelleRegeln = () => R.regelnFuer(spielart || "normal", { sau: Boolean(sau), super: Boolean(superSau), zweiteDulle: opt.dulle });
+const sauGespielt = () => Boolean(sau) && stiche.some((st) => st.karten.some((k) => R.basis(k.karte) === "DA"));
+const aktuelleRegeln = () => R.regelnFuer(spielart || "normal", { sau: Boolean(sau), superSau: opt.super, sauGespielt: sauGespielt(), zweiteDulle: opt.dulle });
+const neunerAnzahl = (hand) => hand.filter((k) => k[1] === "9").length;
+// Armut: höchstens 3 Trümpfe (Füchse zählen nicht mit) -> Paket = alle Trümpfe, sonst null
+function armutPaket(hand) {
+  const r = R.regelnFuer("normal");
+  const t = hand.filter((k) => r.istTrumpf(k));
+  return t.filter((k) => R.basis(k) !== "DA").length <= 3 ? t : null;
+}
 
 // Sitz-Reihenfolge einer Partie: ab dem Spieler nach dem Geber; bei 5 setzt der Geber aus
 export function sitzordnung(alleIds, geberIdx) {
@@ -199,7 +231,7 @@ export async function starten(uebergebeneApi) {
   haendeUnsub = onSnapshot(collection(api.db, "raeume", api.code, "dkHaende"), (snap) => {
     haende = [];
     snap.forEach((d) => haende.push(d.data()));
-    if (status === "spielen" || status === "vorbehalt") zeichne();
+    if (status === "spielen" || status === "vorbehalt" || status === "armut") zeichne();
   });
 
   if (api.istLeiter && !api.raum?.dkStatus) {
@@ -208,7 +240,7 @@ export async function starten(uebergebeneApi) {
       dkPhaseStart: 0, dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
       dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
       dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkPunkte: {}, dkRang: null,
-      dkOpt: { ...OPT_DEF }, dkSau: null, dkSuper: null
+      dkOpt: { ...OPT_DEF }, dkSau: null, dkRunde: 0, dkPflicht: false, dkPflichtErledigt: [], dkArmut: null, dkHinweis: ""
     });
   }
   tickId = setInterval(tick, 200);
@@ -223,7 +255,8 @@ export function beenden() {
   status = null; anzahl = 8; partie = 0; geber = null; alle = []; sp = []; vorbehalt = {}; phaseStart = 0;
   spielart = "normal"; art = "normal"; solist = null; re = []; reBekannt = false; klaerung = 0;
   stich = []; stichZeit = 0; stiche = []; amZug = null; zugStart = 0; ansagen = { re: 0, kontra: 0 };
-  ergebnis = null; punkteSumme = {}; rang = null; opt = { ...OPT_DEF }; sau = null; superSau = null;
+  ergebnis = null; punkteSumme = {}; rang = null; opt = { ...OPT_DEF }; sau = null;
+  runde = 0; pflicht = false; pflichtErledigt = []; armut = null; hinweis = ""; armutAuswahl = new Set();
   gewaehlt = null; zeigeLetzten = false; leiterBusy = false; schreibt = false;
 }
 
@@ -261,16 +294,20 @@ export function raumDaten(daten) {
   rang = daten.dkRang ?? null;
   opt = { ...OPT_DEF, ...(daten.dkOpt ?? {}) };
   sau = daten.dkSau ?? null;
-  superSau = daten.dkSuper ?? null;
-  if (partie !== altePartie || status !== alterStatus) { gewaehlt = null; zeigeLetzten = false; }
+  runde = daten.dkRunde ?? 0;
+  pflicht = Boolean(daten.dkPflicht);
+  pflichtErledigt = daten.dkPflichtErledigt ?? [];
+  armut = daten.dkArmut ?? null;
+  hinweis = daten.dkHinweis ?? "";
+  if (partie !== altePartie || status !== alterStatus) { gewaehlt = null; zeigeLetzten = false; armutAuswahl = new Set(); }
   if (stiche.length !== alteStiche) zeigeLetzten = false;
   schreibt = false;
-  api.fortschritt(status === "vorbehalt" || status === "spielen" || status === "ergebnis" ? `Partie ${partie + 1}/${anzahl}` : "");
+  api.fortschritt(["vorbehalt", "armut", "spielen", "ergebnis"].includes(status) ? `Runde ${runde + 1}/${anzahl}${pflicht ? " · Pflichtsolo" : ""}` : "");
   zeichne();
 }
 
 function alleVerstecken() {
-  ["dk-setup", "dk-vorbehalt-screen", "dk-spiel-screen", "dk-ergebnis-screen", "dk-endstand-screen"]
+  ["dk-setup", "dk-vorbehalt-screen", "dk-armut-screen", "dk-spiel-screen", "dk-ergebnis-screen", "dk-endstand-screen"]
     .forEach((id) => { $(id).hidden = true; });
 }
 
@@ -283,6 +320,9 @@ function zeichne() {
   } else if (status === "vorbehalt") {
     $("dk-vorbehalt-screen").hidden = false;
     zeigeVorbehalt();
+  } else if (status === "armut") {
+    $("dk-armut-screen").hidden = false;
+    zeigeArmut();
   } else if (status === "spielen") {
     $("dk-spiel-screen").hidden = false;
     zeigeSpiel();
@@ -317,9 +357,12 @@ function zeigeSetup() {
     updateDoc(api.raumRef(), { ["dkOpt." + z.k]: wert }).catch(() => {});
   }));
   const regeln = [];
-  if (opt.sau >= 1) regeln.push("Schweinchen: Wer beide Karo-Asse hält, hat die Sau - sie sind dann die höchsten Trümpfe (noch über der Dulle). Gilt nur im Normalspiel; Füchse zählen dann nicht.");
-  if (opt.sau >= 2) regeln.push("Super-Sau: Wer beide Karo-Könige hält, dessen Könige stechen sogar die Sau.");
+  if (opt.sau) regeln.push("Sau: Wer beide Karo-Asse hält, dessen Asse sind die höchsten Trümpfe (noch über der Dulle). Nur im Normalspiel; Füchse zählen dann nicht.");
+  if (opt.super) regeln.push(opt.sau ? "Super-Sau: Sobald eine Sau gespielt wurde, stechen die Karo-Neunen sogar die Sau. Vorher sind sie ganz normale Karo-Neunen." : "Super-Sau wirkt nur zusammen mit der Sau.");
   if (opt.dulle) regeln.push("Die zweite Herz-Zehn sticht die erste.");
+  if (opt.schmeissen) regeln.push("Schmeißen: Wer 5 oder mehr Neunen hält, darf werfen - dann wird neu gegeben.");
+  if (opt.pflicht) regeln.push("Pflichtsolo: Das erste Solo jedes Spielers kommt selbst raus und zählt nicht als Runde - derselbe Geber gibt nochmal. Bei vier Pflichtsoli gibt es also vier Partien mehr.");
+  if (opt.armut) regeln.push("Armut: Wer höchstens 3 Trümpfe hat (Füchse nicht mitgezählt), kann Armut ansagen. Er gibt seine Trümpfe an den ersten Mitspieler, der annimmt; der gibt gleich viele Karten zurück und spielt mit ihm zusammen. Nimmt niemand an, wird neu gegeben.");
   $("dk-opt-regeln").textContent = regeln.join(" ");
   const n = echteAnz;
   $("dk-opt-hinweis").textContent = n === 5
@@ -354,7 +397,7 @@ async function spielStarten() {
     await Promise.all(spielerListe.map((s) => updateDoc(api.spielerRef(s.id), { punkte: 0 })));
     const ids = [...spielerListe.map((s) => s.id), ...BOT_IDS.slice(0, n < 4 ? 4 - n : 0)];
     const punkte = Object.fromEntries(ids.map((id) => [id, 0]));
-    await partieAusteilen(0, ids, { dkAlle: ids, dkAnzahl: gueltigeAnzahl(), dkPunkte: punkte, dkRang: null });
+    await partieAusteilen(0, 0, ids, { dkAlle: ids, dkAnzahl: gueltigeAnzahl(), dkPunkte: punkte, dkRang: null, dkPflichtErledigt: [] });
   } catch (e) {
     zeigeDebug("Fehler beim Start: " + e.message);
   }
@@ -362,8 +405,9 @@ async function spielStarten() {
 }
 
 // Leiter: neue Partie geben und in die Vorbehalts-Phase wechseln
-async function partieAusteilen(index, alleIds, extra = {}) {
-  const geberIdx = index % alleIds.length;
+// index = laufende Partie (Hand-Dokumente), rundenIdx = gezählte Runde (bestimmt den Geber)
+async function partieAusteilen(index, rundenIdx, alleIds, extra = {}) {
+  const geberIdx = rundenIdx % alleIds.length;
   const reihe = sitzordnung(alleIds, geberIdx);
   const karten = R.mischen(R.kartenDeck());
   const batch = writeBatch(api.db);
@@ -372,11 +416,11 @@ async function partieAusteilen(index, alleIds, extra = {}) {
     batch.set(handRef(id), { spielerId: id, partie: index, karten: k, start: k });
   });
   batch.update(api.raumRef(), {
-    ...extra,
-    dkStatus: "vorbehalt", dkPartie: index, dkGeber: alleIds[geberIdx], dkSpieler: reihe, dkVorbehalt: {},
+    dkStatus: "vorbehalt", dkPartie: index, dkRunde: rundenIdx, dkGeber: alleIds[geberIdx], dkSpieler: reihe, dkVorbehalt: {},
     dkPhaseStart: Date.now(), dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
     dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
-    dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkSau: null, dkSuper: null
+    dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkSau: null, dkPflicht: false, dkArmut: null, dkHinweis: "",
+    ...extra
   });
   await batch.commit();
 }
@@ -400,7 +444,8 @@ const SOLO_WAHL = [
 ];
 
 function zeigeVorbehalt() {
-  $("dk-vb-label").textContent = `Partie ${partie + 1} von ${anzahl}`;
+  $("dk-vb-label").textContent = `Runde ${runde + 1} von ${anzahl}`;
+  $("dk-vb-hinweis").textContent = hinweis;
   const hand = meineKarten();
   const spielt = istSpieler();
   const mein = vorbehalt[api.spielerId];
@@ -423,6 +468,9 @@ function zeigeVorbehalt() {
       h += beide
         ? `<button type="button" class="btn-primaer" data-w="hochzeit">Hochzeit ansagen</button>`
         : `<button type="button" class="btn-primaer" data-w="gesund">Gesund (normal spielen)</button>`;
+      const nn = neunerAnzahl(hand);
+      if (opt.schmeissen && nn >= 5) h += `<button type="button" class="btn-sekundaer" data-w="schmeissen">Schmeißen (${nn} Neuner)</button>`;
+      if (opt.armut && !beide && armutPaket(hand)) h += `<button type="button" class="btn-sekundaer" data-w="armut">Armut ansagen</button>`;
       if (opt.solo) h += `<div class="dk-solo-grid">` + SOLO_WAHL.map(([k, t]) => `<button type="button" class="btn-sekundaer" data-w="${k}">${t}</button>`).join("") + `</div>`;
       wahl.innerHTML = h;
       wahl.querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () => {
@@ -443,6 +491,8 @@ function zeigeVorbehalt() {
 }
 
 // Leiter: Vorbehalte auswerten
+const istSoloWahl = (w) => !["gesund", "hochzeit", "armut", "schmeissen"].includes(w);
+
 async function vorbehaltAufloesen() {
   const karten = {};
   for (const id of sp) { const h = handVon(id); if (!h) return; karten[id] = h; }
@@ -450,16 +500,42 @@ async function vorbehaltAufloesen() {
   sp.forEach((id) => {
     let w = vorbehalt[id];
     const beide = R.hatBeideKreuzDamen(karten[id]);
-    if (!w || (w === "gesund" && beide)) w = beide ? "hochzeit" : "gesund";
+    const normalW = beide ? "hochzeit" : "gesund";
+    if (!w || (w === "gesund" && beide)) w = normalW;
     if (w === "hochzeit" && !beide) w = "gesund";
-    if (!opt.solo && w !== "gesund" && w !== "hochzeit") w = beide ? "hochzeit" : "gesund";
+    if (w === "schmeissen" && !(opt.schmeissen && neunerAnzahl(karten[id]) >= 5)) w = normalW;
+    if (w === "armut" && !(opt.armut && !beide && armutPaket(karten[id]))) w = normalW;
+    if (!opt.solo && istSoloWahl(w)) w = normalW;
     v[id] = w;
   });
-  const soloId = sp.find((id) => v[id] !== "gesund" && v[id] !== "hochzeit");
-  const hochzeitId = sp.find((id) => v[id] === "hochzeit");
+  // 1. Schmeißen: sofort neu geben
+  const schm = sp.find((id) => v[id] === "schmeissen");
+  if (schm) {
+    await partieAusteilen(partie + 1, runde, alle, { dkHinweis: `${name(schm)} hat geschmissen (${neunerAnzahl(karten[schm])} Neuner) - es wurde neu gegeben.` });
+    return;
+  }
+  const soloId = sp.find((id) => istSoloWahl(v[id]));
+  const armId = soloId ? null : sp.find((id) => v[id] === "armut");
+  const hochzeitId = soloId || armId ? null : sp.find((id) => v[id] === "hochzeit");
+  // 2. Armut: erst Annahme klären
+  if (armId) {
+    const paket = armutPaket(karten[armId]);
+    const i0 = sp.indexOf(armId);
+    await updateDoc(api.raumRef(), {
+      dkVorbehalt: v, dkStatus: "armut",
+      dkArmut: { arm: armId, n: paket.length, paket, reihe: [1, 2, 3].map((d) => sp[(i0 + d) % 4]), idx: 0, annehmer: null, phase: "frage", zurueck: null, start: Date.now() }
+    });
+    return;
+  }
   let upd;
+  let extra = { dkPflicht: false };
+  let start = sp[0];
   if (soloId) {
     upd = { dkSpielart: v[soloId], dkArt: "solo", dkSolist: soloId, dkRe: [soloId], dkReBekannt: true };
+    if (opt.pflicht && !pflichtErledigt.includes(soloId)) {
+      extra = { dkPflicht: true, dkPflichtErledigt: [...pflichtErledigt, soloId] };
+      start = soloId;
+    }
   } else if (hochzeitId) {
     upd = { dkSpielart: "normal", dkArt: "hochzeit", dkSolist: hochzeitId, dkRe: [hochzeitId], dkReBekannt: false };
   } else {
@@ -468,14 +544,106 @@ async function vorbehaltAufloesen() {
       dkRe: sp.filter((id) => karten[id].some((k) => R.basis(k) === "CQ")), dkReBekannt: true
     };
   }
+  await spielBeginnen({ ...upd, ...extra, dkVorbehalt: v }, karten, start);
+}
+
+// Status auf "spielen" setzen (Sau-Halter bestimmen, Vorhand festlegen)
+async function spielBeginnen(upd, karten, start) {
   const normal = upd.dkSpielart === "normal";
-  const hatPaar = (id, code) => karten[id].filter((k) => R.basis(k) === code).length === 2;
-  const sauId = normal && opt.sau >= 1 ? sp.find((id) => hatPaar(id, "DA")) ?? null : null;
-  const superId = normal && opt.sau >= 2 ? sp.find((id) => hatPaar(id, "DK")) ?? null : null;
+  const sauId = normal && opt.sau ? sp.find((id) => karten[id].filter((k) => R.basis(k) === "DA").length === 2) ?? null : null;
   await updateDoc(api.raumRef(), {
-    ...upd, dkSau: sauId, dkSuper: superId, dkVorbehalt: v, dkStatus: "spielen", dkAmZug: sp[0], dkZugStart: Date.now(), dkStich: [], dkStichZeit: 0,
+    ...upd, dkSau: sauId, dkStatus: "spielen", dkAmZug: start, dkZugStart: Date.now(), dkStich: [], dkStichZeit: 0,
     dkStiche: [], dkKlaerung: 0, dkAnsagen: { re: 0, kontra: 0 }
   });
+}
+
+// ---- Armut -----------------------------------------------------------------
+function armutRueckKarten(hand, n) {
+  const r = R.regelnFuer("normal");
+  const billig = (a, b) => R.augenVon(a) - R.augenVon(b) || r.staerke(a) - r.staerke(b);
+  const fehl = hand.filter((k) => !r.istTrumpf(k)).sort(billig);
+  const trumpf = hand.filter((k) => r.istTrumpf(k)).sort(billig);
+  return [...fehl, ...trumpf].slice(0, n);
+}
+
+async function armutAntwort(ja) {
+  const a = armut;
+  if (!a || a.phase !== "frage" || a.reihe[a.idx] !== api.spielerId) return;
+  try {
+    if (ja) await armutAnnehmen(api.spielerId);
+    else await updateDoc(api.raumRef(), { "dkArmut.idx": a.idx + 1, "dkArmut.start": Date.now() });
+  } catch (e) { zeigeDebug(e.message); }
+}
+
+async function armutAnnehmen(id) {
+  const a = armut;
+  const h1 = handVon(a.arm), h2 = handVon(id);
+  if (!h1 || !h2) return;
+  const batch = writeBatch(api.db);
+  batch.update(handRef(a.arm), { karten: h1.filter((k) => !a.paket.includes(k)) });
+  batch.update(handRef(id), { karten: [...h2, ...a.paket] });
+  batch.update(api.raumRef(), { "dkArmut.annehmer": id, "dkArmut.phase": a.n === 0 ? "fertig" : "tausch", "dkArmut.start": Date.now() });
+  await batch.commit();
+}
+
+async function armutZurueckgeben(id, rueck) {
+  const a = armut;
+  const h1 = handVon(a.arm), h2 = handVon(id);
+  if (!h1 || !h2 || rueck.length !== a.n) return;
+  const r = R.regelnFuer("normal");
+  const batch = writeBatch(api.db);
+  batch.update(handRef(id), { karten: h2.filter((k) => !rueck.includes(k)) });
+  batch.update(handRef(a.arm), { karten: [...h1, ...rueck] });
+  batch.update(api.raumRef(), { "dkArmut.phase": "fertig", "dkArmut.zurueck": rueck.filter((k) => r.istTrumpf(k)).length });
+  await batch.commit();
+}
+
+function zeigeArmut() {
+  const a = armut;
+  if (!a) return;
+  $("dk-ar-label").textContent = `Runde ${runde + 1} von ${anzahl}`;
+  const ich = api.spielerId;
+  const hand = meineKarten();
+  const box = $("dk-ar-hand"), wahl = $("dk-ar-wahl");
+  wahl.innerHTML = "";
+  const armName = a.arm === ich ? "Du" : name(a.arm);
+  let titel = "", info = "";
+  let handOpt = { nurAnzeige: true, reihen: 2 };
+  if (a.phase === "frage") {
+    const dran = a.reihe[a.idx];
+    titel = a.arm === ich ? "Du hast Armut" : `${name(a.arm)} hat Armut`;
+    if (dran === ich) {
+      info = `${name(a.arm)} hat ${a.n} Trumpfkarte${a.n === 1 ? "" : "n"} abzugeben. Nimmst du die Armut an? Du bekommst die Trümpfe, gibst genauso viele Karten zurück und spielst dann mit ${name(a.arm)} zusammen.`;
+      wahl.innerHTML = `<button type="button" class="btn-primaer" data-ja="1">Armut annehmen</button><button type="button" class="btn-sekundaer" data-ja="0">Nein, danke</button>`;
+      wahl.querySelectorAll("[data-ja]").forEach((b) => b.addEventListener("click", () => armutAntwort(b.dataset.ja === "1")));
+    } else if (a.arm === ich) {
+      info = `Deine ${a.n} Trümpfe gehen an den Ersten, der annimmt. Gefragt wird gerade: ${name(dran)} …`;
+    } else {
+      info = `${name(dran)} wird gefragt, ob er die Armut annimmt …`;
+    }
+  } else if (a.phase === "tausch") {
+    if (a.annehmer === ich) {
+      titel = "Karten zurückgeben";
+      info = `Du hast ${a.n} Karten von ${name(a.arm)} bekommen. Wähle ${a.n} Karten, die du zurückgibst (${armutAuswahl.size}/${a.n}).`;
+      handOpt = { reihen: 2, auswahl: armutAuswahl, onKlick: (k) => {
+        if (armutAuswahl.has(k)) armutAuswahl.delete(k);
+        else if (armutAuswahl.size < a.n) armutAuswahl.add(k);
+        zeichne();
+      } };
+      wahl.innerHTML = `<button type="button" class="btn-primaer" id="dk-ar-gib"${armutAuswahl.size === a.n ? "" : " disabled"}>Karten zurückgeben</button>`;
+      wahl.querySelector("#dk-ar-gib").addEventListener("click", () => armutZurueckgeben(ich, [...armutAuswahl]).catch((e) => zeigeDebug(e.message)));
+    } else {
+      titel = `${name(a.annehmer)} nimmt die Armut an`;
+      info = `${name(a.annehmer)} sucht ${a.n} Karten zum Zurückgeben aus …`;
+    }
+  } else {
+    titel = "Armut geklärt";
+    info = `${name(a.arm)} und ${name(a.annehmer)} spielen zusammen. Es geht gleich los …`;
+  }
+  $("dk-ar-titel").textContent = titel;
+  $("dk-ar-info").textContent = info;
+  if (sp.includes(ich)) zeichneHand(box, R.sortiereHand(hand, R.regelnFuer("normal")), handOpt);
+  else box.innerHTML = "";
 }
 
 // ---- Spielansicht ----------------------------------------------------------
@@ -498,8 +666,8 @@ function zeichneHand(box, karten, opt = {}) {
   const verf = Math.max(box.clientWidth || el.wurzel.clientWidth || 340, 200);
   const kw = Math.max(34, Math.min(96, verf / (1 + Math.max(0, n - 1) * 0.44)));
   box.style.setProperty("--kw", kw + "px");
-  const legal = opt.nurAnzeige ? null : new Set(legaleKarten());
-  const meinZug = !opt.nurAnzeige && status === "spielen" && amZug === api.spielerId && stich.length < 4;
+  const legal = opt.nurAnzeige || opt.onKlick ? null : new Set(legaleKarten());
+  const meinZug = !opt.nurAnzeige && !opt.onKlick && status === "spielen" && amZug === api.spielerId && stich.length < 4;
   box.innerHTML = "";
   reihen.forEach((reihe) => {
     const zeile = opt.reihen === 2 ? document.createElement("div") : box;
@@ -511,7 +679,10 @@ function zeichneHand(box, karten, opt = {}) {
       b.dataset.k = k;
       b.innerHTML = kartenSvg(k);
       if (opt.nurAnzeige) b.disabled = true;
-      else {
+      else if (opt.onKlick) {
+        if (opt.auswahl?.has(k)) b.classList.add("gewaehlt");
+        b.addEventListener("click", () => opt.onKlick(k));
+      } else {
         if (k === gewaehlt) b.classList.add("gewaehlt");
         if (meinZug && !legal.has(k)) b.classList.add("gesperrt");
         if (!meinZug) b.classList.add("wartet");
@@ -546,7 +717,7 @@ function ansageText(team) {
 
 function zeigeSpiel() {
   const spielt = istSpieler();
-  $("dk-kopf-links").textContent = `Partie ${partie + 1}/${anzahl} · ${spielName()}`;
+  $("dk-kopf-links").textContent = `Runde ${runde + 1}/${anzahl} · ${spielName()}${pflicht ? " (Pflicht)" : ""}`;
   const team = meinTeam();
   $("dk-kopf-team").innerHTML = !spielt ? "Du schaust zu"
     : team === "re" ? `<b class="dk-team-re">Du bist Re</b>`
@@ -558,8 +729,9 @@ function zeigeSpiel() {
   if (ansagen.kontra) chips.push(`<span class="dk-chip dk-chip-ko">${escapeHtml(ansageText("kontra"))}</span>`);
   const gespielt = [...stiche.flatMap((x) => x.karten), ...stich];
   const zeigt = (code) => gespielt.find((x) => R.basis(x.karte) === code);
-  if (sau && zeigt("DA")) chips.push(`<span class="dk-chip">Schweinchen: ${escapeHtml(name(zeigt("DA").spielerId))}</span>`);
-  if (superSau && zeigt("DK")) chips.push(`<span class="dk-chip">Super-Sau: ${escapeHtml(name(zeigt("DK").spielerId))}</span>`);
+  if (sau && zeigt("DA")) chips.push(`<span class="dk-chip">Sau: ${escapeHtml(name(zeigt("DA").spielerId))}</span>`);
+  if (sau && opt.super && sauGespielt()) chips.push(`<span class="dk-chip">Super-Sau aktiv: Karo-9 sticht</span>`);
+  if (art === "armut" && armut) chips.push(`<span class="dk-chip">Armut: ${escapeHtml(name(armut.arm))} + ${escapeHtml(name(armut.annehmer))}${armut.zurueck != null ? ` (${armut.zurueck} Trumpf zurück)` : ""}</span>`);
   if (art === "hochzeit" && !reBekannt) chips.push(`<span class="dk-chip">Hochzeit von ${escapeHtml(name(solist))}</span>`);
   $("dk-ansagen").innerHTML = chips.join("");
 
@@ -619,6 +791,7 @@ function zeigeSpiel() {
 function spielName() {
   if (art === "hochzeit") return reBekannt ? "Hochzeit" : "Hochzeit (Partner offen)";
   if (art === "stilleHochzeit") return "Stille Hochzeit";
+  if (art === "armut") return "Armut";
   return R.SPIELARTEN[spielart] ?? "Normalspiel";
 }
 
@@ -711,6 +884,39 @@ function setTimer(t, anteil) {
   t.classList.toggle("gv-timer-knapp", anteil < 0.2);
 }
 
+async function armutTick() {
+  const a = armut;
+  const wartet = Date.now() - a.start;
+  if (a.phase === "frage") {
+    if (a.idx >= a.reihe.length) {
+      await partieAusteilen(partie + 1, runde, alle, { dkHinweis: `Niemand hat die Armut von ${name(a.arm)} angenommen - es wurde neu gegeben.` });
+      return;
+    }
+    const dran = a.reihe[a.idx];
+    if (isBot(dran) && wartet > BOT_ZEIT_MS * 1.5) {
+      const h = handVon(dran);
+      if (!h) return;
+      const r = R.regelnFuer("normal");
+      if (h.filter((k) => r.istTrumpf(k)).length >= 5) await armutAnnehmen(dran);
+      else await updateDoc(api.raumRef(), { "dkArmut.idx": a.idx + 1, "dkArmut.start": Date.now() });
+    } else if (!isBot(dran) && wartet > VORBEHALT_ZEIT_MS) {
+      await updateDoc(api.raumRef(), { "dkArmut.idx": a.idx + 1, "dkArmut.start": Date.now() });
+    }
+  } else if (a.phase === "tausch") {
+    const h = handVon(a.annehmer);
+    if (!h || h.length !== 12 + a.n) return;
+    if ((isBot(a.annehmer) && wartet > BOT_ZEIT_MS * 1.5) || wartet > VORBEHALT_ZEIT_MS * 2) {
+      await armutZurueckgeben(a.annehmer, armutRueckKarten(h, a.n));
+    }
+  } else if (a.phase === "fertig") {
+    const karten = {};
+    for (const id of sp) { const h = handVon(id); if (!h || h.length !== 12) return; karten[id] = h; }
+    await spielBeginnen({
+      dkSpielart: "normal", dkArt: "armut", dkSolist: null, dkRe: [a.arm, a.annehmer], dkReBekannt: true, dkPflicht: false
+    }, karten, sp[0]);
+  }
+}
+
 async function leiterTick() {
   if (leiterBusy) return;
   leiterBusy = true;
@@ -719,11 +925,17 @@ async function leiterTick() {
       const botUpd = {};
       sp.filter((id) => isBot(id) && !vorbehalt[id]).forEach((id) => {
         const h = handVon(id);
-        if (h) botUpd["dkVorbehalt." + id] = R.hatBeideKreuzDamen(h) ? "hochzeit" : "gesund";
+        if (h) {
+          const beide = R.hatBeideKreuzDamen(h);
+          botUpd["dkVorbehalt." + id] = opt.schmeissen && neunerAnzahl(h) >= 5 ? "schmeissen"
+            : beide ? "hochzeit" : opt.armut && armutPaket(h) ? "armut" : "gesund";
+        }
       });
       if (Object.keys(botUpd).length) { await updateDoc(api.raumRef(), botUpd); return; }
       const alleDa = sp.length && sp.every((id) => vorbehalt[id]);
       if (sp.length && (alleDa || Date.now() - phaseStart > VORBEHALT_ZEIT_MS)) await vorbehaltAufloesen();
+    } else if (status === "armut" && armut) {
+      await armutTick();
     } else if (status === "spielen") {
       if (stich.length === 4 && stichZeit && Date.now() - stichZeit > STICH_PAUSE_MS) await stichAbschliessen();
       else if (stich.length < 4 && amZug && isBot(amZug) && Date.now() - zugStart > BOT_ZEIT_MS) await botZug();
@@ -743,7 +955,7 @@ function bekannteRe() {
   const gespielt = [...stiche.flatMap((x) => x.karten), ...stich];
   const rev = new Set(gespielt.filter((x) => R.basis(x.karte) === "CQ").map((x) => x.spielerId));
   if (art === "solo") return [new Set([solist]), true];
-  if ((art === "hochzeit" || art === "stilleHochzeit") && reBekannt) return [new Set(re), true];
+  if ((art === "hochzeit" || art === "stilleHochzeit" || art === "armut") && reBekannt) return [new Set(re), true];
   if (art === "hochzeit") rev.add(solist);
   return [rev, art === "normal" && rev.size >= 2];
 }
@@ -849,7 +1061,7 @@ async function stichAbschliessen() {
 function zeigeErgebnis() {
   const e = ergebnis;
   if (!e) return;
-  $("dk-erg-label").textContent = `Partie ${partie + 1} von ${anzahl} · ${R.SPIELARTEN[e.typ] ?? ""}${e.art === "hochzeit" ? " (Hochzeit)" : e.art === "stilleHochzeit" ? " (Stille Hochzeit)" : ""}`;
+  $("dk-erg-label").textContent = `Runde ${runde + 1} von ${anzahl} · ${R.SPIELARTEN[e.typ] ?? ""}${e.art === "hochzeit" ? " (Hochzeit)" : e.art === "stilleHochzeit" ? " (Stille Hochzeit)" : e.art === "armut" ? " (Armut)" : ""}${pflicht ? " · Pflichtsolo - zählt nicht als Runde, derselbe Geber gibt nochmal" : ""}`;
   const reNamen = e.re.map((id) => escapeHtml(name(id))).join(" & ");
   const koNamen = sp.filter((id) => !e.re.includes(id)).map((id) => escapeHtml(name(id))).join(" & ");
   $("dk-erg-titel").innerHTML = e.reGewinnt ? `Re gewinnt: ${reNamen}` : `Kontra gewinnt: ${koNamen}`;
@@ -872,7 +1084,7 @@ function zeigeErgebnis() {
       `<span>${dazu === null ? "–" : (dazu > 0 ? "+" : "") + dazu} &nbsp;→&nbsp; <b>${punkteSumme[id] ?? 0}</b></span>`;
     liste.appendChild(li);
   });
-  const letzte = partie + 1 >= anzahl;
+  const letzte = !pflicht && runde + 1 >= anzahl;
   const b = $("dk-weiter");
   b.hidden = !api.istLeiter;
   b.textContent = letzte ? "Endstand anzeigen" : "Nächste Partie";
@@ -883,8 +1095,8 @@ async function weiter() {
   if (!api.istLeiter || status !== "ergebnis") return;
   $("dk-weiter").disabled = true;
   try {
-    if (partie + 1 < anzahl) {
-      await partieAusteilen(partie + 1, alle);
+    if (pflicht || runde + 1 < anzahl) {
+      await partieAusteilen(partie + 1, pflicht ? runde : runde + 1, alle);
     } else {
       const rp = R.rangPunkte(Object.fromEntries(alle.map((id) => [id, punkteSumme[id] ?? 0])));
       const batch = writeBatch(api.db);

@@ -39,7 +39,7 @@ export function mischen(liste, zufall = Math.random) {
 }
 
 // Trumpfliste (hoch -> niedrig) als Basis-Codes ohne Kopie
-// opts: { sau: DA-Paar in einer Hand ist höchster Trumpf, super: DK-Paar noch darüber }
+// opts: { sau: DA-Paar in einer Hand ist höchster Trumpf }
 export function trumpfListe(typ, opts = {}) {
   const damen = ["CQ", "SQ", "HQ", "DQ"], buben = ["CJ", "SJ", "HJ", "DJ"];
   if (typ === "damen") return damen;
@@ -50,11 +50,8 @@ export function trumpfListe(typ, opts = {}) {
     const farbkarten = f === "H" ? ["HA", "HK", "H9"] : [`${f}A`, `${f}T`, `${f}K`, `${f}9`];
     return ["HT", ...damen, ...buben, ...farbkarten];
   }
-  if (typ === "normal" && (opts.sau || opts.super)) {
-    const vorn = [];
-    if (opts.super) vorn.push("DK");
-    if (opts.sau) vorn.push("DA");
-    return [...vorn, "HT", ...damen, ...buben, ...["DA", "DT", "DK", "D9"].filter((b) => !vorn.includes(b))];
+  if (typ === "normal" && opts.sau) {
+    return ["DA", "HT", ...damen, ...buben, "DT", "DK", "D9"];
   }
   return ["HT", ...damen, ...buben, "DA", "DT", "DK", "D9"]; // Normalspiel und Karo-Solo
 }
@@ -67,7 +64,9 @@ export function regelnFuer(typ, opts = {}) {
   const istTrumpf = (id) => index.has(basis(id));
   const farbe = (id) => (istTrumpf(id) ? "T" : farbeVon(id));
   const staerke = (id) => (istTrumpf(id) ? 1000 - index.get(basis(id)) : RANG_STAERKE[rangVon(id)]);
-  return { typ, istTrumpf, farbe, staerke, anzahlTrumpf: liste.length, zweiteDulle: Boolean(opts.zweiteDulle) };
+  return { typ, istTrumpf, farbe, staerke, anzahlTrumpf: liste.length, zweiteDulle: Boolean(opts.zweiteDulle),
+    // Super-Sau: Karo-9 sticht die Sau, sobald eine Sau gespielt wurde (sauGespielt = in früheren Stichen)
+    superSau: Boolean(opts.sau && opts.superSau && typ === "normal"), sauGespielt: Boolean(opts.sauGespielt) };
 }
 
 // Erlaubte Karten aus der Hand, wenn schon Karten im Stich liegen
@@ -81,6 +80,13 @@ export function erlaubteKarten(hand, stich, regeln) {
 // Index der Karte im Stich, die gewinnt (bei Gleichstand die zuerst gespielte)
 export function stichGewinnerIndex(stich, regeln) {
   const lead = regeln.farbe(stich[0].karte);
+  // wirksame Stärke einer Karte im Stich (Super-Sau: Karo-9 nach gespielter Sau)
+  const eff = (i) => {
+    const c = stich[i].karte;
+    if (regeln.superSau && basis(c) === "D9" &&
+      (regeln.sauGespielt || stich.slice(0, i).some((x) => basis(x.karte) === "DA"))) return 5000;
+    return regeln.staerke(c);
+  };
   let best = 0;
   for (let i = 1; i < stich.length; i++) {
     const c = stich[i].karte, b = stich[best].karte;
@@ -88,17 +94,16 @@ export function stichGewinnerIndex(stich, regeln) {
     let schlaegt = false;
     if (cf === "T" && bf !== "T") schlaegt = true;
     else if (cf === "T" && bf === "T") {
-      schlaegt = regeln.staerke(c) > regeln.staerke(b) ||
+      schlaegt = eff(i) > eff(best) ||
         (regeln.zweiteDulle && basis(c) === "HT" && basis(b) === "HT");
-    }
-    else if (cf === lead && bf === lead) schlaegt = regeln.staerke(c) > regeln.staerke(b);
+    } else if (cf === lead && bf === lead) schlaegt = eff(i) > eff(best);
     if (schlaegt) best = i;
   }
   return best;
 }
 
 export function sortiereHand(hand, regeln) {
-  const reihenfolgeFarben = ["T", "C", "S", "H", "D"];
+  const reihenfolgeFarben = ["C", "H", "S", "D", "T"]; // Fehlfarben Kreuz, Herz, Pik, Karo - Trumpf ganz rechts
   return [...hand].sort((a, b) => {
     const fa = reihenfolgeFarben.indexOf(regeln.farbe(a)), fb = reihenfolgeFarben.indexOf(regeln.farbe(b));
     if (fa !== fb) return fa - fb;
@@ -133,9 +138,9 @@ export function bewerte(ctx) {
   const aRe = ctx.ansagen?.re ?? 0, aKo = ctx.ansagen?.kontra ?? 0;
   const istRe = (id) => re.includes(id);
   const solo = art === "solo" || art === "stilleHochzeit";
-  const normalRegeln = art === "normal" || art === "hochzeit" || art === "stilleHochzeit";
+  const normalRegeln = art === "normal" || art === "hochzeit" || art === "stilleHochzeit" || art === "armut";
   const opt = { fuchs: true, karlchen: true, doppelkopf: true, ...(ctx.opt || {}) };
-  const mitFuchsKarlchen = (art === "normal" || art === "hochzeit" || art === "stilleHochzeit") && (typ === "normal");
+  const mitFuchsKarlchen = (art === "normal" || art === "hochzeit" || art === "stilleHochzeit" || art === "armut") && (typ === "normal");
   const mitFuchs = mitFuchsKarlchen && opt.fuchs && !ctx.sau;
   const mitKarlchen = mitFuchsKarlchen && opt.karlchen;
 

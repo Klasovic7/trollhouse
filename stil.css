@@ -3173,3 +3173,5 @@ body.ank-offen { overflow: hidden; }
 .dk-hk:disabled { opacity: 1; }
 .dk-hand-vb { flex-direction: column; align-items: center; gap: 6px; padding-top: 4px; }
 .dk-hand-reihe { display: flex; justify-content: center; }
+#dk-ar-hand { padding-top: 24px; }
+.dk-hinweis { text-align: center; font-weight: 600; }
