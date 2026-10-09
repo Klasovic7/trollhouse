@@ -37,7 +37,7 @@ const BOT_INFO = {
 const BOT_IDS = Object.keys(BOT_INFO);
 const isBot = (id) => typeof id === "string" && id.startsWith("bot");
 const OPT_DEF = {
-  dulle: false, sau: false, super: false, schmeissen: false, pflicht: false, armut: false, bock: false,
+  dulle: true, sau: true, super: true, schmeissen: true, pflicht: false, armut: true, bock: true,
   solo: true, fuchs: true, karlchen: true, doppelkopf: true
 };
 const INFO = {
