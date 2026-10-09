@@ -39,7 +39,8 @@ export function mischen(liste, zufall = Math.random) {
 }
 
 // Trumpfliste (hoch -> niedrig) als Basis-Codes ohne Kopie
-export function trumpfListe(typ) {
+// opts: { sau: DA-Paar in einer Hand ist höchster Trumpf, super: DK-Paar noch darüber }
+export function trumpfListe(typ, opts = {}) {
   const damen = ["CQ", "SQ", "HQ", "DQ"], buben = ["CJ", "SJ", "HJ", "DJ"];
   if (typ === "damen") return damen;
   if (typ === "buben") return buben;
@@ -49,18 +50,24 @@ export function trumpfListe(typ) {
     const farbkarten = f === "H" ? ["HA", "HK", "H9"] : [`${f}A`, `${f}T`, `${f}K`, `${f}9`];
     return ["HT", ...damen, ...buben, ...farbkarten];
   }
+  if (typ === "normal" && (opts.sau || opts.super)) {
+    const vorn = [];
+    if (opts.super) vorn.push("DK");
+    if (opts.sau) vorn.push("DA");
+    return [...vorn, "HT", ...damen, ...buben, ...["DA", "DT", "DK", "D9"].filter((b) => !vorn.includes(b))];
+  }
   return ["HT", ...damen, ...buben, "DA", "DT", "DK", "D9"]; // Normalspiel und Karo-Solo
 }
 
 const RANG_STAERKE = { 9: 0, J: 1, Q: 2, K: 3, T: 4, A: 5 };
 
-export function regelnFuer(typ) {
-  const liste = trumpfListe(typ);
+export function regelnFuer(typ, opts = {}) {
+  const liste = trumpfListe(typ, opts);
   const index = new Map(liste.map((b, i) => [b, i]));
   const istTrumpf = (id) => index.has(basis(id));
   const farbe = (id) => (istTrumpf(id) ? "T" : farbeVon(id));
   const staerke = (id) => (istTrumpf(id) ? 1000 - index.get(basis(id)) : RANG_STAERKE[rangVon(id)]);
-  return { typ, istTrumpf, farbe, staerke, anzahlTrumpf: liste.length };
+  return { typ, istTrumpf, farbe, staerke, anzahlTrumpf: liste.length, zweiteDulle: Boolean(opts.zweiteDulle) };
 }
 
 // Erlaubte Karten aus der Hand, wenn schon Karten im Stich liegen
@@ -80,7 +87,10 @@ export function stichGewinnerIndex(stich, regeln) {
     const cf = regeln.farbe(c), bf = regeln.farbe(b);
     let schlaegt = false;
     if (cf === "T" && bf !== "T") schlaegt = true;
-    else if (cf === "T" && bf === "T") schlaegt = regeln.staerke(c) > regeln.staerke(b);
+    else if (cf === "T" && bf === "T") {
+      schlaegt = regeln.staerke(c) > regeln.staerke(b) ||
+        (regeln.zweiteDulle && basis(c) === "HT" && basis(b) === "HT");
+    }
     else if (cf === lead && bf === lead) schlaegt = regeln.staerke(c) > regeln.staerke(b);
     if (schlaegt) best = i;
   }
@@ -124,7 +134,10 @@ export function bewerte(ctx) {
   const istRe = (id) => re.includes(id);
   const solo = art === "solo" || art === "stilleHochzeit";
   const normalRegeln = art === "normal" || art === "hochzeit" || art === "stilleHochzeit";
+  const opt = { fuchs: true, karlchen: true, doppelkopf: true, ...(ctx.opt || {}) };
   const mitFuchsKarlchen = (art === "normal" || art === "hochzeit" || art === "stilleHochzeit") && (typ === "normal");
+  const mitFuchs = mitFuchsKarlchen && opt.fuchs && !ctx.sau;
+  const mitKarlchen = mitFuchsKarlchen && opt.karlchen;
 
   let reAugen = 0, koAugen = 0, reStiche = 0, koStiche = 0;
   const sp = { re: [], kontra: [] };
@@ -133,11 +146,13 @@ export function bewerte(ctx) {
     const reGewinnt = istRe(st.gewinner);
     if (reGewinnt) { reAugen += augen; reStiche++; } else { koAugen += augen; koStiche++; }
     const team = reGewinnt ? "re" : "kontra";
-    if (augen >= 40) sp[team].push({ text: "Doppelkopf", punkte: 1 });
-    if (mitFuchsKarlchen) {
+    if (opt.doppelkopf && augen >= 40) sp[team].push({ text: "Doppelkopf", punkte: 1 });
+    if (mitFuchs) {
       st.karten.forEach((k) => {
         if (basis(k.karte) === "DA" && istRe(k.spielerId) !== reGewinnt) sp[team].push({ text: "Fuchs gefangen", punkte: 1 });
       });
+    }
+    if (mitKarlchen) {
       if (nr === stiche.length - 1) {
         const w = st.karten.find((k) => k.spielerId === st.gewinner);
         if (w && basis(w.karte) === "CJ") sp[team].push({ text: "Karlchen", punkte: 1 });
