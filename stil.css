@@ -3112,3 +3112,64 @@ body.ank-offen { overflow: hidden; }
 .kn-verlierer { text-align: center; font-size: 1.05rem; }
 .kn-treffer { opacity: .7; font-size: .7rem; font-weight: 600; }
 .kn-erg-info { font-weight: 700; margin-top: 10px; }
+
+/* ---- Doppelkopf ---- */
+.dk-bildschirm { padding-left: 10px; padding-right: 10px; }
+.dk-kopf { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .85rem; margin-bottom: 4px; }
+.dk-team-re { color: #f87171; }
+.dk-team-kontra { color: #60a5fa; }
+.dk-ansagen { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 6px; }
+.dk-chip { padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; background: rgba(255,255,255,.14); }
+.dk-chip-re { background: rgba(248,113,113,.3); }
+.dk-chip-ko { background: rgba(96,165,250,.3); }
+.dk-tisch { position: relative; height: 300px; max-width: 420px; margin: 8px auto; border-radius: 22px;
+  background: radial-gradient(ellipse at center, #2f8a52 0%, #1f5c36 100%); box-shadow: inset 0 0 0 3px rgba(0,0,0,.25); color: #fff; }
+.dk-sitz { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 8px; border-radius: 12px; max-width: 30%; line-height: 1.15; }
+.dk-sitz.aktiv { background: rgba(255,255,255,.18); box-shadow: 0 0 0 2px #facc15; }
+.dk-av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--spieler-farbe); background: #fff; }
+.dk-av-text { display: inline-flex; align-items: center; justify-content: center; color: #222; font-size: .7rem; }
+.dk-sitz-name { font-size: .8rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.dk-sitz-info { font-size: .68rem; opacity: .8; }
+.dk-s0 { left: 50%; bottom: 4px; transform: translateX(-50%); }
+.dk-s2 { left: 50%; top: 4px; transform: translateX(-50%); }
+.dk-s1 { left: 4px; top: 50%; transform: translateY(-50%); }
+.dk-s3 { right: 4px; top: 50%; transform: translateY(-50%); }
+.dk-ablage { position: absolute; width: 54px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.dk-ablage.gewinner { filter: drop-shadow(0 0 6px #facc15) drop-shadow(0 0 2px #facc15); }
+.dk-a2 { top: 50px; left: 50%; transform: translateX(-50%); }
+.dk-a0 { bottom: 50px; left: 50%; transform: translateX(-50%); }
+.dk-a1 { left: 25%; top: 50%; transform: translateY(-50%); }
+.dk-a3 { right: 25%; top: 50%; transform: translateY(-50%); }
+.dk-aussetzer { position: absolute; right: 10px; bottom: 6px; font-size: .68rem; opacity: .75; }
+.dk-karte-svg { display: block; width: 100%; height: auto; }
+.dk-zeile { text-align: center; min-height: 1.4em; margin: 2px 0 6px; font-size: .92rem; }
+.dk-aktionen { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; }
+.dk-aktionen button { margin: 0; }
+.dk-hand { display: flex; justify-content: center; padding-top: 20px; min-height: 60px; }
+.dk-hk { width: var(--kw, 60px); flex: none; margin: 0 0 0 calc(var(--kw, 60px) * -0.56); padding: 0; border: 0; background: none; cursor: pointer;
+  transition: transform .12s; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.dk-hk:first-child { margin-left: 0; }
+.dk-hk.gewaehlt { transform: translateY(-18px); }
+.dk-hk.gesperrt { filter: brightness(.55) drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.dk-hk.wartet { cursor: default; }
+.dk-hand-vb .dk-hk { cursor: default; }
+.dk-vb-wahl { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.dk-vb-wahl button { margin: 0; }
+.dk-solo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dk-letzter { margin: 4px 0 8px; }
+.dk-letzter-reihe { display: flex; gap: 8px; justify-content: center; }
+.dk-mini { width: 60px; text-align: center; font-size: .65rem; }
+.dk-mini-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dk-erg-augen { text-align: center; }
+.dk-erg-details { list-style: none; padding: 0; margin: 6px 0 10px; display: grid; gap: 4px; }
+.dk-erg-details li { display: flex; justify-content: space-between; padding: 3px 10px; border-radius: 10px; background: rgba(255,255,255,.07); font-size: .9rem; }
+.dk-erg-zeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 14px; border-left: 5px solid var(--spieler-farbe); background: rgba(255,255,255,.07); margin-bottom: 6px; }
+#dk-erg-liste { list-style: none; padding: 0; }
+.dk-aktionen { flex-wrap: nowrap; }
+.dk-aktionen button { flex: 1 1 0; width: auto; min-width: 0; padding: 10px 6px; font-size: .88rem; box-shadow: none; }
+.dk-aktionen button[hidden] { display: none; }
+.dk-solo-grid button, .dk-vb-wahl button { padding: 10px 8px; font-size: .92rem; }
+.dk-label { margin: 0 0 4px; font-size: .8rem; opacity: .75; text-transform: uppercase; letter-spacing: .05em; }
+.dk-hk:disabled { opacity: 1; }
+.dk-hand-vb { flex-direction: column; align-items: center; gap: 6px; padding-top: 4px; }
+.dk-hand-reihe { display: flex; justify-content: center; }
