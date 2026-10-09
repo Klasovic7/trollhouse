@@ -1,7 +1,8 @@
 // ============================================================================
 //  Doppelkopf
 // ----------------------------------------------------------------------------
-//  4 Spieler (bei 5 Spielern setzt der Geber jeweils eine Partie aus).
+//  4 Spieler (bei 5 Spielern setzt der Geber jeweils eine Partie aus). Mit weniger
+//  als vier Mitspielern werden Bots dazugesetzt (gesteuert vom Spielleiter-Gerät).
 //  Regeln: siehe regeln.js (Turnierregeln: Re/Kontra, Hochzeit, Solos, Fuchs,
 //  Karlchen, Doppelkopf, Ansagen). Gespielt wird eine feste Anzahl Partien, die
 //  Spielpunkte werden addiert; die Platzierung geht als Rangpunkte in die App-
@@ -11,7 +12,7 @@
 //  ergebnis | beendet), dkAnzahl, dkPartie, dkGeber, dkAlle, dkSpieler,
 //  dkVorbehalt, dkPhaseStart, dkSpielart, dkArt, dkSolist, dkRe, dkReBekannt,
 //  dkKlaerung, dkStich, dkStichZeit, dkStiche, dkAmZug, dkZugStart,
-//  dkAnsagen, dkErgebnis, dkPunkte, dkRang.
+//  dkAnsagen, dkErgebnis, dkPunkte, dkRang, dkOpt (Regeloptionen), dkSau, dkSuper.
 //  Die Hände liegen getrennt in der Subcollection "dkHaende" (ein Dokument je
 //  Spieler). Hinweis: Wer die Datenbank mit Entwicklerwerkzeugen öffnet, kann
 //  fremde Hände und Teams sehen - die Oberfläche zeigt sie nicht an.
@@ -27,18 +28,38 @@ import { kartenSvg } from "./karten.js";
 const VORBEHALT_ZEIT_MS = 45000;
 const ZUG_ZEIT_MS = 90000;
 const STICH_PAUSE_MS = 1700;
+const BOT_ZEIT_MS = 800;
+const BOT_INFO = {
+  bot1: { name: "Bot Karl", farbe: "#94a3b8", icon: "🤖" },
+  bot2: { name: "Bot Frieda", farbe: "#f472b6", icon: "🤖" },
+  bot3: { name: "Bot Otto", farbe: "#fb923c", icon: "🤖" }
+};
+const BOT_IDS = Object.keys(BOT_INFO);
+const isBot = (id) => typeof id === "string" && id.startsWith("bot");
+const OPT_DEF = { dulle: false, sau: 0, solo: true, fuchs: true, karlchen: true, doppelkopf: true };
+const OPT_ZEILEN = [
+  { k: "dulle", titel: "Zweite Dulle sticht die erste", werte: [[false, "Nein"], [true, "Ja"]] },
+  { k: "sau", titel: "Schweinchen", werte: [[0, "Aus"], [1, "Sau"], [2, "Sau + Super-Sau"]] },
+  { k: "solo", titel: "Solos erlaubt", werte: [[true, "Ja"], [false, "Nein"]] },
+  { k: "fuchs", titel: "Fuchs fangen zählt", werte: [[true, "Ja"], [false, "Nein"]] },
+  { k: "karlchen", titel: "Karlchen zählt", werte: [[true, "Ja"], [false, "Nein"]] },
+  { k: "doppelkopf", titel: "Doppelkopf (40+ Augen) zählt", werte: [[true, "Ja"], [false, "Nein"]] }
+];
 
 const VORLAGE = `
   <div id="dk-setup" class="bildschirm-karte" hidden>
     <h1>Doppelkopf</h1>
     <p class="hinweis-text">Klassisches Doppelkopf nach Turnierregeln mit Re/Kontra, Hochzeit, Solos, Fuchs,
       Karlchen, Doppelkopf und Ansagen. Gespielt wird zu viert; sind fünf Leute dabei, setzt der Geber
-      jeweils eine Partie aus. Nach der festgelegten Anzahl Partien gewinnt, wer die meisten Spielpunkte hat.</p>
+      jeweils eine Partie aus; fehlen Mitspieler, spielen Bots mit. Nach der festgelegten Anzahl Partien gewinnt, wer die meisten Spielpunkte hat.</p>
     <div class="gv-modus-zeile">
       <span>Anzahl Partien</span>
       <span class="gv-modus-gruppe" id="dk-opt-anzahl"></span>
     </div>
+    <div id="dk-opts"></div>
+    <p class="hinweis-text" id="dk-opt-regeln"></p>
     <p class="hinweis-text" id="dk-opt-hinweis"></p>
+    <p class="hinweis-text dk-bot-hinweis" id="dk-bot-hinweis"></p>
     <p id="dk-setup-fehler" class="fehler-text"></p>
     <p><button id="dk-starten" class="btn-primaer" hidden>Spiel starten</button></p>
     <p id="dk-setup-warten" hidden><em>Warte, bis der Spielleiter das Spiel startet …</em></p>
@@ -120,6 +141,9 @@ let ansagen = { re: 0, kontra: 0 };
 let ergebnis = null;
 let punkteSumme = {};
 let rang = null;
+let opt = { ...OPT_DEF };
+let sau = null;               // Id des Schweinchen-Halters (beide Karo-Asse) oder null
+let superSau = null;          // Id des Halters beider Karo-Könige oder null
 
 let gewaehlt = null;          // lokal angetippte Karte
 let zeigeLetzten = false;
@@ -129,8 +153,9 @@ let bereitSystem = null;
 let olympiadeAutoStart = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
-const name = (id) => spielerListe.find((s) => s.id === id)?.name ?? "?";
-const spielerVon = (id) => spielerListe.find((s) => s.id === id);
+const spielerVon = (id) => (isBot(id) ? BOT_INFO[id] : spielerListe.find((s) => s.id === id));
+const name = (id) => spielerVon(id)?.name ?? "?";
+const echte = (ids) => ids.filter((id) => !isBot(id));
 const istSpieler = () => sp.includes(api.spielerId);
 const handRef = (id) => doc(api.db, "raeume", api.code, "dkHaende", id);
 
@@ -147,7 +172,7 @@ function handVon(id) {
   return h ? h.karten : null;
 }
 const meineKarten = () => handVon(api.spielerId) ?? [];
-const aktuelleRegeln = () => R.regelnFuer(spielart || "normal");
+const aktuelleRegeln = () => R.regelnFuer(spielart || "normal", { sau: Boolean(sau), super: Boolean(superSau), zweiteDulle: opt.dulle });
 
 // Sitz-Reihenfolge einer Partie: ab dem Spieler nach dem Geber; bei 5 setzt der Geber aus
 export function sitzordnung(alleIds, geberIdx) {
@@ -182,7 +207,8 @@ export async function starten(uebergebeneApi) {
       dkStatus: "setup", dkAnzahl: 8, dkPartie: 0, dkGeber: null, dkAlle: [], dkSpieler: [], dkVorbehalt: {},
       dkPhaseStart: 0, dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
       dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
-      dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkPunkte: {}, dkRang: null
+      dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkPunkte: {}, dkRang: null,
+      dkOpt: { ...OPT_DEF }, dkSau: null, dkSuper: null
     });
   }
   tickId = setInterval(tick, 200);
@@ -197,7 +223,7 @@ export function beenden() {
   status = null; anzahl = 8; partie = 0; geber = null; alle = []; sp = []; vorbehalt = {}; phaseStart = 0;
   spielart = "normal"; art = "normal"; solist = null; re = []; reBekannt = false; klaerung = 0;
   stich = []; stichZeit = 0; stiche = []; amZug = null; zugStart = 0; ansagen = { re: 0, kontra: 0 };
-  ergebnis = null; punkteSumme = {}; rang = null;
+  ergebnis = null; punkteSumme = {}; rang = null; opt = { ...OPT_DEF }; sau = null; superSau = null;
   gewaehlt = null; zeigeLetzten = false; leiterBusy = false; schreibt = false;
 }
 
@@ -233,6 +259,9 @@ export function raumDaten(daten) {
   ergebnis = daten.dkErgebnis ?? null;
   punkteSumme = daten.dkPunkte ?? {};
   rang = daten.dkRang ?? null;
+  opt = { ...OPT_DEF, ...(daten.dkOpt ?? {}) };
+  sau = daten.dkSau ?? null;
+  superSau = daten.dkSuper ?? null;
   if (partie !== altePartie || status !== alterStatus) { gewaehlt = null; zeigeLetzten = false; }
   if (stiche.length !== alteStiche) zeigeLetzten = false;
   schreibt = false;
@@ -268,23 +297,43 @@ function zeichne() {
 
 // ---- Setup -----------------------------------------------------------------
 function zeigeSetup() {
-  const opt = anzahlOptionen();
+  const echteAnz = spielerListe.length;
+  const opts = anzahlOptionen();
   const gruppe = $("dk-opt-anzahl");
   const aktiv = gueltigeAnzahl();
-  gruppe.innerHTML = opt.map((n) => `<button type="button" class="gv-modus-btn${n === aktiv ? " aktiv" : ""}" data-n="${n}"${api.istLeiter ? "" : " disabled"}>${n}</button>`).join("");
+  gruppe.innerHTML = opts.map((n) => `<button type="button" class="gv-modus-btn${n === aktiv ? " aktiv" : ""}" data-n="${n}"${api.istLeiter ? "" : " disabled"}>${n}</button>`).join("");
   gruppe.querySelectorAll("[data-n]").forEach((b) => b.addEventListener("click", () => {
     if (!api.istLeiter) return;
     updateDoc(api.raumRef(), { dkAnzahl: Number(b.dataset.n) }).catch(() => {});
   }));
-  const n = spielerListe.length;
+  const box = $("dk-opts");
+  box.innerHTML = OPT_ZEILEN.map((z) => `<div class="gv-modus-zeile"><span>${z.titel}</span><span class="gv-modus-gruppe">` +
+    z.werte.map(([v, t]) => `<button type="button" class="gv-modus-btn${opt[z.k] === v ? " aktiv" : ""}" data-ok="${z.k}" data-ov="${v}"${api.istLeiter ? "" : " disabled"}>${t}</button>`).join("") +
+    `</span></div>`).join("");
+  box.querySelectorAll("[data-ok]").forEach((b) => b.addEventListener("click", () => {
+    if (!api.istLeiter) return;
+    const z = OPT_ZEILEN.find((x) => x.k === b.dataset.ok);
+    const wert = z.werte.find(([v]) => String(v) === b.dataset.ov)[0];
+    updateDoc(api.raumRef(), { ["dkOpt." + z.k]: wert }).catch(() => {});
+  }));
+  const regeln = [];
+  if (opt.sau >= 1) regeln.push("Schweinchen: Wer beide Karo-Asse hält, hat die Sau - sie sind dann die höchsten Trümpfe (noch über der Dulle). Gilt nur im Normalspiel; Füchse zählen dann nicht.");
+  if (opt.sau >= 2) regeln.push("Super-Sau: Wer beide Karo-Könige hält, dessen Könige stechen sogar die Sau.");
+  if (opt.dulle) regeln.push("Die zweite Herz-Zehn sticht die erste.");
+  $("dk-opt-regeln").textContent = regeln.join(" ");
+  const n = echteAnz;
   $("dk-opt-hinweis").textContent = n === 5
     ? "Fünf Spieler: Der Geber setzt jede Partie aus. Bei 5, 10, 15 oder 20 Partien setzt jeder gleich oft aus."
     : n === 4 ? "Vier Spieler: Alle spielen jede Partie, der Geber wechselt reihum."
-      : "Doppelkopf braucht vier oder fünf Spieler.";
+      : n >= 1 ? "" : "Doppelkopf braucht mindestens einen Spieler.";
+  const bots = n >= 1 && n < 4 ? 4 - n : 0;
+  $("dk-bot-hinweis").textContent = bots
+    ? `Ihr seid ${n === 1 ? "allein" : "zu " + n + "t"} im Raum: ${bots} Bot${bots > 1 ? "s" : ""} (${BOT_IDS.slice(0, bots).map((b) => BOT_INFO[b].name).join(", ")}) ${bots > 1 ? "spielen" : "spielt"} mit.`
+    : "";
   $("dk-starten").hidden = !api.istLeiter;
   $("dk-setup-warten").hidden = api.istLeiter;
   bereitSystem?.render();
-  if (api.istLeiter && api.olympiadeAnzahl && !olympiadeAutoStart && bereitSystem?.alleBereit() && (n === 4 || n === 5)) {
+  if (api.istLeiter && api.olympiadeAnzahl && !olympiadeAutoStart && bereitSystem?.alleBereit() && n >= 1 && n <= 5) {
     olympiadeAutoStart = true;
     spielStarten();
   }
@@ -293,8 +342,8 @@ function zeigeSetup() {
 async function spielStarten() {
   $("dk-setup-fehler").textContent = "";
   const n = spielerListe.length;
-  if (n < 4 || n > 5) {
-    $("dk-setup-fehler").textContent = "Doppelkopf braucht genau vier oder fünf Spieler.";
+  if (n < 1 || n > 5) {
+    $("dk-setup-fehler").textContent = "Doppelkopf geht mit einem bis fünf Spielern (fehlende Plätze füllen Bots auf).";
     return;
   }
   $("dk-starten").disabled = true;
@@ -303,7 +352,7 @@ async function spielStarten() {
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
     haende = [];
     await Promise.all(spielerListe.map((s) => updateDoc(api.spielerRef(s.id), { punkte: 0 })));
-    const ids = spielerListe.map((s) => s.id);
+    const ids = [...spielerListe.map((s) => s.id), ...BOT_IDS.slice(0, n < 4 ? 4 - n : 0)];
     const punkte = Object.fromEntries(ids.map((id) => [id, 0]));
     await partieAusteilen(0, ids, { dkAlle: ids, dkAnzahl: gueltigeAnzahl(), dkPunkte: punkte, dkRang: null });
   } catch (e) {
@@ -327,7 +376,7 @@ async function partieAusteilen(index, alleIds, extra = {}) {
     dkStatus: "vorbehalt", dkPartie: index, dkGeber: alleIds[geberIdx], dkSpieler: reihe, dkVorbehalt: {},
     dkPhaseStart: Date.now(), dkSpielart: "normal", dkArt: "normal", dkSolist: null, dkRe: [], dkReBekannt: false,
     dkKlaerung: 0, dkStich: [], dkStichZeit: 0, dkStiche: [], dkAmZug: null, dkZugStart: 0,
-    dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null
+    dkAnsagen: { re: 0, kontra: 0 }, dkErgebnis: null, dkSau: null, dkSuper: null
   });
   await batch.commit();
 }
@@ -374,7 +423,7 @@ function zeigeVorbehalt() {
       h += beide
         ? `<button type="button" class="btn-primaer" data-w="hochzeit">Hochzeit ansagen</button>`
         : `<button type="button" class="btn-primaer" data-w="gesund">Gesund (normal spielen)</button>`;
-      h += `<div class="dk-solo-grid">` + SOLO_WAHL.map(([k, t]) => `<button type="button" class="btn-sekundaer" data-w="${k}">${t}</button>`).join("") + `</div>`;
+      if (opt.solo) h += `<div class="dk-solo-grid">` + SOLO_WAHL.map(([k, t]) => `<button type="button" class="btn-sekundaer" data-w="${k}">${t}</button>`).join("") + `</div>`;
       wahl.innerHTML = h;
       wahl.querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () => {
         updateDoc(api.raumRef(), { ["dkVorbehalt." + api.spielerId]: b.dataset.w }).catch((e) => zeigeDebug(e.message));
@@ -384,7 +433,7 @@ function zeigeVorbehalt() {
         : "Spielst du ein Solo, gelten deine Karten allein gegen die drei anderen (dreifache Punkte). Sonst: Gesund.";
     }
   }
-  const offen = sp.filter((id) => !vorbehalt[id]);
+  const offen = sp.filter((id) => !vorbehalt[id] && !isBot(id));
   const st = $("dk-vb-status");
   st.innerHTML = offen.length
     ? `<p class="hinweis-text">Noch offen: ${offen.map((id) => escapeHtml(name(id))).join(", ")}</p>`
@@ -403,6 +452,7 @@ async function vorbehaltAufloesen() {
     const beide = R.hatBeideKreuzDamen(karten[id]);
     if (!w || (w === "gesund" && beide)) w = beide ? "hochzeit" : "gesund";
     if (w === "hochzeit" && !beide) w = "gesund";
+    if (!opt.solo && w !== "gesund" && w !== "hochzeit") w = beide ? "hochzeit" : "gesund";
     v[id] = w;
   });
   const soloId = sp.find((id) => v[id] !== "gesund" && v[id] !== "hochzeit");
@@ -418,19 +468,24 @@ async function vorbehaltAufloesen() {
       dkRe: sp.filter((id) => karten[id].some((k) => R.basis(k) === "CQ")), dkReBekannt: true
     };
   }
+  const normal = upd.dkSpielart === "normal";
+  const hatPaar = (id, code) => karten[id].filter((k) => R.basis(k) === code).length === 2;
+  const sauId = normal && opt.sau >= 1 ? sp.find((id) => hatPaar(id, "DA")) ?? null : null;
+  const superId = normal && opt.sau >= 2 ? sp.find((id) => hatPaar(id, "DK")) ?? null : null;
   await updateDoc(api.raumRef(), {
-    ...upd, dkVorbehalt: v, dkStatus: "spielen", dkAmZug: sp[0], dkZugStart: Date.now(), dkStich: [], dkStichZeit: 0,
+    ...upd, dkSau: sauId, dkSuper: superId, dkVorbehalt: v, dkStatus: "spielen", dkAmZug: sp[0], dkZugStart: Date.now(), dkStich: [], dkStichZeit: 0,
     dkStiche: [], dkKlaerung: 0, dkAnsagen: { re: 0, kontra: 0 }
   });
 }
 
 // ---- Spielansicht ----------------------------------------------------------
-function meinTeam() {
-  if (!istSpieler()) return null;
-  if (reBekannt) return re.includes(api.spielerId) ? "re" : "kontra";
-  if (art === "hochzeit" && re[0] === api.spielerId) return "re";
+function teamVon(id) {
+  if (!sp.includes(id)) return null;
+  if (reBekannt) return re.includes(id) ? "re" : "kontra";
+  if (art === "hochzeit" && re[0] === id) return "re";
   return null;
 }
+const meinTeam = () => teamVon(api.spielerId);
 
 function legaleKarten() {
   const hand = meineKarten();
@@ -501,6 +556,10 @@ function zeigeSpiel() {
   const chips = [];
   if (ansagen.re) chips.push(`<span class="dk-chip dk-chip-re">${escapeHtml(ansageText("re"))}</span>`);
   if (ansagen.kontra) chips.push(`<span class="dk-chip dk-chip-ko">${escapeHtml(ansageText("kontra"))}</span>`);
+  const gespielt = [...stiche.flatMap((x) => x.karten), ...stich];
+  const zeigt = (code) => gespielt.find((x) => R.basis(x.karte) === code);
+  if (sau && zeigt("DA")) chips.push(`<span class="dk-chip">Schweinchen: ${escapeHtml(name(zeigt("DA").spielerId))}</span>`);
+  if (superSau && zeigt("DK")) chips.push(`<span class="dk-chip">Super-Sau: ${escapeHtml(name(zeigt("DK").spielerId))}</span>`);
   if (art === "hochzeit" && !reBekannt) chips.push(`<span class="dk-chip">Hochzeit von ${escapeHtml(name(solist))}</span>`);
   $("dk-ansagen").innerHTML = chips.join("");
 
@@ -579,11 +638,11 @@ function zeigeLetztenStich() {
 }
 
 // ---- Ansagen ---------------------------------------------------------------
-function moeglicheAnsage() {
-  if (status !== "spielen" || !istSpieler()) return null;
-  const team = meinTeam();
+function moeglicheAnsage(id = api.spielerId) {
+  if (status !== "spielen" || !sp.includes(id)) return null;
+  const team = teamVon(id);
   if (!team) return null;
-  const hand = meineKarten();
+  const hand = handVon(id) ?? [];
   if (!hand.length) return null;
   const naechste = (ansagen[team] ?? 0) + 1;
   if (naechste > 5) return null;
@@ -617,14 +676,14 @@ async function karteSpielen(karte) {
   }
 }
 
-async function zugSchreiben(id, karte, handKarten) {
+async function zugSchreiben(id, karte, handKarten, extra = {}) {
   const neu = [...stich, { spielerId: id, karte }];
   const naechster = sp[(sp.indexOf(id) + 1) % 4];
   const batch = writeBatch(api.db);
   batch.update(handRef(id), { karten: handKarten.filter((k) => k !== karte) });
   const upd = { dkStich: neu, dkAmZug: naechster, dkZugStart: Date.now() };
   if (neu.length === 4) { upd.dkAmZug = null; upd.dkStichZeit = Date.now(); }
-  batch.update(api.raumRef(), upd);
+  batch.update(api.raumRef(), { ...upd, ...extra });
   await batch.commit();
 }
 
@@ -657,10 +716,17 @@ async function leiterTick() {
   leiterBusy = true;
   try {
     if (status === "vorbehalt") {
+      const botUpd = {};
+      sp.filter((id) => isBot(id) && !vorbehalt[id]).forEach((id) => {
+        const h = handVon(id);
+        if (h) botUpd["dkVorbehalt." + id] = R.hatBeideKreuzDamen(h) ? "hochzeit" : "gesund";
+      });
+      if (Object.keys(botUpd).length) { await updateDoc(api.raumRef(), botUpd); return; }
       const alleDa = sp.length && sp.every((id) => vorbehalt[id]);
       if (sp.length && (alleDa || Date.now() - phaseStart > VORBEHALT_ZEIT_MS)) await vorbehaltAufloesen();
     } else if (status === "spielen") {
       if (stich.length === 4 && stichZeit && Date.now() - stichZeit > STICH_PAUSE_MS) await stichAbschliessen();
+      else if (stich.length < 4 && amZug && isBot(amZug) && Date.now() - zugStart > BOT_ZEIT_MS) await botZug();
       else if (stich.length < 4 && amZug && Date.now() - zugStart > ZUG_ZEIT_MS) await autoZug();
     }
   } catch (e) {
@@ -668,6 +734,72 @@ async function leiterTick() {
   } finally {
     leiterBusy = false;
   }
+}
+
+// ---- Bots ------------------------------------------------------------------
+// Einfache, aber vernünftige Strategie: Partner schmieren, Gegner mit der
+// kleinstmöglichen Karte stechen, sonst die billigste Karte abwerfen.
+function bekannteRe() {
+  const gespielt = [...stiche.flatMap((x) => x.karten), ...stich];
+  const rev = new Set(gespielt.filter((x) => R.basis(x.karte) === "CQ").map((x) => x.spielerId));
+  if (art === "solo") return [new Set([solist]), true];
+  if ((art === "hochzeit" || art === "stilleHochzeit") && reBekannt) return [new Set(re), true];
+  if (art === "hochzeit") rev.add(solist);
+  return [rev, art === "normal" && rev.size >= 2];
+}
+
+function beziehung(id, pid, team) {
+  if (!team || pid === id) return "unbekannt";
+  const [rev, komplett] = bekannteRe();
+  const pidRe = rev.has(pid);
+  if (team === "re") {
+    if (pidRe) return art === "solo" || art === "stilleHochzeit" ? "unbekannt" : "partner";
+    return komplett ? "gegner" : "unbekannt";
+  }
+  if (pidRe) return "gegner";
+  return komplett ? "partner" : "unbekannt";
+}
+
+function botStaerke(id) {
+  const r = aktuelleRegeln();
+  return (handVon(id) ?? []).reduce((sum, k) => {
+    if (!r.istTrumpf(k)) return sum;
+    return sum + (["HT", "CQ", "SQ", "HQ", "DQ"].includes(R.basis(k)) ? 2 : 1);
+  }, 0);
+}
+
+function botWaehle(id) {
+  const hand = handVon(id);
+  const r = aktuelleRegeln();
+  const legal = R.erlaubteKarten(hand, stich, r);
+  if (legal.length === 1) return legal[0];
+  const augen = (k) => R.augenVon(k);
+  const billig = (a, b) => augen(a) - augen(b) || r.staerke(a) - r.staerke(b);
+  const team = teamVon(id);
+  if (!stich.length) {
+    const ass = legal.filter((k) => !r.istTrumpf(k) && R.rangVon(k) === "A");
+    if (ass.length) return ass[0];
+    return [...legal].sort(billig)[0];
+  }
+  const gIdx = R.stichGewinnerIndex(stich, r);
+  const rel = beziehung(id, stich[gIdx].spielerId, team);
+  if (rel === "partner") {
+    if (stich.length === 3) return [...legal].sort((a, b) => augen(b) - augen(a) || r.staerke(a) - r.staerke(b))[0];
+    return [...legal].sort(billig)[0];
+  }
+  const gewinnend = legal.filter((k) => R.stichGewinnerIndex([...stich, { spielerId: id, karte: k }], r) === stich.length);
+  if (gewinnend.length) return gewinnend.sort((a, b) => r.staerke(a) - r.staerke(b))[0];
+  return [...legal].sort(billig)[0];
+}
+
+async function botZug() {
+  const id = amZug;
+  const hand = handVon(id);
+  if (!hand || !hand.length) return;
+  const extra = {};
+  const a = moeglicheAnsage(id);
+  if (a && a.stufe === 1 && botStaerke(id) >= (a.team === "re" ? 12 : 11)) extra["dkAnsagen." + a.team] = 1;
+  await zugSchreiben(id, botWaehle(id), hand, extra);
 }
 
 async function autoZug() {
@@ -701,11 +833,11 @@ async function stichAbschliessen() {
     return;
   }
   // Partie vorbei -> auswerten
-  const res = R.bewerte({ typ: spielart, art: neueArt, re: neueRe, spielerIds: sp, stiche: neueStiche, ansagen });
+  const res = R.bewerte({ typ: spielart, art: neueArt, re: neueRe, spielerIds: sp, stiche: neueStiche, ansagen, opt, sau: Boolean(sau) });
   const neu = { ...punkteSumme };
   alle.forEach((id) => { neu[id] = (neu[id] ?? 0) + (res.punkte[id] ?? 0); });
   const batch = writeBatch(api.db);
-  alle.forEach((id) => batch.update(api.spielerRef(id), { punkte: neu[id] ?? 0 }));
+  echte(alle).forEach((id) => batch.update(api.spielerRef(id), { punkte: neu[id] ?? 0 }));
   batch.update(api.raumRef(), {
     ...upd, dkStatus: "ergebnis", dkAmZug: null,
     dkErgebnis: { ...res, typ: spielart, art: neueArt, re: neueRe }, dkPunkte: neu
@@ -756,10 +888,10 @@ async function weiter() {
     } else {
       const rp = R.rangPunkte(Object.fromEntries(alle.map((id) => [id, punkteSumme[id] ?? 0])));
       const batch = writeBatch(api.db);
-      alle.forEach((id) => batch.update(api.spielerRef(id), { punkte: rp[id] ?? 0 }));
+      echte(alle).forEach((id) => batch.update(api.spielerRef(id), { punkte: rp[id] ?? 0 }));
       batch.update(api.raumRef(), { dkStatus: "beendet", dkRang: rp });
       await batch.commit();
-      speichereWertung(api, "doppelkopf", Object.fromEntries(alle.map((id) => [id, rp[id] ?? 0])));
+      speichereWertung(api, "doppelkopf", Object.fromEntries(echte(alle).map((id) => [id, rp[id] ?? 0])));
     }
   } catch (e) {
     zeigeDebug("Fehler beim Weiterschalten: " + e.message);
