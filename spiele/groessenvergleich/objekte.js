@@ -200,6 +200,91 @@ export const OBJEKTE = [
 
 export const OBJEKT_NACH_ID = Object.fromEntries(OBJEKTE.map((o) => [o.id, o]));
 
+// ---- Länder (Fläche in km²) -------------------------------------------------
+// Umrisse aus spiele/laenderumrisse/laender.json; die Umrisse sind dort einzeln
+// auf eine Zeichenfläche normiert, ihre Größe wird hier über die echte Fläche
+// wieder zueinander ins Verhältnis gesetzt.
+const FLAECHE_KM2 = {
+  deutschland: 357600, frankreich: 543940, spanien: 505990, italien: 301340, portugal: 92212,
+  "vereinigtes-konigreich": 243610, irland: 70273, niederlande: 41850, belgien: 30528, schweiz: 41285,
+  osterreich: 83871, polen: 312696, tschechien: 78867, griechenland: 131957, schweden: 450295,
+  norwegen: 323802, finnland: 338424, danemark: 43094, ukraine: 603550, turkei: 783562, ungarn: 93028,
+  island: 103000, estland: 45228, lettland: 64589, litauen: 65300, belarus: 207600, rumanien: 238397,
+  bulgarien: 110879, serbien: 88361, kroatien: 56594, slowenien: 20273, slowakei: 49035, zypern: 9251,
+  russland: 17098246, usa: 9833517, kanada: 9984670, mexiko: 1964375, kuba: 109884, brasilien: 8515767,
+  argentinien: 2780400, chile: 756102, peru: 1285216, kolumbien: 1141748, venezuela: 916445,
+  ecuador: 283561, bolivien: 1098581, paraguay: 406752, uruguay: 176215, agypten: 1002450,
+  sudafrika: 1221037, marokko: 446550, madagaskar: 587041, nigeria: 923768, kenia: 580367,
+  athiopien: 1104300, ghana: 238533, tunesien: 163610, algerien: 2381741, libyen: 1759540,
+  sudan: 1861484, simbabwe: 390757, namibia: 825615, botswana: 581730, tansania: 945087, uganda: 241550,
+  "demokratische-republik-kongo": 2344858, angola: 1246700, mosambik: 801590, senegal: 196722,
+  kamerun: 475440, elfenbeinkuste: 322463, china: 9596961, japan: 377975, indien: 3287263,
+  sudkorea: 100210, thailand: 513120, "saudi-arabien": 2149690, israel: 22072, iran: 1648195,
+  irak: 438317, pakistan: 881913, bangladesch: 147570, vietnam: 331212, indonesien: 1904569,
+  philippinen: 300000, malaysia: 330803, "sri-lanka": 65610, nepal: 147181, mongolei: 1564116,
+  kasachstan: 2724900, myanmar: 676578, "vereinigte-arabische-emirate": 83600, australien: 7692024,
+  neuseeland: 268021, "papua-neuguinea": 462840
+};
+
+// Länder, bei denen "das/die" im Namen steckt, brauchen keinen Artikel im Spieltext;
+// hier wird der Name ohnehin immer ausgeschrieben.
+export const LAENDER = [];
+let laenderGeladen = false;
+
+function landAusPfad(eintrag) {
+  const zahlen = /(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const m of eintrag.pfad.matchAll(zahlen)) {
+    const x = Number(m[1]), y = Number(m[2]);
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  }
+  const d = eintrag.pfad.replace(zahlen, (_, x, y) => `${f(Number(x) - minX)},${f(Number(y) - minY)}`);
+  // Fläche der gezeichneten Form (Shoelace je Teilpfad, vorzeichenbehaftet)
+  let flaeche = 0;
+  for (const teil of d.split("M").filter(Boolean)) {
+    const p = [...teil.matchAll(zahlen)].map((m) => [Number(m[1]), Number(m[2])]);
+    let a = 0;
+    for (let i = 0; i < p.length; i++) {
+      const q = p[(i + 1) % p.length];
+      a += p[i][0] * q[1] - q[0] * p[i][1];
+    }
+    flaeche += a / 2;
+  }
+  return { d, b: maxX - minX, h: maxY - minY, flaeche: Math.abs(flaeche) };
+}
+
+export async function ladeLaender() {
+  if (laenderGeladen) return;
+  laenderGeladen = true;
+  try {
+    const antwort = await fetch(new URL("../laenderumrisse/laender.json", import.meta.url));
+    const daten = await antwort.json();
+    for (const e of daten) {
+      const km2 = FLAECHE_KM2[e.id];
+      if (!km2) continue;
+      const g = landAusPfad(e);
+      if (!(g.flaeche > 0)) continue;
+      const o = { id: "land-" + e.id, artikel: "", name: e.name, kat: "Land", art: "flaeche", m: km2,
+        vb: [g.b, g.h], vbFlaeche: g.flaeche, pfade: ["M" + g.d.replace(/^M/, "")] };
+      LAENDER.push(o);
+      OBJEKT_NACH_ID[o.id] = o;
+    }
+  } catch (e) {
+    laenderGeladen = false;
+  }
+}
+
+// Echte Länge pro Zeicheneinheit (m bzw. bei Ländern km) für den Messwert x
+function realProEinheit(o, x) {
+  if (o.art === "flaeche") return Math.sqrt(x / o.vbFlaeche);
+  return x / (o.art === "hoch" ? o.vb[1] : o.vb[0]);
+}
+
+export function formatMass(o, m) {
+  if (o.art === "flaeche") return Math.round(m).toLocaleString("de-DE") + " km²";
+  return formatMeter(m) + " m";
+}
+
 export function formatMeter(m) {
   let s;
   if (m >= 100) s = String(Math.round(m));
@@ -208,17 +293,18 @@ export function formatMeter(m) {
   return s.replace(".", ",");
 }
 
-// Silhouette als SVG-Gruppe (x,y = linke untere Ecke, skala = Pixel pro Meter)
-export function objektSvg(o, x, yUnten, pxProMeter, attr) {
-  const einheitenProM = o.art === "hoch" ? o.vb[1] / o.m : o.vb[0] / o.m;
-  const s = pxProMeter / einheitenProM;
-  const hoehePx = o.vb[1] * s;
-  return `<g transform="translate(${f(x)} ${f(yUnten - hoehePx)}) scale(${s})" ${attr}>` +
+// Silhouette als SVG-Gruppe (x = links, yUnten = Bodenlinie, s = Pixel pro echter Längeneinheit)
+export function objektSvg(o, x, yUnten, s, attr, mass = o.m) {
+  const sc = s * realProEinheit(o, mass);
+  const hoehePx = o.vb[1] * sc;
+  return `<g transform="translate(${f(x)} ${f(yUnten - hoehePx)}) scale(${sc})" ${attr}>` +
     o.pfade.map((d) => `<path d="${d}" fill-rule="evenodd"/>`).join("") + "</g>";
 }
 
-// Breite/Höhe des Objekts in Metern
-export function ausdehnung(o) {
-  const einheitenProM = o.art === "hoch" ? o.vb[1] / o.m : o.vb[0] / o.m;
-  return { b: o.vb[0] / einheitenProM, h: o.vb[1] / einheitenProM };
+// Breite/Höhe in echten Längeneinheiten beim Messwert x
+export function ausdehnung(o, mass = o.m) {
+  const r = realProEinheit(o, mass);
+  return { b: o.vb[0] * r, h: o.vb[1] * r };
 }
+
+export function skalierung(o, s, mass = o.m) { return s * realProEinheit(o, mass); }

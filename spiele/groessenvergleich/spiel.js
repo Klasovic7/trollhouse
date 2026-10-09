@@ -21,7 +21,7 @@ import {
 } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
-import { OBJEKTE, OBJEKT_NACH_ID, formatMeter, objektSvg, ausdehnung } from "./objekte.js";
+import { OBJEKTE, LAENDER, OBJEKT_NACH_ID, ladeLaender, formatMeter, formatMass, objektSvg, ausdehnung, skalierung } from "./objekte.js";
 
 const MAX_RUNDEN = 15;
 const STANDARD_ANZAHL = 5;
@@ -31,8 +31,8 @@ const SLIDER_MAX = 1000;
 const FEIN_SCHRITT = 6;
 
 // Zeichenfläche (SVG-Koordinaten)
-const SZ_B = 1000, SZ_H = 640, SZ_BODEN = 590;
-const SZ_RAND_L = 64, SZ_RAND_R = 30, SZ_OBEN = 40, SZ_LUECKE = 60;
+const SZ_B = 1000, SZ_H = 670, SZ_BODEN = 590;
+const SZ_RAND_L = 64, SZ_RAND_R = 30, SZ_OBEN = 74, SZ_LUECKE = 60;
 
 const VORLAGE = `
   <div id="gv-setup" class="bildschirm-karte" hidden>
@@ -51,6 +51,16 @@ const VORLAGE = `
       </div>
       <p id="gv-anzahl-max" class="hinweis-text"></p>
     </div>
+
+    <div id="gv-modus-zeile" class="gv-modus-zeile">
+      <span>Kategorie</span>
+      <span class="gv-modus-gruppe">
+        <button type="button" class="gv-modus-btn" data-modus="objekte">Objekte</button>
+        <button type="button" class="gv-modus-btn" data-modus="land">Länder</button>
+        <button type="button" class="gv-modus-btn" data-modus="gemischt">Gemischt</button>
+      </span>
+    </div>
+    <p class="hinweis-text" id="gv-modus-hinweis"></p>
 
     <p id="gv-setup-fehler" class="fehler-text"></p>
     <p><button id="gv-starten" class="btn-primaer" hidden>Spiel starten</button></p>
@@ -77,6 +87,7 @@ const VORLAGE = `
   <div id="gv-ergebnis-screen" class="bildschirm-karte" hidden>
     <p class="kategorie">Größenvergleich</p>
     <h2 id="gv-erg-titel"></h2>
+    <p id="gv-erg-ref" class="hinweis-text"></p>
     <svg id="gv-erg-szene" class="gv-szene" viewBox="0 0 ${SZ_B} ${SZ_H}" role="img" aria-label="Auflösung"></svg>
     <ul id="gv-erg-liste"></ul>
     <p><button id="gv-weiter" hidden>Weiter</button></p>
@@ -109,6 +120,7 @@ let sendeLaeuft = false;
 let auswertungLaeuft = false;
 let aktuelleRundeKey = null;
 let sliderWert = 500;
+let modus = "objekte";
 
 let bereitSystem = null;
 let olympiadeAutoStart = false;
@@ -116,7 +128,8 @@ let olympiadeAutoStart = false;
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
 // ---- Rundenerzeugung (nur Spielleiter) -------------------------------------
-function gross(o) { const e = ausdehnung(o); return Math.max(e.b, e.h); }
+function grossBei(o, x) { const e = ausdehnung(o, x); return Math.max(e.b, e.h); }
+function gross(o) { return grossBei(o, o.m); }
 function mischen(liste) {
   const a = [...liste];
   for (let i = a.length - 1; i > 0; i--) {
@@ -128,33 +141,40 @@ function mischen(liste) {
 function zwischen(a, b) { return a + Math.random() * (b - a); }
 function runden3(x) { return Number(x.toPrecision(3)); }
 
-export function erzeugePaare(anzahl) {
+export function erzeugePaare(anzahl, modus = "objekte") {
   const ergebnis = [];
-  let zielReihe = [];
-  let letzteRef = null;
+  const pools = { objekte: OBJEKTE, land: LAENDER };
+  if (pools.land.length < 4) modus = "objekte";
+  const reihen = { objekte: [], land: [] };
+  const letzteRef = { objekte: null, land: null };
   for (let i = 0; i < anzahl; i++) {
-    if (zielReihe.length === 0) zielReihe = mischen(OBJEKTE);
-    const ziel = zielReihe.pop();
-    let kandidaten = OBJEKTE.filter((r) => {
-      if (r.id === ziel.id || r.id === letzteRef) return false;
+    const kat = modus === "gemischt" ? (Math.random() < 0.5 ? "objekte" : "land") : modus;
+    const pool = pools[kat];
+    if (reihen[kat].length === 0) reihen[kat] = mischen(pool);
+    const ziel = reihen[kat].pop();
+    // Länder nur mit Ländern, Objekte nur mit Objekten. Verhältnis der "Größe"
+    // (Kantenlänge) begrenzen, damit beide Silhouetten sichtbar bleiben.
+    const [vMin, vMax] = kat === "land" ? [1.2, 3.5] : [1.3, 8];
+    let kandidaten = pool.filter((r) => {
+      if (r.id === ziel.id || r.id === letzteRef[kat]) return false;
       const v = gross(ziel) / gross(r);
-      return (v >= 1.3 && v <= 8) || (1 / v >= 1.3 && 1 / v <= 8);
+      return (v >= vMin && v <= vMax) || (1 / v >= vMin && 1 / v <= vMax);
     });
-    if (kandidaten.length === 0) kandidaten = OBJEKTE.filter((r) => r.id !== ziel.id);
+    if (kandidaten.length === 0) kandidaten = pool.filter((r) => r.id !== ziel.id);
     const ref = kandidaten[Math.floor(Math.random() * kandidaten.length)];
-    letzteRef = ref.id;
+    letzteRef[kat] = ref.id;
 
     // Schieberegler-Bereich: zufällig und asymmetrisch um die echte Größe, damit
-    // die Mitte des Reglers nichts verrät.
-    let faktorUnten = zwischen(1.7, 4);
-    let faktorOben = zwischen(1.7, 4);
-    const gz = gross(ziel), gr = gross(ref);
-    const proMeter = gz / ziel.m;
-    while (gz * faktorOben > gr * 12) faktorOben *= 0.85;
-    while ((proMeter * (ziel.m / faktorUnten)) < gr / 12) faktorUnten *= 0.85;
+    // die Mitte des Reglers nichts verrät. Bei Ländern geht der Regler über die
+    // Fläche, daher etwas größere Faktoren.
+    const fMax = kat === "land" ? 6 : 4;
+    let faktorUnten = zwischen(1.7, fMax);
+    let faktorOben = zwischen(1.7, fMax);
+    const gr = gross(ref);
+    while (grossBei(ziel, ziel.m * faktorOben) > gr * 12) faktorOben *= 0.9;
+    while (grossBei(ziel, ziel.m / faktorUnten) < gr / 12) faktorUnten *= 0.9;
     const lo = runden3(ziel.m / faktorUnten);
     const hi = runden3(ziel.m * faktorOben);
-    // Startposition (Anteil 0..1 auf dem Regler), nicht in der Nähe der Lösung
     const wahr = Math.log(ziel.m / lo) / Math.log(hi / lo);
     let start;
     do { start = zwischen(0.1, 0.9); } while (Math.abs(start - wahr) < 0.15);
@@ -168,11 +188,7 @@ export function meterAusSlider(paar, v) {
 }
 
 // ---- Szene zeichnen --------------------------------------------------------
-function ausdehnungBei(o, meter) {
-  const e = ausdehnung(o);
-  const k = meter / o.m;
-  return { b: e.b * k, h: e.h * k };
-}
+function ausdehnungBei(o, meter) { return ausdehnung(o, meter); }
 
 // Die Szene passt sich immer so an, dass beide Silhouetten ins Bild passen:
 // wird die rote größer, schrumpft die blaue optisch (und umgekehrt).
@@ -191,6 +207,7 @@ function layoutFuer(paar, meterListe) {
 
 // Maßlinie (vertikal bei "hoch", sonst waagerecht unter dem Objekt)
 function masslinie(o, meter, x, farbe, s, beschriftung) {
+  if (o.art === "flaeche") return "";
   const e = ausdehnungBei(o, meter);
   const txt = escapeHtml(beschriftung ?? `${formatMeter(meter)} m`);
   const stil = `stroke="${farbe}" stroke-width="3" fill="none"`;
@@ -206,14 +223,9 @@ function masslinie(o, meter, x, farbe, s, beschriftung) {
 }
 
 function zielGruppe(L, meter, farbe, optionen = {}) {
-  const pxProMeter = L.s;
   const ziel = L.ziel;
-  // Skalierung: Objekt der echten Größe m wird auf "meter" gestreckt
-  const k = meter / ziel.m;
-  const e = ausdehnung(ziel);
-  const hoehePx = e.h * k * pxProMeter;
-  const einheitenProM = ziel.art === "hoch" ? ziel.vb[1] / ziel.m : ziel.vb[0] / ziel.m;
-  const sc = (pxProMeter * k) / einheitenProM;
+  const sc = skalierung(ziel, L.s, meter);
+  const hoehePx = ziel.vb[1] * sc;
   const attr = optionen.umriss
     ? `fill="none" stroke="${farbe}" stroke-width="4" stroke-linejoin="round" vector-effect="non-scaling-stroke"`
     : `fill="${farbe}" fill-opacity="${optionen.deckkraft ?? 1}"`;
@@ -230,9 +242,17 @@ function bodenLinie() {
   return `<path d="M10 ${SZ_BODEN}H${SZ_B - 10}" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>`;
 }
 
+// Namen immer dazuschreiben: Referenz oben links (blau), Anpassen oben rechts (rot)
+function namensZeilen(L, refFarbe, zielFarbe, refZusatz, zielZusatz) {
+  const t = (x, anker, farbe, name, zusatz) =>
+    `<text x="${x}" y="44" text-anchor="${anker}" fill="${farbe}" class="gv-name-text">${escapeHtml(name)}` +
+    (zusatz ? `<tspan class="gv-name-zusatz" fill="${farbe}"> ${escapeHtml(zusatz)}</tspan>` : "") + `</text>`;
+  return t(14, "start", refFarbe, L.ref.name, refZusatz) + t(SZ_B - 14, "end", zielFarbe, L.ziel.name, zielZusatz);
+}
+
 function zeichneRundenSzene(paar, meter) {
   const L = layoutFuer(paar, [meter]);
-  $("gv-szene").innerHTML = bodenLinie() + refGruppe(L) + zielGruppe(L, meter, "#ef4444");
+  $("gv-szene").innerHTML = bodenLinie() + namensZeilen(L, "#2563eb", "#dc2626") + refGruppe(L) + zielGruppe(L, meter, "#ef4444");
 }
 
 function formatPlusMinus(verhaeltnis) {
@@ -243,17 +263,13 @@ function formatPlusMinus(verhaeltnis) {
 function frageText() {
   return "Zieh die rote Silhouette auf die richtige Größe";
 }
-function refText(paar) {
-  const r = OBJEKT_NACH_ID[paar.ref];
-  const artikel = r.artikel.charAt(0).toUpperCase() + r.artikel.slice(1);
-  return `${artikel} ${r.name} ist ${formatMeter(r.m)} m ${r.art}.`;
-}
-
 // ---- Lebenszyklus ----------------------------------------------------------
 export async function starten(uebergebeneApi) {
   api = uebergebeneApi;
   el.wurzel = api.wurzel;
   el.wurzel.innerHTML = VORLAGE;
+  await ladeLaender();
+  if (!el.wurzel) return;
   bereitSystem = initBereitSystem(api, "gv");
   olympiadeAutoStart = false;
 
@@ -284,6 +300,12 @@ function verdrahteBedienelemente() {
   });
   feld.addEventListener("focus", () => { feld.select(); });
   $("gv-starten").addEventListener("click", spielStarten);
+  el.wurzel.querySelectorAll(".gv-modus-btn").forEach((b) => b.addEventListener("click", () => {
+    if (!api.istLeiter) return;
+    modus = b.dataset.modus;
+    zeigeModus();
+    updateDoc(api.raumRef(), { gvModus: modus }).catch(() => {});
+  }));
   $("gv-regler").addEventListener("input", () => reglerGeaendert(Number($("gv-regler").value)));
   $("gv-minus").addEventListener("click", () => reglerGeaendert(sliderWert - FEIN_SCHRITT));
   $("gv-plus").addEventListener("click", () => reglerGeaendert(sliderWert + FEIN_SCHRITT));
@@ -320,7 +342,7 @@ export function beenden() {
   spielerListe = []; alleAntworten = []; paare = [];
   status = null; rundenIndex = -1; anzahlRunden = 0; anzahlEntwurf = null;
   rundeStart = 0; eigeneAbgegeben = false; sendeLaeuft = false; auswertungLaeuft = false;
-  aktuelleRundeKey = null; sliderWert = 500;
+  aktuelleRundeKey = null; sliderWert = 500; modus = "objekte";
 }
 
 export function spieler(liste) {
@@ -336,6 +358,7 @@ export function raumDaten(daten) {
   status = daten.gvStatus ?? null;
   anzahlRunden = daten.gvAnzahlRunden ?? 0;
   anzahlEntwurf = daten.gvAnzahlEntwurf ?? null;
+  if (daten.gvModus) modus = daten.gvModus;
   paare = daten.gvPaare ?? [];
   const neuerIndex = daten.gvRundenIndex ?? 0;
   const neuerStart = daten.gvRundeStart ?? 0;
@@ -383,10 +406,21 @@ function alleVerstecken() {
     .forEach((id) => { $(id).hidden = true; });
 }
 
+function zeigeModus() {
+  el.wurzel.querySelectorAll(".gv-modus-btn").forEach((b) => {
+    b.classList.toggle("aktiv", b.dataset.modus === modus);
+    b.disabled = !api.istLeiter;
+  });
+  $("gv-modus-hinweis").textContent =
+    modus === "land" ? "Nur Länder gegen Länder - verglichen wird die Fläche."
+    : modus === "gemischt" ? "Mal Objekte, mal Länder - aber nie gegeneinander."
+    : "Tiere, Bauwerke und Fahrzeuge bunt gemischt - Länder sind nicht dabei.";
+}
+
 function zeigeSetup() {
   const anzahlFeld = $("gv-anzahl");
   anzahlFeld.max = MAX_RUNDEN;
-  const hinweis = `Bis zu ${MAX_RUNDEN} Runden - Tiere, Bauwerke und Fahrzeuge bunt gemischt.`;
+  const hinweis = `Bis zu ${MAX_RUNDEN} Runden.`;
   if (api.olympiadeAnzahl) {
     const festgelegt = Math.min(Math.max(1, api.olympiadeAnzahl), MAX_RUNDEN);
     anzahlFeld.value = String(festgelegt);
@@ -402,6 +436,7 @@ function zeigeSetup() {
     $("gv-anzahl-max").textContent = hinweis;
     anzahlFeld.disabled = true;
   }
+  zeigeModus();
   $("gv-anzahl-zeile").hidden = false;
   $("gv-starten").hidden = !api.istLeiter;
   $("gv-setup-warten").hidden = api.istLeiter;
@@ -430,7 +465,7 @@ async function spielStarten() {
       gvStatus: "runde_aktiv",
       gvRundenIndex: 0,
       gvAnzahlRunden: anzahl,
-      gvPaare: erzeugePaare(anzahl),
+      gvPaare: erzeugePaare(anzahl, modus),
       gvRundeStart: Date.now()
     });
   } catch (e) {
@@ -450,7 +485,7 @@ export async function vorZurueck() {
   try {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
-      gvStatus: null, gvRundenIndex: 0, gvAnzahlRunden: 0, gvAnzahlEntwurf: 0, gvRundeStart: 0, gvPaare: []
+      gvStatus: null, gvModus: "objekte", gvRundenIndex: 0, gvAnzahlRunden: 0, gvAnzahlEntwurf: 0, gvRundeStart: 0, gvPaare: []
     });
     await api.zurueckZurAuswahl();
   } catch (e) {
@@ -464,7 +499,7 @@ function bereiteRundeVor() {
   if (!paar) return;
   $("gv-frage").textContent = frageText(paar);
   const r = OBJEKT_NACH_ID[paar.ref], z = OBJEKT_NACH_ID[paar.ziel];
-  const mass = (o) => (o.art === "hoch" ? "Höhe" : o.art === "lang" ? "Länge" : "Breite");
+  const mass = (o) => (o.art === "flaeche" ? "Fläche" : o.art === "hoch" ? "Höhe" : o.art === "lang" ? "Länge" : "Breite");
   $("gv-chip-ref").innerHTML = `<small>Referenz</small><b>${escapeHtml(r.name)}</b><em>${mass(r)} ?</em>`;
   $("gv-chip-ziel").innerHTML = `<small>Größe anpassen</small><b>${escapeHtml(z.name)}</b><em>${mass(z)} ?</em>`;
   $("gv-regler").disabled = false;
@@ -638,8 +673,14 @@ function zeigeErgebnis(pos) {
   const paar = paare[pos];
   if (!paar) return;
   const z = OBJEKT_NACH_ID[paar.ziel];
-  $("gv-erg-titel").textContent =
-    `${z.artikel.charAt(0).toUpperCase() + z.artikel.slice(1)} ${z.name} ist ${formatMeter(z.m)} m ${z.art}.`;
+  const r = OBJEKT_NACH_ID[paar.ref];
+  const satz = (o) => {
+    if (o.art === "flaeche") return `${o.name} hat eine Fläche von ${formatMass(o, o.m)}.`;
+    const art = o.artikel.charAt(0).toUpperCase() + o.artikel.slice(1);
+    return `${art} ${o.name} ist ${formatMass(o, o.m)} ${o.art}.`;
+  };
+  $("gv-erg-titel").textContent = satz(z);
+  $("gv-erg-ref").textContent = `Referenz: ${satz(r)}`;
   zeigeErgebnisInhalt(pos);
   $("gv-weiter").hidden = !api.istLeiter;
   $("gv-weiter").textContent = pos + 1 >= anzahlRunden ? "Endstand anzeigen" : "Nächste Runde";
@@ -654,7 +695,8 @@ function zeigeErgebnisInhalt(pos) {
   const punkte = berechneRundenpunkte(pos);
 
   const L = layoutFuer(paar, [z.m, ...antworten.filter((a) => a.meter > 0).map((a) => a.meter)]);
-  let svg = bodenLinie() + refGruppe(L) + masslinie(L.ref, L.ref.m, L.refX, "#2563eb", L.s);
+  let svg = bodenLinie() + namensZeilen(L, "#2563eb", "#16a34a", `(${formatMass(L.ref, L.ref.m)})`, `(${formatMass(z, z.m)})`) +
+    refGruppe(L) + masslinie(L.ref, L.ref.m, L.refX, "#2563eb", L.s);
   svg += zielGruppe(L, z.m, "#22c55e", { deckkraft: 0.85 });
   svg += masslinie(L.ziel, z.m, L.zielX, "#16a34a", L.s);
   antworten.forEach((a) => {
@@ -674,7 +716,7 @@ function zeigeErgebnisInhalt(pos) {
   sortiert.forEach((a) => {
     const s = spielerListe.find((x) => x.id === a.spielerId);
     const extra = a.meter > 0
-      ? `${formatMeter(a.meter)} m (${formatPlusMinus(a.meter / z.m)})`
+      ? `${formatMass(z, a.meter)} (${formatPlusMinus(a.meter / z.m)})`
       : "Keine Schätzung";
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(a.spielerName, s?.farbe, s?.icon, punkte[a.spielerId] > 0 ? `+${punkte[a.spielerId]}` : "0",

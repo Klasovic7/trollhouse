@@ -3079,3 +3079,11 @@ body.ank-offen { overflow: hidden; }
 .gv-chip-ref small { color: #60a5fa; }
 .gv-chip-ziel { border-left: 4px solid #ef4444; }
 .gv-chip-ziel small { color: #f87171; }
+.gv-name-text { font-size: 40px; font-weight: 800; font-family: inherit; }
+.gv-name-zusatz { font-size: 30px; font-weight: 600; }
+.gv-modus-zeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 4px; flex-wrap: wrap; }
+.gv-modus-gruppe { display: inline-flex; gap: 4px; }
+.gv-modus-btn { padding: 8px 12px; margin: 0; font-size: .85rem; background: rgba(255,255,255,.12); }
+.gv-modus-btn.aktiv { background: var(--akzent); box-shadow: 0 0 0 2px rgba(255,255,255,.5); }
+.gv-modus-btn:disabled { opacity: 1; cursor: default; }
+.gv-modus-btn:disabled:not(.aktiv) { opacity: .5; }
