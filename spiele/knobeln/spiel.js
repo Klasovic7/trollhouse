@@ -9,7 +9,12 @@
 //  wandert dabei jede Runde weiter), bis nur noch eine Person übrig bleibt -
 //  das ist der Verlierer.
 //
-//  Punkte: Wer zuerst rausgeht, bekommt die meisten, der Verlierer 0.
+//  Optionen (Spielleiter): Anzahl richtiger Tipps, bis man raus ist (1 bis 3), und
+//  "Finale": zwei Durchgänge mit allen, jeweils mit einem Verlierer; die beiden
+//  Verlierer spielen zu zweit ein Finale (außer es war zweimal dieselbe Person).
+//
+//  Punkte: Wer zuerst rausgeht, bekommt die meisten, der Verlierer 0. Im Finale
+//  bekommt der Sieger 3 Zusatzpunkte.
 //
 //  Raumfelder beginnen mit "kn": knStatus (setup | hand | tippen | aufloesung |
 //  beendet), knRunde, knAktive, knReihenfolge, knTippIndex, knTipps,
@@ -26,6 +31,7 @@ import { speichereWertung } from "../../kern/wertung.js";
 const HAND_ZEIT_MS = 30000;
 const TIPP_ZEIT_MS = 25000;
 const MAX_HOELZER = 3;
+const FINALE_BONUS = 3;
 
 const VORLAGE = `
   <div id="kn-setup" class="bildschirm-karte" hidden>
@@ -34,6 +40,22 @@ const VORLAGE = `
       reihum, wie viele Hölzer insgesamt im Spiel sind - jede Zahl darf nur einmal genannt werden.
       Wer richtig tippt, ist raus und in Sicherheit. Mit den Übrigen geht es weiter, bis nur noch
       eine Person übrig ist: der Verlierer.</p>
+    <div class="gv-modus-zeile">
+      <span>Richtige Tipps bis raus</span>
+      <span class="gv-modus-gruppe" id="kn-opt-treffer">
+        <button type="button" class="gv-modus-btn" data-treffer="1">1</button>
+        <button type="button" class="gv-modus-btn" data-treffer="2">2</button>
+        <button type="button" class="gv-modus-btn" data-treffer="3">3</button>
+      </span>
+    </div>
+    <div class="gv-modus-zeile">
+      <span>Mit Finale</span>
+      <span class="gv-modus-gruppe" id="kn-opt-finale">
+        <button type="button" class="gv-modus-btn" data-finale="0">Aus</button>
+        <button type="button" class="gv-modus-btn" data-finale="1">An</button>
+      </span>
+    </div>
+    <p class="hinweis-text" id="kn-opt-hinweis"></p>
     <p id="kn-setup-fehler" class="fehler-text"></p>
     <p><button id="kn-starten" class="btn-primaer" hidden>Spiel starten</button></p>
     <p id="kn-setup-warten" hidden><em>Warte, bis der Spielleiter das Spiel startet …</em></p>
@@ -64,6 +86,7 @@ const VORLAGE = `
     <h2 id="kn-erg-titel"></h2>
     <p class="kn-summe">Insgesamt: <strong id="kn-erg-summe"></strong></p>
     <ul id="kn-erg-liste"></ul>
+    <p id="kn-erg-info" class="hinweis-text kn-erg-info"></p>
     <p><button id="kn-weiter" hidden>Weiter</button></p>
   </div>
 
@@ -93,6 +116,13 @@ let phaseStart = 0;
 let auswertung = null;
 let ausgeschieden = [];
 let anzahlStart = 0;
+let durchgang = 0;           // 0 und 1 = normale Durchgänge, 2 = Finale
+let alle = [];               // alle Spieler-Ids zu Spielbeginn
+let treffer = {};            // richtige Tipps je Spieler im aktuellen Durchgang
+let verlierer = [];          // Verlierer der bisherigen Durchgänge
+let punkteSumme = {};
+let optTreffer = 1;
+let optFinale = false;
 
 let meineHand = null;       // lokal gemerkt: Anzahl, die ich gewählt habe
 let meineHandRunde = -1;
@@ -141,6 +171,18 @@ export async function starten(uebergebeneApi) {
 
   $("kn-starten").addEventListener("click", spielStarten);
   $("kn-weiter").addEventListener("click", weiter);
+  el.wurzel.querySelectorAll("[data-treffer]").forEach((b) => b.addEventListener("click", () => {
+    if (!api.istLeiter) return;
+    optTreffer = Number(b.dataset.treffer);
+    zeigeOptionen();
+    updateDoc(api.raumRef(), { knOptTreffer: optTreffer }).catch(() => {});
+  }));
+  el.wurzel.querySelectorAll("[data-finale]").forEach((b) => b.addEventListener("click", () => {
+    if (!api.istLeiter) return;
+    optFinale = b.dataset.finale === "1";
+    zeigeOptionen();
+    updateDoc(api.raumRef(), { knOptFinale: optFinale }).catch(() => {});
+  }));
 
   haendeUnsub = onSnapshot(collection(api.db, "raeume", api.code, "knHaende"), (snap) => {
     haende = [];
@@ -151,7 +193,8 @@ export async function starten(uebergebeneApi) {
   if (api.istLeiter && !api.raum?.knStatus) {
     await updateDoc(api.raumRef(), {
       knStatus: "setup", knRunde: 0, knAktive: [], knReihenfolge: [], knTippIndex: 0, knTipps: {},
-      knPhaseStart: 0, knAuswertung: null, knAusgeschieden: [], knAnzahlStart: 0
+      knPhaseStart: 0, knAuswertung: null, knAusgeschieden: [], knAnzahlStart: 0,
+      knOptTreffer: 1, knOptFinale: false, knDurchgang: 0, knAlle: [], knTreffer: {}, knVerlierer: [], knPunkte: {}
     });
   }
   tickId = setInterval(tick, 200);
@@ -165,6 +208,7 @@ export function beenden() {
   spielerListe = []; haende = [];
   status = null; runde = 0; aktive = []; reihenfolge = []; tippIndex = 0; tipps = {};
   phaseStart = 0; auswertung = null; ausgeschieden = []; anzahlStart = 0;
+  durchgang = 0; alle = []; treffer = {}; verlierer = []; punkteSumme = {}; optTreffer = 1; optFinale = false;
   meineHand = null; meineHandRunde = -1; leiterBusy = false;
 }
 
@@ -187,9 +231,32 @@ export function raumDaten(daten) {
   auswertung = daten.knAuswertung ?? null;
   ausgeschieden = daten.knAusgeschieden ?? [];
   anzahlStart = daten.knAnzahlStart ?? 0;
+  durchgang = daten.knDurchgang ?? 0;
+  alle = daten.knAlle ?? [];
+  treffer = daten.knTreffer ?? {};
+  verlierer = daten.knVerlierer ?? [];
+  punkteSumme = daten.knPunkte ?? {};
+  optTreffer = daten.knOptTreffer ?? 1;
+  optFinale = Boolean(daten.knOptFinale);
   if (runde !== alteRunde) { meineHand = null; }
-  api.fortschritt(status === "hand" || status === "tippen" || status === "aufloesung" ? `Runde ${runde + 1}` : "");
+  api.fortschritt(status === "hand" || status === "tippen" || status === "aufloesung" ? durchgangLabel() : "");
   zeichne();
+}
+
+function zeigeOptionen() {
+  el.wurzel.querySelectorAll("[data-treffer]").forEach((b) => {
+    b.classList.toggle("aktiv", Number(b.dataset.treffer) === optTreffer);
+    b.disabled = !api.istLeiter;
+  });
+  el.wurzel.querySelectorAll("[data-finale]").forEach((b) => {
+    b.classList.toggle("aktiv", (b.dataset.finale === "1") === optFinale);
+    b.disabled = !api.istLeiter;
+  });
+  $("kn-opt-hinweis").textContent =
+    (optTreffer === 1 ? "Ein richtiger Tipp reicht, um raus zu sein. " : `Man braucht ${optTreffer} richtige Tipps, um raus zu sein. `) +
+    (optFinale
+      ? "Mit Finale: zwei Durchgänge, die beiden Verlierer spielen ein Finale zu zweit (bei zweimal demselben Verlierer entfällt es)."
+      : "Ohne Finale: ein Durchgang, die letzte Person verliert.");
 }
 
 function alleVerstecken() {
@@ -202,6 +269,7 @@ function zeichne() {
   alleVerstecken();
   if (status === "setup" || !status) {
     $("kn-setup").hidden = false;
+    zeigeOptionen();
     $("kn-starten").hidden = !api.istLeiter;
     $("kn-setup-warten").hidden = api.istLeiter;
     bereitSystem?.render();
@@ -224,6 +292,11 @@ function zeichne() {
   }
 }
 
+function durchgangLabel() {
+  if (durchgang === 2) return `Finale · Runde ${runde + 1}`;
+  return optFinale ? `Durchgang ${durchgang + 1}/2 · Runde ${runde + 1}` : `Runde ${runde + 1}`;
+}
+
 // ---- Start -----------------------------------------------------------------
 async function spielStarten() {
   $("kn-setup-fehler").textContent = "";
@@ -240,7 +313,8 @@ async function spielStarten() {
     const ids = spielerListe.map((s) => s.id);
     await updateDoc(api.raumRef(), {
       knStatus: "hand", knRunde: 0, knAktive: ids, knReihenfolge: ids, knTippIndex: 0, knTipps: {},
-      knPhaseStart: Date.now(), knAuswertung: null, knAusgeschieden: [], knAnzahlStart: ids.length
+      knPhaseStart: Date.now(), knAuswertung: null, knAusgeschieden: [], knAnzahlStart: ids.length,
+      knDurchgang: 0, knAlle: ids, knTreffer: {}, knVerlierer: [], knPunkte: {}, knEndVerlierer: null
     });
   } catch (e) {
     zeigeDebug("Fehler beim Start: " + e.message);
@@ -254,7 +328,8 @@ export async function vorZurueck() {
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
     await updateDoc(api.raumRef(), {
       knStatus: null, knRunde: 0, knAktive: [], knReihenfolge: [], knTippIndex: 0, knTipps: {},
-      knPhaseStart: 0, knAuswertung: null, knAusgeschieden: [], knAnzahlStart: 0
+      knPhaseStart: 0, knAuswertung: null, knAusgeschieden: [], knAnzahlStart: 0,
+      knOptTreffer: 1, knOptFinale: false, knDurchgang: 0, knAlle: [], knTreffer: {}, knVerlierer: [], knPunkte: {}, knEndVerlierer: null
     });
     await api.zurueckZurAuswahl();
   } catch (e) {
@@ -270,7 +345,7 @@ function handDieserRunde(id) {
 }
 
 function zeigeHandScreen() {
-  $("kn-runde-label").textContent = `Runde ${runde + 1} · noch ${aktive.length} im Spiel`;
+  $("kn-runde-label").textContent = `${durchgangLabel()} · noch ${aktive.length} im Spiel`;
   const wahl = $("kn-hand-wahl");
   const schonGewaehlt = handDieserRunde(api.spielerId) != null || meineHandRunde === runde && meineHand != null;
   if (!ichBinAktiv()) {
@@ -342,7 +417,7 @@ function zeigeTippScreen() {
   const max = n * MAX_HOELZER;
   const dran = reihenfolge[tippIndex];
   const ichDran = dran === api.spielerId && ichBinAktiv();
-  $("kn-tipp-label").textContent = `Runde ${runde + 1} · Gesamtzahl 0 bis ${max}`;
+  $("kn-tipp-label").textContent = `${durchgangLabel()} · Gesamtzahl 0 bis ${max}`;
   $("kn-tipp-titel").textContent = ichDran
     ? "Du bist dran: Wie viele Hölzer sind es insgesamt?"
     : `${name(dran)} tippt gerade …`;
@@ -355,7 +430,7 @@ function zeigeTippScreen() {
     const li = document.createElement("li");
     li.className = "kn-tipp-zeile" + (i === tippIndex ? " dran" : "");
     li.innerHTML = `<span class="kn-tipp-spieler">${avatarHtml(s?.icon, "kn-chip-avatar")}<span>${escapeHtml(s?.name ?? "?")}</span></span>` +
-      `<span class="kn-tipp-wert">${hat ? escapeHtml(String(tipps[id])) : i === tippIndex ? "…" : "–"}</span>`;
+      `<span class="kn-tipp-wert">${optTreffer > 1 ? `<small class="kn-treffer">${treffer[id] ?? 0}/${optTreffer}</small> ` : ""}${hat ? escapeHtml(String(tipps[id])) : i === tippIndex ? "…" : "–"}</span>`;
     liste.appendChild(li);
   });
 
@@ -470,22 +545,41 @@ async function wertAus() {
     summe += hand[id];
   });
   const richtig = reihenfolge.filter((id) => Number(tipps[id]) === summe);
+  const neueTreffer = { ...treffer };
+  richtig.forEach((id) => { neueTreffer[id] = (neueTreffer[id] ?? 0) + 1; });
+  const raus = richtig.filter((id) => neueTreffer[id] >= optTreffer);
   await updateDoc(api.raumRef(), {
     knStatus: "aufloesung",
-    knAuswertung: { runde, summe, haende: hand, tipps: { ...tipps }, richtig, reihenfolge: [...reihenfolge] }
+    knTreffer: neueTreffer,
+    knAuswertung: { runde, summe, haende: hand, tipps: { ...tipps }, richtig, raus, treffer: neueTreffer, reihenfolge: [...reihenfolge] }
   });
 }
 
 // ---- Auflösung -------------------------------------------------------------
+// Was passiert nach dieser Auflösung? (nächste Runde, nächster Durchgang, Finale, Ende)
+function naechsterSchritt(a) {
+  const neueAktive = aktive.filter((id) => !a.raus.includes(id));
+  const neueAusgeschieden = [...ausgeschieden, ...a.raus];
+  if (neueAktive.length > 1) return { art: "runde", neueAktive, neueAusgeschieden };
+  const loser = neueAktive[0];
+  let art = "ende";
+  if (optFinale && durchgang === 0) art = "durchgang2";
+  else if (optFinale && durchgang === 1 && verlierer[0] !== loser) art = "finale";
+  return { art, neueAktive, neueAusgeschieden, loser };
+}
+
 function zeigeErgebnis() {
   if (!auswertung) return;
   const a = auswertung;
-  $("kn-erg-label").textContent = `Runde ${a.runde + 1}`;
+  $("kn-erg-label").textContent = durchgangLabel();
   $("kn-erg-summe").textContent = String(a.summe);
-  if (a.richtig.length > 0) {
-    $("kn-erg-titel").textContent = `${a.richtig.map(name).join(" und ")} ${a.richtig.length > 1 ? "haben" : "hat"} richtig getippt - und ${a.richtig.length > 1 ? "sind" : "ist"} raus!`;
-  } else {
+  const mitZaehler = (id) => name(id) + (optTreffer > 1 ? ` (${a.treffer[id]}/${optTreffer})` : "");
+  if (a.richtig.length === 0) {
     $("kn-erg-titel").textContent = "Niemand lag richtig - es geht in die nächste Runde.";
+  } else if (a.raus.length > 0) {
+    $("kn-erg-titel").textContent = `${a.richtig.map(mitZaehler).join(" und ")} ${a.richtig.length > 1 ? "haben" : "hat"} richtig getippt - ${a.raus.map(name).join(" und ")} ${a.raus.length > 1 ? "sind" : "ist"} raus!`;
+  } else {
+    $("kn-erg-titel").textContent = `${a.richtig.map(mitZaehler).join(" und ")} ${a.richtig.length > 1 ? "haben" : "hat"} richtig getippt - noch nicht genug, um raus zu sein.`;
   }
   const liste = $("kn-erg-liste");
   liste.innerHTML = "";
@@ -501,9 +595,22 @@ function zeigeErgebnis() {
       `</div>`;
     liste.appendChild(li);
   });
-  const neueAktive = aktive.filter((id) => !a.richtig.includes(id));
+
+  const n = naechsterSchritt(a);
+  const info = $("kn-erg-info");
+  const gruppe = durchgang === 2 ? "Finale" : optFinale ? `Durchgang ${durchgang + 1}` : "Das Spiel";
+  info.textContent = n.art === "runde" ? ""
+    : `${gruppe} ist vorbei: ${name(n.loser)} hat verloren.` +
+      (n.art === "ende" && optFinale && durchgang === 1 ? " Beide Durchgänge verloren - ein Finale ist nicht nötig." : "");
   $("kn-weiter").hidden = !api.istLeiter;
-  $("kn-weiter").textContent = neueAktive.length <= 1 ? "Endstand anzeigen" : "Nächste Runde";
+  $("kn-weiter").textContent = n.art === "runde" ? "Nächste Runde"
+    : n.art === "durchgang2" ? "Durchgang 2 starten"
+    : n.art === "finale" ? "Finale starten" : "Endstand anzeigen";
+}
+
+function rotiere(ids, runde) {
+  const start = runde % ids.length;
+  return [...ids.slice(start), ...ids.slice(0, start)];
 }
 
 async function weiter() {
@@ -511,44 +618,66 @@ async function weiter() {
   $("kn-weiter").disabled = true;
   try {
     const a = auswertung;
-    const neueAusgeschieden = [...ausgeschieden, ...a.richtig];
-    const neueAktive = aktive.filter((id) => !a.richtig.includes(id));
-    if (neueAktive.length <= 1) {
-      // Punkte: wer zuerst rausgeht, bekommt die meisten; der Verlierer 0.
-      const n = anzahlStart;
-      const batch = writeBatch(api.db);
-      const punkteMap = {};
-      neueAusgeschieden.forEach((id, i) => {
-        const p = n - 1 - i;
-        punkteMap[id] = p;
-        batch.update(api.spielerRef(id), { punkte: increment(p) });
-      });
-      neueAktive.forEach((id) => { punkteMap[id] = 0; });
-      batch.update(api.raumRef(), { knStatus: "beendet", knAusgeschieden: neueAusgeschieden, knAktive: neueAktive });
-      await batch.commit();
-      speichereWertung(api, "knobeln", punkteMap);
-    } else {
-      const naechste = a.runde + 1;
-      // Der erste Tipp wandert jede Runde weiter.
-      const start = naechste % neueAktive.length;
-      const neueReihenfolge = [...neueAktive.slice(start), ...neueAktive.slice(0, start)];
+    const n = naechsterSchritt(a);
+    const naechste = a.runde + 1;
+    if (n.art === "runde") {
       await updateDoc(api.raumRef(), {
-        knStatus: "hand", knRunde: naechste, knAktive: neueAktive, knReihenfolge: neueReihenfolge,
-        knTippIndex: 0, knTipps: {}, knPhaseStart: Date.now(), knAuswertung: null, knAusgeschieden: neueAusgeschieden
+        knStatus: "hand", knRunde: naechste, knAktive: n.neueAktive, knReihenfolge: rotiere(n.neueAktive, naechste),
+        knTippIndex: 0, knTipps: {}, knPhaseStart: Date.now(), knAuswertung: null, knAusgeschieden: n.neueAusgeschieden
       });
+      return;
+    }
+    // Der Durchgang ist zu Ende: Punkte verbuchen
+    const neuePunkte = { ...punkteSumme };
+    const add = (id, p) => { neuePunkte[id] = (neuePunkte[id] ?? 0) + p; };
+    alle.forEach((id) => add(id, 0));
+    if (durchgang === 2) {
+      add(n.neueAusgeschieden[0], FINALE_BONUS);
+    } else {
+      n.neueAusgeschieden.forEach((id, i) => add(id, alle.length - 1 - i));
+    }
+    const neueVerlierer = [...verlierer, n.loser];
+
+    if (n.art === "durchgang2") {
+      await updateDoc(api.raumRef(), {
+        knStatus: "hand", knRunde: naechste, knDurchgang: 1, knAktive: alle, knReihenfolge: rotiere(alle, naechste),
+        knTippIndex: 0, knTipps: {}, knTreffer: {}, knPhaseStart: Date.now(), knAuswertung: null, knAusgeschieden: [],
+        knVerlierer: neueVerlierer, knPunkte: neuePunkte
+      });
+    } else if (n.art === "finale") {
+      await updateDoc(api.raumRef(), {
+        knStatus: "hand", knRunde: naechste, knDurchgang: 2, knAktive: neueVerlierer, knReihenfolge: rotiere(neueVerlierer, naechste),
+        knTippIndex: 0, knTipps: {}, knTreffer: {}, knPhaseStart: Date.now(), knAuswertung: null, knAusgeschieden: [],
+        knVerlierer: neueVerlierer, knPunkte: neuePunkte
+      });
+    } else {
+      const batch = writeBatch(api.db);
+      alle.forEach((id) => batch.update(api.spielerRef(id), { punkte: neuePunkte[id] ?? 0 }));
+      batch.update(api.raumRef(), {
+        knStatus: "beendet", knAusgeschieden: n.neueAusgeschieden, knAktive: n.neueAktive, knVerlierer: neueVerlierer,
+        knPunkte: neuePunkte, knEndVerlierer: n.loser
+      });
+      await batch.commit();
+      speichereWertung(api, "knobeln", Object.fromEntries(alle.map((id) => [id, neuePunkte[id] ?? 0])));
     }
   } catch (e) {
     zeigeDebug("Fehler beim Weiterschalten: " + e.message);
+  } finally {
+    $("kn-weiter").disabled = false;
   }
-  $("kn-weiter").disabled = false;
 }
 
 // ---- Endstand --------------------------------------------------------------
 function zeigeEndstand() {
-  const verlierer = aktive[0];
-  $("kn-verlierer").innerHTML = verlierer
-    ? `Verloren hat <strong>${escapeHtml(name(verlierer))}</strong> - als Letzte*r übrig geblieben.`
-    : "";
+  const endVerlierer = verlierer[verlierer.length - 1] ?? aktive[0];
+  let text = endVerlierer ? `Verloren hat <strong>${escapeHtml(name(endVerlierer))}</strong>.` : "";
+  if (optFinale && verlierer.length >= 2) {
+    const [v1, v2, v3] = verlierer;
+    text += v3
+      ? ` Durchgang 1 verlor ${escapeHtml(name(v1))}, Durchgang 2 ${escapeHtml(name(v2))} - das Finale entschied.`
+      : ` ${escapeHtml(name(v1))} hat beide Durchgänge verloren, ein Finale war nicht nötig.`;
+  }
+  $("kn-verlierer").innerHTML = text;
   const sortiert = [...spielerListe].sort((a, b) => (b.punkte ?? 0) - (a.punkte ?? 0));
   const liste = $("kn-endstand-liste");
   liste.innerHTML = "";
