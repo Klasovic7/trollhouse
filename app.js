@@ -1152,9 +1152,6 @@ function reagiereAufRaum(daten) {
     return;
   }
 
-  // Update-Hinweis (einmal pro Raum): jeder sieht ihn direkt nach der Profilwahl.
-  import("./kern/update-hinweis.js?v=278").then((m) => m.zeigeUpdateHinweis(zustand.code)).catch(() => {});
-
   const spielId = daten.aktuellesSpiel ?? null;
   // v198: kommt die Lobby gerade aus einem beendeten Spiel zurueck (vorher
   // aktiv, jetzt keins mehr), zeigt sie wieder die normale Spielauswahl statt
