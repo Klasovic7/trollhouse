@@ -41,6 +41,7 @@ const DATEIEN = [
   "spiele/groessenvergleich/spiel.js",
   "spiele/groessenvergleich/objekte.js",
   "spiele/groessenvergleich/silhouetten.js",
+  "spiele/knobeln/spiel.js",
   "spiele/laenderumrisse/spiel.js",
   "spiele/laenderumrisse/laender.json",
   "spiele/stimmts/spiel.js",
