@@ -13,9 +13,9 @@ import {
 // WICHTIG: bei jedem Versionssprung hier UND in spiele/register.js
 // (SPIEL_VERSION) mit hochzaehlen, sonst bekommen manche Geraete
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
-import { SPIELE, spielInfo } from "./spiele/register.js?v=279";
+import { SPIELE, spielInfo } from "./spiele/register.js?v=280";
 
-export const APP_VERSION = "v279";
+export const APP_VERSION = "v280";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -550,7 +550,7 @@ async function waehleSpiel(id) {
   const info = spielInfo(id);
   if (!info || info.kommtBald) return;
   // Alleine im Raum: kein Spiel startbar, stattdessen der Hinweis-Dialog.
-  if (zustand.spieler.length <= 1) {
+  if (zustand.spieler.length <= 1 && !info.mitBots) {
     uebenDialog.hidden = false;
     return;
   }

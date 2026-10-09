@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "279";
+const SPIEL_VERSION = "280";
 
 export const SPIELE = [
   {
@@ -179,8 +179,9 @@ export const SPIELE = [
     name: "Doppelkopf",
     emoji: "🃏",
     farbe: "#16a34a",
-    beschreibung: "Das Kartenspiel zu viert (oder fünft) mit Re/Kontra, Hochzeit und Solo",
-    minSpieler: 4,
+    beschreibung: "Das Kartenspiel zu viert (oder fünft), alleine mit Bots spielbar",
+    minSpieler: 1,
+    mitBots: true,
     laden: () => import(`./doppelkopf/spiel.js?v=${SPIEL_VERSION}`)
   }
 ];
