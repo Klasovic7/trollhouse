@@ -3087,3 +3087,26 @@ body.ank-offen { overflow: hidden; }
 .gv-modus-btn.aktiv { background: var(--akzent); box-shadow: 0 0 0 2px rgba(255,255,255,.5); }
 .gv-modus-btn:disabled { opacity: 1; cursor: default; }
 .gv-modus-btn:disabled:not(.aktiv) { opacity: .5; }
+
+/* ---------- Knobeln (v279) ---------- */
+.kn-hand-wahl { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 8px 0; }
+.kn-hand-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; margin: 0; border-radius: 18px; background: rgba(255,255,255,.1); color: inherit; font-size: 1.4rem; font-weight: 800; }
+.kn-hand-btn:hover { background: rgba(255,255,255,.18); }
+.kn-hoelzer { max-width: 100%; height: auto; color: rgba(255,255,255,.7); }
+.kn-gewaehlt { grid-column: 1 / -1; text-align: center; }
+.kn-aktive { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.kn-chip-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; }
+.kn-tipp-liste { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.kn-tipp-zeile { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.07); margin: 0; }
+.kn-tipp-zeile.dran { background: rgba(255,255,255,.2); box-shadow: 0 0 0 2px rgba(255,255,255,.55); }
+.kn-tipp-spieler { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; min-width: 0; }
+.kn-tipp-wert { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.kn-tipp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.kn-tipp-btn { margin: 0; padding: 14px 0; font-size: 1.3rem; font-weight: 800; border-radius: 14px; }
+.kn-tipp-btn:disabled { opacity: .25; text-decoration: line-through; }
+.kn-summe { text-align: center; font-size: 1.1rem; margin: 4px 0 10px; }
+.kn-summe strong { font-size: 2.2rem; }
+.kn-erg-zeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 14px; border-left: 5px solid var(--spieler-farbe); background: rgba(255,255,255,.07); }
+.kn-erg-zeile.richtig { background: rgba(34,197,94,.28); }
+.kn-erg-tipp { white-space: nowrap; }
+.kn-verlierer { text-align: center; font-size: 1.05rem; }
