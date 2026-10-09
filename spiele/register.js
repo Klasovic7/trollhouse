@@ -164,6 +164,15 @@ export const SPIELE = [
     beschreibung: "Zieh die rote Silhouette auf die richtige Größe",
     minSpieler: 2,
     laden: () => import(`./groessenvergleich/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "knobeln",
+    name: "Knobeln",
+    emoji: "🔥",
+    farbe: "#f59e0b",
+    beschreibung: "Streichhölzer in der Faust - tippt die Gesamtzahl, wer richtig liegt, ist raus",
+    minSpieler: 2,
+    laden: () => import(`./knobeln/spiel.js?v=${SPIEL_VERSION}`)
   }
 ];
 
