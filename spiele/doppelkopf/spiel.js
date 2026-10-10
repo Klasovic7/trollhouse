@@ -129,9 +129,9 @@ const VORLAGE = `
   <div id="dk-ergebnis-screen" class="bildschirm-karte" hidden>
     <p class="dk-label" id="dk-erg-label"></p>
     <h2 id="dk-erg-titel"></h2>
-    <p id="dk-erg-augen" class="dk-erg-augen"></p>
-    <ul id="dk-erg-details" class="dk-erg-details"></ul>
-    <h3>Punkte dieser Partie</h3>
+    <div id="dk-erg-teams" class="dk-erg-teams"></div>
+    <div id="dk-erg-notiz" class="dk-erg-notiz"></div>
+    <h3>Punktestand</h3>
     <ul id="dk-erg-liste"></ul>
     <p id="dk-erg-warten" class="hinweis-text" hidden><em>Der Spielleiter geht gleich weiter …</em></p>
     <p><button id="dk-weiter" class="btn-primaer" hidden>Weiter</button></p>
@@ -1158,14 +1158,34 @@ function zeigeErgebnis() {
   const reNamen = e.re.map((id) => escapeHtml(name(id))).join(" & ");
   const koNamen = sp.filter((id) => !e.re.includes(id)).map((id) => escapeHtml(name(id))).join(" & ");
   $("dk-erg-titel").innerHTML = e.reGewinnt ? `Re gewinnt: ${reNamen}` : `Kontra gewinnt: ${koNamen}`;
-  $("dk-erg-augen").innerHTML = `Re <b>${e.reAugen}</b> Augen (${e.reStiche} Stiche) · Kontra <b>${e.koAugen}</b> Augen (${e.koStiche} Stiche)`;
-  const det = [];
-  e.details.forEach((d) => det.push(`<li><span>${escapeHtml(d.text)}</span><b>${d.punkte > 0 ? "+" : ""}${d.punkte}</b></li>`));
-  const sonder = (liste, team) => liste.forEach((d) => det.push(`<li><span>${team}: ${escapeHtml(d.text)}</span><b>${team === "Re" ? "+" : "−"}1</b></li>`));
-  sonder(e.sonderRe, "Re"); sonder(e.sonderKontra, "Kontra");
-  if (e.bock) det.push(`<li><span>Bockrunde: alle Punkte doppelt</span><b>×2</b></li>`);
-  if (e.neuBock) det.push(`<li><span>0 Punkte - die nächsten ${e.neuBock} Partien zählen doppelt (Bock)</span><b>×2</b></li>`);
-  $("dk-erg-details").innerHTML = det.join("");
+  const kontraIds = sp.filter((id) => !e.re.includes(id));
+  const gewinnerRe = e.reGewinnt;
+  const alte = e.details.filter((d) => d.text === "Gegen die Alten");
+  const erreicht = e.details.filter((d) => d.text !== "Gegen die Alten");
+  const zeile = (d, plus = true) => `<li><span>${escapeHtml(d.text)}</span><b>${plus && d.punkte > 0 ? "+" : ""}${d.punkte}</b></li>`;
+  const team = (titel, cls, ids, istGewinner, augen, stiche, sonder) => {
+    const spieler = ids.map((id) => {
+      const s2 = spielerVon(id);
+      return `<div class="dk-erg-sp" style="--spieler-farbe:${s2?.farbe ?? "#888"}">${avatarHtml(s2?.icon, "dk-av")}<span>${escapeHtml(id === api.spielerId ? "Du" : name(id))}</span></div>`;
+    }).join("");
+    const gesamt = ids.length ? (e.punkte[ids[0]] ?? 0) : 0;
+    const eigeneSonder = sonder.map((d) => zeile({ text: d.text, punkte: 1 })).join("") + (istGewinner ? alte.map((d) => zeile(d)).join("") : "");
+    return `<div class="dk-erg-team ${cls}${istGewinner ? " gewinner" : ""}">` +
+      `<h3>${titel}</h3><div class="dk-erg-spieler">${spieler}</div>` +
+      `<div class="dk-erg-kopf"><span>Erreichte Punkte</span><b>${stiche} ${stiche === 1 ? "Stich" : "Stiche"}, ${augen} Augen</b></div>` +
+      `<ul class="dk-erg-box">${istGewinner ? erreicht.map((d) => zeile(d)).join("") : ""}</ul>` +
+      `<div class="dk-erg-kopf"><span>Sonderpunkte</span></div>` +
+      `<ul class="dk-erg-box dk-erg-box-klein">${eigeneSonder}</ul>` +
+      `<div class="dk-erg-gesamt">Gesamt: ${gesamt > 0 ? "+" : ""}${gesamt}</div></div>`;
+  };
+  $("dk-erg-teams").innerHTML =
+    team("Re:", "re", e.re, gewinnerRe, e.reAugen, e.reStiche, e.sonderRe) +
+    team("Kontra:", "kontra", kontraIds, !gewinnerRe, e.koAugen, e.koStiche, e.sonderKontra);
+  const notiz = [];
+  if (e.bock) notiz.push("Bockrunde: alle Punkte zählen doppelt.");
+  if (e.neuBock) notiz.push(`0 Punkte - die nächsten ${e.neuBock} Partien zählen doppelt (Bock).`);
+  if (e.typ && e.typ !== "normal" && e.art === "solo") notiz.push("Solo: Der Solist bekommt die Punkte dreifach.");
+  $("dk-erg-notiz").innerHTML = notiz.map((t) => `<p class="hinweis-text">${escapeHtml(t)}</p>`).join("");
   const liste = $("dk-erg-liste");
   liste.innerHTML = "";
   const sortiert = [...alle].sort((a, b) => (punkteSumme[b] ?? 0) - (punkteSumme[a] ?? 0));
