@@ -3122,27 +3122,58 @@ body.ank-offen { overflow: hidden; }
 .dk-chip { padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; background: rgba(255,255,255,.14); }
 .dk-chip-re { background: rgba(248,113,113,.3); }
 .dk-chip-ko { background: rgba(96,165,250,.3); }
-.dk-tisch { position: relative; height: 300px; max-width: 420px; margin: 8px auto; border-radius: 22px;
-  background: radial-gradient(ellipse at center, #2f8a52 0%, #1f5c36 100%); box-shadow: inset 0 0 0 3px rgba(0,0,0,.25); color: #fff; }
-.dk-sitz { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 8px; border-radius: 12px; max-width: 30%; line-height: 1.15; }
-.dk-sitz.aktiv { background: rgba(255,255,255,.18); box-shadow: 0 0 0 2px #facc15; }
-.dk-av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--spieler-farbe); background: #fff; }
+.dk-tisch { position: relative; height: clamp(340px, 52vh, 460px); max-width: 460px; margin: 6px auto; border-radius: 20px; overflow: hidden; color: #fff;
+  background-color: #8a5428;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.22' numOctaves='5' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.08  0 0 0 0 0.02  0 0 0 -2.4 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% 45%, rgba(255,190,120,.28) 0%, rgba(255,190,120,0) 62%),
+    linear-gradient(180deg, #a2662f 0%, #8a5428 55%, #6e3f17 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  box-shadow: inset 0 0 0 3px rgba(0,0,0,.35), inset 0 0 40px rgba(0,0,0,.45); }
+.dk-tisch-vb { height: clamp(300px, 44vh, 400px); }
+body.dk-aktiv #spiel-kopf-titel { display: none; }
+.dk-sitz { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 6px; border-radius: 12px; max-width: 92px; line-height: 1.15; z-index: 2; }
+.dk-sitz.aktiv { background: rgba(255,255,255,.2); box-shadow: 0 0 0 2px #facc15; }
+.dk-av { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--spieler-farbe); background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
 .dk-av-text { display: inline-flex; align-items: center; justify-content: center; color: #222; font-size: .7rem; }
-.dk-sitz-name { font-size: .8rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.dk-blase { position: absolute; top: -6px; left: 100%; margin-left: 2px; white-space: nowrap; z-index: 3; padding: 2px 8px; border-radius: 10px 10px 10px 2px; background: #fff; color: #222; font-size: .72rem; font-weight: 800; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
-.dk-blase-3 { left: auto; right: 100%; margin-left: 0; margin-right: 2px; border-radius: 10px 10px 2px 10px; }
-.dk-sitz-info { font-size: .68rem; opacity: .8; }
-.dk-s0 { left: 50%; bottom: 4px; transform: translateX(-50%); }
-.dk-s2 { left: 50%; top: 4px; transform: translateX(-50%); }
-.dk-s1 { left: 4px; top: 50%; transform: translateY(-50%); }
-.dk-s3 { right: 4px; top: 50%; transform: translateY(-50%); }
-.dk-ablage { position: absolute; width: 54px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.dk-sitz-name { font-size: .78rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.dk-blase { position: absolute; top: -8px; left: 100%; margin-left: 2px; white-space: nowrap; z-index: 5; padding: 2px 8px; border-radius: 12px 12px 12px 2px; background: #fff; color: #222; font-size: .7rem; font-weight: 800; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+.dk-blase-1, .dk-blase-3 { top: auto; bottom: 100%; left: 50%; right: auto; margin: 0 0 3px; transform: translateX(-50%); border-radius: 12px; }
+/* Sitzpositionen: 0 unten (ich), 1 links, 2 oben, 3 rechts */
+.dk-s0 { left: 6px; bottom: 6px; }
+.dk-s2 { left: 24%; top: 60px; }
+.dk-s1 { left: 44px; top: 32%; }
+.dk-s3 { right: 44px; top: 32%; }
+/* Handfächer der Mitspieler (Kartenrücken) */
+.dk-rk { display: block; flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.dk-rk svg { display: block; width: 100%; height: 100%; }
+.dk-hf { position: absolute; display: flex; z-index: 1; }
+.dk-hf2 { top: -14px; left: 50%; transform: translateX(-50%); flex-direction: row; }
+.dk-hf2 .dk-rk { width: 36px; height: 54px; margin-left: -23px; }
+.dk-hf2 .dk-rk:first-child { margin-left: 0; }
+.dk-hf1, .dk-hf3 { top: 50%; transform: translateY(-50%); flex-direction: column; }
+.dk-hf1 { left: -14px; }
+.dk-hf3 { right: -14px; }
+.dk-hf1 .dk-rk, .dk-hf3 .dk-rk { position: relative; width: 54px; height: 36px; margin-top: -22px; }
+.dk-hf1 .dk-rk:first-child, .dk-hf3 .dk-rk:first-child { margin-top: 0; }
+.dk-hf1 .dk-rk svg, .dk-hf3 .dk-rk svg { position: absolute; left: 50%; top: 50%; width: 36px; height: 54px; transform: translate(-50%, -50%) rotate(90deg); }
+.dk-hf3 .dk-rk svg { transform: translate(-50%, -50%) rotate(-90deg); }
+/* Stichstapel */
+.dk-stapel { position: absolute; width: 30px; height: 45px; z-index: 1; }
+.dk-stapel .dk-rk { position: absolute; inset: 0; }
+.dk-stapel .dk-rk:nth-child(2) { transform: translate(3px, -3px); }
+.dk-stapel .dk-rk:nth-child(3) { transform: translate(6px, -6px); }
+.dk-st0 { left: 50%; bottom: 8px; margin-left: -15px; }
+.dk-st2 { left: 66%; top: 70px; }
+.dk-st1 { left: 58px; bottom: 14%; }
+.dk-st3 { right: 58px; bottom: 14%; }
+.dk-ablage { position: absolute; width: 50px; z-index: 3; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
 .dk-ablage.gewinner { filter: drop-shadow(0 0 6px #facc15) drop-shadow(0 0 2px #facc15); }
-.dk-a2 { top: 50px; left: 50%; transform: translateX(-50%); }
-.dk-a0 { bottom: 50px; left: 50%; transform: translateX(-50%); }
-.dk-a1 { left: 25%; top: 50%; transform: translateY(-50%); }
-.dk-a3 { right: 25%; top: 50%; transform: translateY(-50%); }
-.dk-aussetzer { position: absolute; right: 10px; bottom: 6px; font-size: .68rem; opacity: .75; }
+.dk-a2 { top: 66px; left: 50%; transform: translateX(-50%) rotate(-3deg); }
+.dk-a0 { bottom: 66px; left: 50%; transform: translateX(-50%) rotate(2deg); }
+.dk-a1 { left: calc(50% - 54px); top: 50%; transform: translateY(-50%) rotate(-6deg); }
+.dk-a3 { right: calc(50% - 54px); top: 50%; transform: translateY(-50%) rotate(5deg); }
+.dk-aussetzer { position: absolute; right: 10px; bottom: 6px; font-size: .68rem; opacity: .85; z-index: 2; text-shadow: 0 1px 3px #000; }
 .dk-karte-svg { display: block; width: 100%; height: auto; }
 .dk-zeile { text-align: center; min-height: 1.4em; margin: 2px 0 6px; font-size: .92rem; }
 .dk-aktionen { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; }

@@ -23,9 +23,10 @@ import {
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import * as R from "./regeln.js";
-import { kartenSvg } from "./karten.js";
+import { kartenSvg, rueckSvg } from "./karten.js";
 
-const VORBEHALT_ZEIT_MS = 45000;
+const VORBEHALT_ZEIT_MS = 30000;
+const BOT_VB_MS = 1400;
 const ZUG_ZEIT_MS = 90000;
 const STICH_PAUSE_MS = 1700;
 const BOT_ZEIT_MS = 800;
@@ -91,13 +92,13 @@ const VORLAGE = `
   </div>
 
   <div id="dk-vorbehalt-screen" class="bildschirm-karte dk-bildschirm" hidden>
-    <p class="dk-label" id="dk-vb-label"></p>
-    <h2 id="dk-vb-titel">Was spielst du?</h2>
-    <p id="dk-vb-hinweis" class="hinweis-text dk-hinweis"></p>
+    <div class="dk-kopf"><span id="dk-vb-label"></span><span id="dk-vb-titel"></span></div>
+    <div id="dk-vb-tisch" class="dk-tisch dk-tisch-vb"></div>
     <div id="dk-timer-vb" class="gv-timer" aria-hidden="true"><i></i></div>
-    <div id="dk-vb-hand" class="dk-hand dk-hand-vb"></div>
-    <div id="dk-vb-wahl" class="dk-vb-wahl"></div>
+    <p id="dk-vb-hinweis" class="hinweis-text dk-hinweis"></p>
     <p id="dk-vb-info" class="hinweis-text"></p>
+    <div id="dk-vb-wahl" class="dk-vb-wahl"></div>
+    <div id="dk-vb-hand" class="dk-hand"></div>
     <div id="dk-vb-status" class="warten-block"></div>
   </div>
 
@@ -234,6 +235,7 @@ export function sitzordnung(alleIds, geberIdx) {
 
 // ---- Lebenszyklus ----------------------------------------------------------
 export async function starten(uebergebeneApi) {
+  document.body.classList.add("dk-aktiv");
   api = uebergebeneApi;
   el.wurzel = api.wurzel;
   el.wurzel.innerHTML = VORLAGE;
@@ -265,6 +267,7 @@ export async function starten(uebergebeneApi) {
 }
 
 export function beenden() {
+  document.body.classList.remove("dk-aktiv");
   bereitSystem = null;
   if (haendeUnsub) { haendeUnsub(); haendeUnsub = null; }
   if (tickId) { clearInterval(tickId); tickId = null; }
@@ -469,51 +472,56 @@ const SOLO_WAHL = [
   ["damen", "Damen-Solo"], ["buben", "Buben-Solo"], ["fleischlos", "Fleischlos"]
 ];
 
+let vbOffen = false; // „Vorbehalt“ angeklickt -> Auswahl der Spielart sichtbar
+
 function zeigeVorbehalt() {
-  $("dk-vb-label").textContent = `Runde ${runde + 1} von ${anzahl}`;
+  $("dk-vb-label").textContent = `Runde ${runde + 1}/${anzahl}`;
   $("dk-vb-hinweis").textContent = hinweis;
   const hand = meineKarten();
   const spielt = istSpieler();
-  const mein = vorbehalt[api.spielerId];
+  const dran = sp.find((id) => !vorbehalt[id]);
+  const ichDran = spielt && dran === api.spielerId;
   const handBox = $("dk-vb-hand");
   const wahl = $("dk-vb-wahl");
+  $("dk-vb-tisch").innerHTML = tischHtml(true);
+  $("dk-vb-titel").innerHTML = spielt ? "" : "Du schaust zu";
   if (!spielt) {
-    $("dk-vb-titel").textContent = "Du setzt diese Partie aus";
     handBox.innerHTML = "";
     wahl.innerHTML = "";
-    $("dk-vb-info").textContent = `${name(geber)} gibt und setzt aus. Die anderen entscheiden gerade, ob sie ein Solo spielen.`;
+    $("dk-vb-info").textContent = `${name(geber)} gibt und setzt aus. Die anderen entscheiden gerade, ob sie gesund sind oder einen Vorbehalt haben.`;
   } else {
-    $("dk-vb-titel").textContent = "Was spielst du?";
-    zeichneHand(handBox, R.sortiereHand(hand, R.regelnFuer("normal")), { nurAnzeige: true, reihen: 2 });
+    zeichneHand(handBox, R.sortiereHand(hand, R.regelnFuer("normal")), { nurAnzeige: true });
     const beide = R.hatBeideKreuzDamen(hand);
-    if (mein) {
+    if (!ichDran) {
       wahl.innerHTML = "";
-      $("dk-vb-info").textContent = "Deine Wahl ist abgegeben. Warte auf die anderen …";
+      vbOffen = false;
+      $("dk-vb-info").textContent = dran ? `${name(dran)} ist dran …` : "Alle haben entschieden …";
     } else {
-      let h = "";
-      h += beide
-        ? `<button type="button" class="btn-primaer" data-w="hochzeit">Hochzeit ansagen</button>`
-        : `<button type="button" class="btn-primaer" data-w="gesund">Gesund (normal spielen)</button>`;
       const nn = neunerAnzahl(hand);
-      if (opt.schmeissen && nn >= 5) h += `<button type="button" class="btn-sekundaer" data-w="schmeissen">Schmeißen (${nn} Neuner)</button>`;
-      if (opt.armut && !beide && armutPaket(hand)) h += `<button type="button" class="btn-sekundaer" data-w="armut">Armut ansagen</button>`;
-      if (opt.solo) h += `<div class="dk-solo-grid">` + SOLO_WAHL.map(([k, t]) => `<button type="button" class="btn-sekundaer" data-w="${k}">${t}</button>`).join("") + `</div>`;
-      wahl.innerHTML = h;
+      let opts = "";
+      if (beide) opts += `<button type="button" class="btn-primaer" data-w="hochzeit">Hochzeit ansagen</button>`;
+      if (opt.schmeissen && nn >= 5) opts += `<button type="button" class="btn-sekundaer" data-w="schmeissen">Schmeißen (${nn} Neuner)</button>`;
+      if (opt.armut && !beide && armutPaket(hand)) opts += `<button type="button" class="btn-sekundaer" data-w="armut">Armut ansagen</button>`;
+      if (opt.solo) opts += `<div class="dk-solo-grid">` + SOLO_WAHL.map(([k, t]) => `<button type="button" class="btn-sekundaer" data-w="${k}">${t}</button>`).join("") + `</div>`;
+      const hatVorbehalt = Boolean(opts);
+      if (vbOffen && hatVorbehalt) {
+        wahl.innerHTML = opts + (beide ? "" : `<button type="button" class="btn-sekundaer" data-zurueck="1">Zurück</button>`);
+        $("dk-vb-info").textContent = "Was spielst du? Bei einem Solo gelten deine Karten allein gegen die drei anderen (dreifache Punkte).";
+      } else {
+        wahl.innerHTML = (beide ? "" : `<button type="button" class="btn-primaer" data-w="gesund">Gesund</button>`) +
+          (hatVorbehalt ? `<button type="button" class="${beide ? "btn-primaer" : "btn-sekundaer"}" data-vorbehalt="1">Vorbehalt</button>` : "");
+        $("dk-vb-info").textContent = beide ? "Du hältst beide Kreuz-Damen: Sag eine Hochzeit an oder spiel ein Solo." : "Du bist dran: Gesund oder Vorbehalt?";
+      }
       wahl.querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () => {
-        updateDoc(api.raumRef(), { ["dkVorbehalt." + api.spielerId]: b.dataset.w }).catch((e) => zeigeDebug(e.message));
+        vbOffen = false;
+        updateDoc(api.raumRef(), { ["dkVorbehalt." + api.spielerId]: b.dataset.w, dkPhaseStart: Date.now() }).catch((e) => zeigeDebug(e.message));
       }));
-      $("dk-vb-info").textContent = beide
-        ? "Du hältst beide Kreuz-Damen: Sag eine Hochzeit an oder spiel ein Solo."
-        : "Spielst du ein Solo, gelten deine Karten allein gegen die drei anderen (dreifache Punkte). Sonst: Gesund.";
+      wahl.querySelector("[data-vorbehalt]")?.addEventListener("click", () => { vbOffen = true; zeigeVorbehalt(); });
+      wahl.querySelector("[data-zurueck]")?.addEventListener("click", () => { vbOffen = false; zeigeVorbehalt(); });
     }
   }
-  const offen = sp.filter((id) => !vorbehalt[id] && !isBot(id));
-  const st = $("dk-vb-status");
-  st.innerHTML = offen.length
-    ? `<p class="hinweis-text">Noch offen: ${offen.map((id) => escapeHtml(name(id))).join(", ")}</p>`
-    : "";
-  const t = $("dk-timer-vb");
-  t.hidden = false;
+  $("dk-vb-status").innerHTML = "";
+  $("dk-timer-vb").hidden = false;
 }
 
 // Leiter: Vorbehalte auswerten
@@ -764,28 +772,7 @@ function zeigeSpiel() {
   $("dk-ansagen").innerHTML = chips.join("");
 
   // Tisch
-  const tisch = $("dk-tisch");
-  let h = "";
-  sp.forEach((id) => {
-    const pos = platzierung(id);
-    const s = spielerVon(id);
-    const anzSt = stiche.filter((x) => x.gewinner === id).length + (stich.length === 4 && stichGewinner() === id ? 1 : 0);
-    const aktiv = amZug === id && stich.length < 4;
-    const ich = id === api.spielerId;
-    h += `<div class="dk-sitz dk-s${pos}${aktiv ? " aktiv" : ""}" style="--spieler-farbe:${s?.farbe ?? "#888"}">` +
-      `${avatarHtml(s?.icon, "dk-av")}<span class="dk-sitz-name">${escapeHtml(ich ? "Du" : name(id))}</span>` +
-      `<span class="dk-sitz-info">${anzSt} ${anzSt === 1 ? "Stich" : "Stiche"}</span>` +
-      (ansagenVon[id] ? `<span class="dk-blase dk-blase-${pos}">${escapeHtml(ansagenVon[id])}!</span>` : "") + `</div>`;
-    const k = stich.find((x) => x.spielerId === id);
-    if (k) {
-      const gewinner = stich.length === 4 ? stichGewinner() : null;
-      h += `<div class="dk-ablage dk-a${pos}${gewinner === id ? " gewinner" : ""}">${kartenSvg(k.karte)}</div>`;
-    }
-  });
-  if (geber && alle.length === 5) {
-    h += `<div class="dk-aussetzer">${escapeHtml(geber === api.spielerId ? "Du setzt" : name(geber) + " setzt")} aus</div>`;
-  }
-  tisch.innerHTML = h;
+  $("dk-tisch").innerHTML = tischHtml(false);
 
   // Hand
   const handBox = $("dk-hand");
@@ -815,6 +802,42 @@ function zeigeSpiel() {
   if (a) ab.textContent = a.text;
   $("dk-btn-letzter").hidden = stiche.length === 0;
   zeigeLetztenStich();
+}
+
+const RUECK = rueckSvg();
+const rueckStapel = (n) => Array.from({ length: n }, () => `<span class="dk-rk">${RUECK}</span>`).join("");
+
+// Tisch mit Handfächern, Spielerlogos, Stichstapeln und Ablage (vb = Vorbehalts-Phase)
+function tischHtml(vb) {
+  let h = "";
+  const dranVb = vb ? sp.find((x) => !vorbehalt[x]) : null;
+  sp.forEach((id) => {
+    const pos = platzierung(id);
+    const s = spielerVon(id);
+    const anzSt = stiche.filter((x) => x.gewinner === id).length + (!vb && stich.length === 4 && stichGewinner() === id ? 1 : 0);
+    const aktiv = vb ? dranVb === id : amZug === id && stich.length < 4;
+    const ich = id === api.spielerId;
+    if (!ich) {
+      const n = handVon(id)?.length ?? Math.max(0, 12 - stiche.length);
+      h += `<div class="dk-hf dk-hf${pos}">${rueckStapel(n)}</div>`;
+    }
+    let blase = "";
+    if (vb) blase = vorbehalt[id] ? (vorbehalt[id] === "gesund" ? "Gesund." : "Vorbehalt!") : "";
+    else if (ansagenVon[id]) blase = ansagenVon[id] + "!";
+    h += `<div class="dk-sitz dk-s${pos}${aktiv ? " aktiv" : ""}" style="--spieler-farbe:${s?.farbe ?? "#888"}">` +
+      `${avatarHtml(s?.icon, "dk-av")}<span class="dk-sitz-name">${escapeHtml(ich ? "Du" : name(id))}</span>` +
+      (blase ? `<span class="dk-blase dk-blase-${pos}">${escapeHtml(blase)}</span>` : "") + `</div>`;
+    if (anzSt > 0) h += `<div class="dk-stapel dk-st${pos}">${rueckStapel(Math.min(anzSt, 3))}</div>`;
+    const k = !vb && stich.find((x) => x.spielerId === id);
+    if (k) {
+      const gewinner = stich.length === 4 ? stichGewinner() : null;
+      h += `<div class="dk-ablage dk-a${pos}${gewinner === id ? " gewinner" : ""}">${kartenSvg(k.karte)}</div>`;
+    }
+  });
+  if (geber && alle.length === 5) {
+    h += `<div class="dk-aussetzer">${escapeHtml(geber === api.spielerId ? "Du setzt" : name(geber) + " setzt")} aus</div>`;
+  }
+  return h;
 }
 
 function spielName() {
@@ -955,18 +978,18 @@ async function leiterTick() {
   leiterBusy = true;
   try {
     if (status === "vorbehalt") {
-      const botUpd = {};
-      sp.filter((id) => isBot(id) && !vorbehalt[id]).forEach((id) => {
-        const h = handVon(id);
-        if (h) {
-          const beide = R.hatBeideKreuzDamen(h);
-          botUpd["dkVorbehalt." + id] = opt.schmeissen && neunerAnzahl(h) >= 5 ? "schmeissen"
+      const dran = sp.find((id) => !vorbehalt[id]);
+      const wartet = Date.now() - phaseStart;
+      if (dran) {
+        const h = handVon(dran);
+        const beide = h ? R.hatBeideKreuzDamen(h) : false;
+        let w = null;
+        if (isBot(dran) && h && wartet > BOT_VB_MS) {
+          w = opt.schmeissen && neunerAnzahl(h) >= 5 ? "schmeissen"
             : beide ? "hochzeit" : opt.armut && armutPaket(h) ? "armut" : "gesund";
-        }
-      });
-      if (Object.keys(botUpd).length) { await updateDoc(api.raumRef(), botUpd); return; }
-      const alleDa = sp.length && sp.every((id) => vorbehalt[id]);
-      if (sp.length && (alleDa || Date.now() - phaseStart > VORBEHALT_ZEIT_MS)) await vorbehaltAufloesen();
+        } else if (wartet > VORBEHALT_ZEIT_MS) w = beide ? "hochzeit" : "gesund";
+        if (w) await updateDoc(api.raumRef(), { ["dkVorbehalt." + dran]: w, dkPhaseStart: Date.now() });
+      } else if (sp.length && wartet > BOT_VB_MS) await vorbehaltAufloesen();
     } else if (status === "armut" && armut) {
       await armutTick();
     } else if (status === "spielen") {
