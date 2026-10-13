@@ -93,12 +93,18 @@ const VORLAGE = `
 
   <div id="dk-vorbehalt-screen" class="bildschirm-karte dk-bildschirm" hidden>
     <div class="dk-kopf"><span id="dk-vb-label"></span><span id="dk-vb-titel"></span></div>
-    <div id="dk-vb-tisch" class="dk-tisch dk-tisch-vb"></div>
-    <div id="dk-timer-vb" class="gv-timer" aria-hidden="true"><i></i></div>
-    <p id="dk-vb-hinweis" class="hinweis-text dk-hinweis"></p>
-    <p id="dk-vb-info" class="hinweis-text"></p>
-    <div id="dk-vb-wahl" class="dk-vb-wahl"></div>
-    <div id="dk-vb-hand" class="dk-hand"></div>
+    <div class="dk-holz">
+      <div id="dk-vb-tisch" class="dk-tisch"></div>
+      <div id="dk-timer-vb" class="gv-timer" aria-hidden="true"><i></i></div>
+      <p id="dk-vb-hinweis" class="hinweis-text dk-hinweis"></p>
+      <p id="dk-vb-info" class="dk-zeile"></p>
+      <div id="dk-vb-hand" class="dk-hand"></div>
+      <div id="dk-vb-popup" class="dk-popup" hidden>
+        <h3 id="dk-vb-popup-titel">Du bist dran</h3>
+        <p id="dk-vb-popinfo" class="hinweis-text"></p>
+        <div id="dk-vb-wahl" class="dk-vb-wahl"></div>
+      </div>
+    </div>
     <div id="dk-vb-status" class="warten-block"></div>
   </div>
 
@@ -114,16 +120,18 @@ const VORLAGE = `
   <div id="dk-spiel-screen" class="bildschirm-karte dk-bildschirm" hidden>
     <div class="dk-kopf"><span id="dk-kopf-links"></span><span id="dk-kopf-team"></span></div>
     <div id="dk-ansagen" class="dk-ansagen"></div>
-    <div id="dk-tisch" class="dk-tisch"></div>
-    <div id="dk-timer-zug" class="gv-timer" aria-hidden="true"><i></i></div>
-    <p id="dk-zeile" class="dk-zeile"></p>
-    <div id="dk-letzter" class="dk-letzter" hidden></div>
-    <div class="dk-aktionen">
-      <button type="button" id="dk-btn-ansage" class="btn-sekundaer" hidden></button>
-      <button type="button" id="dk-btn-letzter" class="btn-sekundaer">Letzter Stich</button>
-      <button type="button" id="dk-btn-spielen" class="btn-primaer" disabled>Karte spielen</button>
+    <div class="dk-holz">
+      <div id="dk-tisch" class="dk-tisch"></div>
+      <div id="dk-timer-zug" class="gv-timer" aria-hidden="true"><i></i></div>
+      <p id="dk-zeile" class="dk-zeile"></p>
+      <div id="dk-letzter" class="dk-letzter" hidden></div>
+      <div class="dk-aktionen">
+        <button type="button" id="dk-btn-ansage" class="btn-sekundaer" hidden></button>
+        <button type="button" id="dk-btn-letzter" class="btn-sekundaer">Letzter Stich</button>
+        <button type="button" id="dk-btn-spielen" class="btn-primaer" disabled>Karte spielen</button>
+      </div>
+      <div id="dk-hand" class="dk-hand"></div>
     </div>
-    <div id="dk-hand" class="dk-hand"></div>
   </div>
 
   <div id="dk-ergebnis-screen" class="bildschirm-karte" hidden>
@@ -488,15 +496,18 @@ function zeigeVorbehalt() {
   if (!spielt) {
     handBox.innerHTML = "";
     wahl.innerHTML = "";
+    $("dk-vb-popup").hidden = true;
     $("dk-vb-info").textContent = `${name(geber)} gibt und setzt aus. Die anderen entscheiden gerade, ob sie gesund sind oder einen Vorbehalt haben.`;
   } else {
     zeichneHand(handBox, R.sortiereHand(hand, R.regelnFuer("normal")), { nurAnzeige: true });
     const beide = R.hatBeideKreuzDamen(hand);
+    $("dk-vb-popup").hidden = !ichDran;
     if (!ichDran) {
       wahl.innerHTML = "";
       vbOffen = false;
       $("dk-vb-info").textContent = dran ? `${name(dran)} ist dran …` : "Alle haben entschieden …";
     } else {
+      $("dk-vb-info").textContent = "";
       const nn = neunerAnzahl(hand);
       let opts = "";
       if (beide) opts += `<button type="button" class="btn-primaer" data-w="hochzeit">Hochzeit ansagen</button>`;
@@ -506,11 +517,13 @@ function zeigeVorbehalt() {
       const hatVorbehalt = Boolean(opts);
       if (vbOffen && hatVorbehalt) {
         wahl.innerHTML = opts + (beide ? "" : `<button type="button" class="btn-sekundaer" data-zurueck="1">Zurück</button>`);
-        $("dk-vb-info").textContent = "Was spielst du? Bei einem Solo gelten deine Karten allein gegen die drei anderen (dreifache Punkte).";
+        $("dk-vb-popup-titel").textContent = "Was spielst du?";
+        $("dk-vb-popinfo").textContent = "Bei einem Solo gelten deine Karten allein gegen die drei anderen (dreifache Punkte).";
       } else {
         wahl.innerHTML = (beide ? "" : `<button type="button" class="btn-primaer" data-w="gesund">Gesund</button>`) +
           (hatVorbehalt ? `<button type="button" class="${beide ? "btn-primaer" : "btn-sekundaer"}" data-vorbehalt="1">Vorbehalt</button>` : "");
-        $("dk-vb-info").textContent = beide ? "Du hältst beide Kreuz-Damen: Sag eine Hochzeit an oder spiel ein Solo." : "Du bist dran: Gesund oder Vorbehalt?";
+        $("dk-vb-popup-titel").textContent = "Du bist dran";
+        $("dk-vb-popinfo").textContent = beide ? "Du hältst beide Kreuz-Damen: Sag eine Hochzeit an oder spiel ein Solo." : "Gesund oder Vorbehalt?";
       }
       wahl.querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () => {
         vbOffen = false;

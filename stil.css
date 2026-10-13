@@ -3122,15 +3122,23 @@ body.ank-offen { overflow: hidden; }
 .dk-chip { padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; background: rgba(255,255,255,.14); }
 .dk-chip-re { background: rgba(248,113,113,.3); }
 .dk-chip-ko { background: rgba(96,165,250,.3); }
-.dk-tisch { position: relative; height: clamp(400px, 56vh, 480px); max-width: 460px; margin: 6px auto; border-radius: 20px; overflow: hidden; color: #fff;
+.dk-holz { position: relative; margin: 6px 0; border-radius: 20px; overflow: hidden; color: #fff; padding-bottom: 8px;
   background-color: #8a5428;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.22' numOctaves='5' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.08  0 0 0 0 0.02  0 0 0 -2.4 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 50% 45%, rgba(255,190,120,.28) 0%, rgba(255,190,120,0) 62%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.22' numOctaves='5' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.18  0 0 0 0 0.08  0 0 0 0 0.02  0 0 0 -2.4 1.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% 40%, rgba(255,190,120,.28) 0%, rgba(255,190,120,0) 62%),
     linear-gradient(180deg, #a2662f 0%, #8a5428 55%, #6e3f17 100%);
   background-size: 100% 100%, 100% 100%, 100% 100%;
   box-shadow: inset 0 0 0 3px rgba(0,0,0,.35), inset 0 0 40px rgba(0,0,0,.45); }
-.dk-tisch-vb { height: clamp(300px, 44vh, 400px); }
+.dk-holz > :not(.dk-tisch):not(.dk-popup) { margin-left: 8px; margin-right: 8px; }
+.dk-tisch { position: relative; height: clamp(340px, 46vh, 430px); max-width: 460px; margin: 0 auto; }
+.dk-holz .dk-hand { padding-top: 22px; }
+.dk-popup { position: absolute; left: 50%; top: 175px; transform: translateX(-50%); width: min(300px, 88%); max-height: calc(100% - 190px); overflow: auto; z-index: 20;
+  padding: 12px 14px; border-radius: 18px; background: rgba(24,14,12,.94); box-shadow: 0 8px 28px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.12);
+  animation: dkPop .22s ease-out; }
+.dk-popup[hidden] { display: none; }
+.dk-popup h3 { margin: 0 0 4px; text-align: center; }
+@keyframes dkPop { from { opacity: 0; transform: translateX(-50%) scale(.85); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
 body.dk-aktiv #spiel-kopf-titel { display: none; }
 .dk-sitz { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 5px; border-radius: 12px; max-width: 70px; line-height: 1.15; z-index: 2; }
 .dk-sitz.aktiv { background: rgba(255,255,255,.2); box-shadow: 0 0 0 2px #facc15; }
@@ -3143,9 +3151,9 @@ body.dk-aktiv #spiel-kopf-titel { display: none; }
 /* Sitzpositionen: 0 unten (ich), 1 links, 2 oben, 3 rechts */
 .dk-s1, .dk-s3 { max-width: 86px; }
 .dk-s0 { left: 6px; bottom: 6px; }
-.dk-s2 { left: 6px; top: 8px; }
-.dk-s1 { left: 48px; top: calc(50% - 98px); }
-.dk-s3 { right: 48px; top: calc(50% - 98px); }
+.dk-s2 { left: 58%; top: 48px; }
+.dk-s1 { left: 46px; top: 112px; }
+.dk-s3 { right: 46px; top: 112px; }
 /* Handfächer der Mitspieler (Kartenrücken) */
 .dk-rk { display: block; flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .dk-rk svg { display: block; width: 100%; height: 100%; }
@@ -3166,13 +3174,13 @@ body.dk-aktiv #spiel-kopf-titel { display: none; }
 .dk-stapel .dk-rk:nth-child(2) { transform: translate(3px, -3px); }
 .dk-stapel .dk-rk:nth-child(3) { transform: translate(6px, -6px); }
 .dk-st0 { left: 50%; bottom: 8px; margin-left: -15px; }
-.dk-st2 { left: 68%; top: 70px; }
+.dk-st2 { left: 30%; top: 64px; }
 .dk-st1 { left: 58px; bottom: 14%; }
 .dk-st3 { right: 58px; bottom: 14%; }
 .dk-ablage { position: absolute; width: 50px; z-index: 3; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
 .dk-ablage.gewinner { filter: drop-shadow(0 0 6px #facc15) drop-shadow(0 0 2px #facc15); }
-.dk-a2 { top: 66px; left: 50%; transform: translateX(-50%) rotate(-3deg); }
-.dk-a0 { bottom: 66px; left: 50%; transform: translateX(-50%) rotate(2deg); }
+.dk-a2 { top: 54px; left: 50%; transform: translateX(-50%) rotate(-3deg); }
+.dk-a0 { bottom: 56px; left: 50%; transform: translateX(-50%) rotate(2deg); }
 .dk-a1 { left: calc(50% - 54px); top: 50%; transform: translateY(-50%) rotate(-6deg); }
 .dk-a3 { right: calc(50% - 54px); top: 50%; transform: translateY(-50%) rotate(5deg); }
 .dk-aussetzer { position: absolute; right: 10px; bottom: 6px; font-size: .68rem; opacity: .85; z-index: 2; text-shadow: 0 1px 3px #000; }
