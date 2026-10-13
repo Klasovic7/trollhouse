@@ -3244,3 +3244,62 @@ body.dk-aktiv #spiel-kopf-titel { display: none; }
 .dk-info:focus-visible { outline: 2px solid #facc15; outline-offset: 2px; }
 .dk-info-text { margin: -2px 0 6px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.07); font-size: .85rem; }
 .dk-chip-bock { background: rgba(250,204,21,.3); }
+
+/* ---------- Startseite: Button "Spiele" + Anleitungen ---------- */
+.start-spiele-btn {
+  position: absolute; right: 20px; bottom: 10px;
+  background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px; padding: 8px 16px; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+}
+.start-spiele-btn:active { transform: scale(.96); }
+body.anl-offen { overflow: hidden; }
+.anl-overlay {
+  position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center;
+  background: rgba(8,4,14,.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  padding: 12px;
+}
+.anl-panel {
+  width: 100%; max-width: 520px; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: #1c1426; color: #fff; border-radius: 20px; padding: 14px 16px 16px;
+  border: 1px solid rgba(255,255,255,.14); box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.anl-kopf { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.anl-kopf h2 { margin: 0; font-size: 1.2rem; }
+.anl-x, .anl-zurueck {
+  background: rgba(255,255,255,.1); color: #fff; border: 0; border-radius: 999px;
+  padding: 7px 12px; font: inherit; font-size: .9rem; cursor: pointer;
+}
+.anl-sub { margin: 4px 0 10px; opacity: .7; font-size: .9rem; }
+.anl-liste { display: grid; gap: 8px; }
+.anl-kachel {
+  display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--farbe) 45%, #1c1426), #241a31);
+  color: #fff; border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 10px 12px; font: inherit; cursor: pointer;
+}
+.anl-kachel:active { transform: scale(.98); }
+.anl-kachel-sym { font-size: 1.8rem; width: 40px; height: 40px; display: grid; place-items: center; flex: none; }
+.anl-kachel-sym .spiel-bild, .anl-titel-sym .spiel-bild { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.anl-kachel-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.anl-kachel-txt small { opacity: .7; font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.anl-kachel-n { font-size: .72rem; opacity: .6; flex: none; }
+.anl-titel { display: flex; align-items: center; gap: 10px; margin: 10px 0 8px; }
+.anl-titel h2 { margin: 0; font-size: 1.3rem; }
+.anl-titel-sym { font-size: 1.6rem; width: 34px; height: 34px; display: grid; place-items: center; }
+.anl-folie { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.anl-bildrahmen { border-radius: 14px; overflow: hidden; }
+.anl-bild { display: block; width: 100%; height: auto; }
+.anl-folie h3 { margin: 12px 0 6px; font-size: 1.1rem; }
+.anl-folie p { margin: 0 0 8px; line-height: 1.45; font-size: .95rem; opacity: .92; }
+.anl-folie strong { color: #fde68a; }
+.anl-punkte { display: flex; justify-content: center; gap: 8px; margin: 10px 0; }
+.anl-punkt { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: 0; background: rgba(255,255,255,.28); cursor: pointer; }
+.anl-punkt.an { background: #fff; transform: scale(1.3); }
+.anl-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.anl-nav button { min-width: 96px; }
+.anl-nav button:disabled { opacity: .35; }
+.anl-zaehler { opacity: .7; font-size: .85rem; }
+.anl-liste { grid-template-columns: minmax(0, 1fr); }
+.anl-kachel { min-width: 0; box-sizing: border-box; overflow: hidden; }
+.anl-panel { box-sizing: border-box; }
+.anl-kachel-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.anl-zaehler { white-space: nowrap; } .anl-nav button { min-width: 0; flex: 1; }

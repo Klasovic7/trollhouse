@@ -13,11 +13,19 @@ import {
 // WICHTIG: bei jedem Versionssprung hier UND in spiele/register.js
 // (SPIEL_VERSION) mit hochzaehlen, sonst bekommen manche Geraete
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
-import { SPIELE, spielInfo } from "./spiele/register.js?v=290";
+import { SPIELE, spielInfo } from "./spiele/register.js?v=291";
 
-export const APP_VERSION = "v290";
+export const APP_VERSION = "v291";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
+
+// Startseite: "Spiele" öffnet die Anleitungen (wird erst beim Klick geladen)
+document.getElementById("btn-spiele-anleitung")?.addEventListener("click", async () => {
+  try {
+    const m = await import("./spiele/anleitungen.js?v=" + APP_VERSION.slice(1));
+    m.oeffneAnleitungen();
+  } catch (e) { console.error("Anleitungen:", e); }
+});
 
 // ---------- DOM ----------
 const startScreen = document.getElementById("start-screen");
