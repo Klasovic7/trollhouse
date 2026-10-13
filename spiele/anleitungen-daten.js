@@ -519,4 +519,9 @@ plus("fussball-auktion", 4, "Jedes Erhöhen setzt den Timer wieder auf 10 Sekund
 plus("fussball-auktion", 6, "Bezahlt werden nur die Münzen auf den **zwei entscheidenden Fähigkeiten**, der Rest kommt zurück.");
 plus("fussball-auktion", 7, "Bei gleicher Summe entscheidet die **Gesamtwertung** der Karte.");
 plus("doppelkopf", 4, "Wer nach **30 Sekunden** nicht entscheidet, ist automatisch gesund.");
-plus("doppelkopf", 5, "Ansagen gehen nur **in den ersten Stichen**: Re/Kontra bis zum 1. Stich, jede weitere Stufe einen Stich später.");
+fix("doppelkopf", 5, { x: [
+  "Du kannst **Re** oder **Kontra** ansagen und damit mehr riskieren. Das geht, **bis du deine 2. Karte gelegt hast** (also vor deiner zweiten Karte).",
+  "**Keine 90** darfst du ansagen, wenn deine Partei vorher schon Re/Kontra gesagt hat - spätestens **vor deiner 3. Karte**. Dann geht es weiter: Keine 60 vor der 4. Karte, Keine 30 vor der 5., Schwarz vor der 6. Jede Ansage gibt einen Punkt dazu.",
+  "Bei einer **Hochzeit** verschiebt sich das, bis die Partner gefunden sind. Ist der Partner schon im 1. Stich klar, kannst du Re/Kontra noch **vor deiner 3. Karte** ansagen - und Keine 90/60/30/Schwarz jeweils eine Karte später.",
+  "Punkte gibt es für **Gewinnen**, **Keine 90/60/30**, **Gegen die Alten** und je nach Einstellung für Sonderpunkte wie **Fuchs** (Karo-Ass fangen), **Doppelkopf** (Stich mit mindestens 40 Augen) und **Karlchen** (letzter Stich mit Kreuz-Bube)."
+] });
