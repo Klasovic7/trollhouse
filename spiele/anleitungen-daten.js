@@ -487,3 +487,36 @@ export const ANLEITUNGEN = {
     }
   ]
 };
+
+// ============================================================================
+//  Feinschliff nach dem Abgleich mit dem echten Spiel (Screenshots der Seiten
+//  liegen in bilder/anleitung/<spiel>-<seite>.webp)
+// ============================================================================
+const fix = (spiel, seite, teil) => Object.assign(ANLEITUNGEN[spiel][seite - 1], teil);
+const plus = (spiel, seite, ...absaetze) => ANLEITUNGEN[spiel][seite - 1].x.push(...absaetze);
+
+fix("schaetzfragen", 2, {
+  t: "Dummkopf-Modus (optional)",
+  x: ["Der Spielleiter kann vor dem Start den **Dummkopf-Modus** einschalten. Dann tippst du vor jeder Frage, **wer am weitesten danebenliegt** - nur auf andere Mitspieler.",
+    "**Nur in diesem Modus** kannst du dafür einen **Extrapunkt** bekommen, nämlich wenn dein Tipp richtig war. Ohne Dummkopf-Modus gibt es diesen Schritt und diesen Punkt nicht."]
+});
+plus("schaetzfragen", 3, "Mit eingeschaltetem Dummkopf-Modus kommt bei richtigem Tipp **+1** dazu.");
+fix("wer-ist-es", 2, { x: ["Wer **zuerst buzzert**, darf als Erstes raten und hat dafür **10 Sekunden**. Die anderen sehen nur, wer gerade antwortet - ein **falscher Name** erscheint danach für alle in der Liste."] });
+plus("zehn-treffer", 2, "Pro Runde habt ihr **40 Sekunden** - oder bis alle 10 Treffer markiert sind.");
+plus("reih-dich-ein", 1, "Es gibt mehrere **Kategorien** hintereinander, jede mit einer neuen Reihe.");
+plus("reih-dich-ein", 3, "Auch bei einer falschen Position landet der Begriff danach an der **richtigen Stelle** der Reihe.");
+fix("wann-war-es", 3, { x: ["Weniger Hinweise = **mehr Punkte**. Eine falsche Antwort kostet Punkte (**−1, −2, −3 …** je Person und Frage) und deckt den nächsten Hinweis auf.", "Sind **alle Hinweise aufgedeckt** und niemand kennt das Jahr, kann der Spielleiter die Runde auflösen."] });
+fix("blitzquiz", 4, { x: ["Ein Bild startet **stark unscharf** und wird **gleichmäßig schärfer** - nach **32 Sekunden** ist es ganz scharf.", "Auch hier gilt: ein Versuch, die schnellste richtige Lösung gewinnt."] });
+plus("doppelblick", 1, "Im Setup gibt es außerdem den Modus **Turm**: Jeder hat einen eigenen Kartenstapel, wer seinen Stapel zuerst los ist, gewinnt.");
+fix("merks-dir", 3, { x: ["Wer **zuerst ausscheidet**, bekommt 0 Punkte, jeder Platz später einen mehr. Scheiden mehrere gleichzeitig aus, teilen sie sich den besseren Platz.", "Wer **am längsten dabei** ist (bei Gleichstand alle davon), bekommt einen Extrapunkt."] });
+plus("merks-dir", 1, "Die Merk- und Tippzeit stellt der Spielleiter ein (Standard 15 Sekunden).");
+fix("zeitgefuehl", 1, { x: ["Alle bekommen dieselbe **Zielzeit** genannt, zum Beispiel 17 Sekunden (zufällig zwischen 5 und 30). Nach einem **3-2-1-Countdown** verschwindet die Zahl."] });
+fix("groessenvergleich", 1, { x: ["Du siehst zwei Silhouetten nebeneinander: ein **blaues Vorbild** (zum Beispiel der Eiffelturm) und eine **rote Silhouette**, die du auf die richtige Größe einstellen musst.", "Die Größen sind **nicht angegeben** - du schätzt aus dem Gefühl. Der Spielleiter wählt vorab Objekte, Länder (Fläche) oder gemischt."] });
+fix("groessenvergleich", 2, { x: ["Mit einem **Schieberegler** (feiner mit **− / +**) stellst du ein, wie groß oder lang du das rote Objekt schätzt. Alle schätzen gleichzeitig.", "Du hast **30 Sekunden** - danach zählt deine aktuelle Einstellung. Bestätige mit **\"Das ist meine Schätzung\"**."] });
+plus("imposter", 4, "Der Spielleiter kann im Setup auch **mehrere Imposter** einstellen.");
+plus("fussball-auktion", 2, "Für Gebote und Spielrunden hast du jeweils **60 Sekunden**. Wer am Ende weniger als 5 Karten hat, bekommt unverkaufte Karten zufällig geschenkt.");
+plus("fussball-auktion", 4, "Jedes Erhöhen setzt den Timer wieder auf 10 Sekunden.");
+plus("fussball-auktion", 6, "Bezahlt werden nur die Münzen auf den **zwei entscheidenden Fähigkeiten**, der Rest kommt zurück.");
+plus("fussball-auktion", 7, "Bei gleicher Summe entscheidet die **Gesamtwertung** der Karte.");
+plus("doppelkopf", 4, "Wer nach **30 Sekunden** nicht entscheidet, ist automatisch gesund.");
+plus("doppelkopf", 5, "Ansagen gehen nur **in den ersten Stichen**: Re/Kontra bis zum 1. Stich, jede weitere Stufe einen Stich später.");

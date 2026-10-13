@@ -2101,7 +2101,7 @@
     .wi-buzzer:not(:disabled):active { transform: scale(.98); }
 
     .wi-antwort-zeile { display: flex; gap: 8px; }
-    .wi-antwort-zeile input { flex: 1; }
+    .wi-antwort-zeile input { flex: 1; min-width: 0; }
 
     /* ======================================================================
        Blitzquiz - Mehrfachauswahl-Kacheln, Buchstaben-Rätsel
@@ -2149,7 +2149,7 @@
     }
     .bz-countdown { color: var(--club-muted); font-size: 0.85rem; margin: 0 0 14px; }
     .bz-antwort-zeile { display: flex; gap: 8px; }
-    .bz-antwort-zeile input { flex: 1; }
+    .bz-antwort-zeile input { flex: 1; min-width: 0; }
     .bz-bild-anzeige {
       display: flex; justify-content: center; align-items: center;
       margin: 10px 0 18px;
@@ -2613,7 +2613,7 @@
   color: var(--club-muted, var(--text-hell)); font-weight: 800;
 }
 .lu-antwort-zeile { display: flex; gap: 8px; }
-.lu-antwort-zeile input { flex: 1; }
+.lu-antwort-zeile input { flex: 1; min-width: 0; }
 
 /* ======================================================================
    Stimmt's? - Behauptung, Stimmt/Stimmt-nicht-Tasten
@@ -3303,3 +3303,5 @@ body.anl-offen { overflow: hidden; }
 .anl-panel { box-sizing: border-box; }
 .anl-kachel-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .anl-zaehler { white-space: nowrap; } .anl-nav button { min-width: 0; flex: 1; }
+.anl-bildrahmen { display: flex; justify-content: center; background: #0d0814; }
+.anl-foto { display: block; max-width: 100%; max-height: 46vh; width: auto; height: auto; object-fit: contain; }

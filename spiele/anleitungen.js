@@ -2,8 +2,8 @@
 //  Spiele-Anleitungen: Übersicht aller Spiele, dann Seite für Seite durchblättern.
 //  Wird erst beim Klick auf "Spiele" (Startseite) geladen.
 // ============================================================================
-import { SPIELE } from "./register.js?v=291";
-import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=291";
+import { SPIELE } from "./register.js?v=292";
+import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=292";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fett = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -61,7 +61,7 @@ export function oeffneAnleitungen(startId = null) {
       </div>
       <div class="anl-titel"><span class="anl-titel-sym">${symbol(sp)}</span><h2>${esc(sp.name)}</h2></div>
       <div class="anl-folie" id="anl-folie">
-        <div class="anl-bildrahmen">${szene(sp.farbe, f.s())}</div>
+        <div class="anl-bildrahmen"><img class="anl-foto" src="bilder/anleitung/${id}-${seite + 1}.webp" alt="Screenshot: ${esc(f.t)}" loading="eager"></div>
         <h3>${esc(f.t)}</h3>
         ${f.x.map((a) => `<p>${fett(a)}</p>`).join("")}
       </div>
@@ -76,6 +76,9 @@ export function oeffneAnleitungen(startId = null) {
     q("[data-liste]").onclick = liste;
     q("[data-zur]").onclick = () => zeige(id, seite - 1);
     q("[data-weiter]").onclick = () => letzte ? liste() : zeige(id, seite + 1);
+    // Falls ein Screenshot fehlt (z. B. offline): gezeichnete Ersatz-Szene
+    const foto = q(".anl-foto");
+    foto.addEventListener("error", () => { foto.parentElement.innerHTML = szene(sp.farbe, f.s()); });
     dialog.querySelectorAll("[data-n]").forEach((b) => b.onclick = () => zeige(id, +b.dataset.n));
     // Wischen
     const fl = q("#anl-folie");
