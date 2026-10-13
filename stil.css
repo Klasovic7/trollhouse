@@ -945,6 +945,8 @@
     .spiel-kachel.passiv:hover { border-color: transparent; background: #f6f4fb; }
     .spiel-kachel.kommt-bald { position: relative; opacity: 0.55; }
     .spiel-emoji { font-size: 34px; line-height: 38px; }
+    .spiel-bild { display: block; height: 62px; width: auto; margin: -6px auto 0; border-radius: 5px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.5)); }
+    .olympiade-auswahl-grid .spiel-bild { height: 40px; margin: 0 auto; }
     .spiel-name { font-size: 0.95rem; font-weight: 800; color: var(--text-dunkel); }
     .spiel-beschreibung { font-size: 0.7rem; color: var(--text-hell); line-height: 1.2; }
     .spiel-badge {
@@ -1330,6 +1332,7 @@
     }
     .spiel-kachel:hover { background: #f7f0ff; }
     .spiel-emoji { font-size: 46px; line-height: 50px; }
+    .spiel-bild { height: 80px; }
     .spiel-name { font-family: "Barlow Condensed", sans-serif; font-size: 1.38rem; line-height: 1; }
     .spiel-beschreibung { max-width: 150px; font-size: .75rem; line-height: 1.25; }
 

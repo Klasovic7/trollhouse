@@ -13,9 +13,9 @@ import {
 // WICHTIG: bei jedem Versionssprung hier UND in spiele/register.js
 // (SPIEL_VERSION) mit hochzaehlen, sonst bekommen manche Geraete
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
-import { SPIELE, spielInfo } from "./spiele/register.js?v=289";
+import { SPIELE, spielInfo } from "./spiele/register.js?v=290";
 
-export const APP_VERSION = "v289";
+export const APP_VERSION = "v290";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -544,6 +544,11 @@ aktiviereWischen(farbKarussell, (richtung) => verschiebeProfilAuswahl("farbe", r
 aktiviereWischen(iconKarussell, (richtung) => verschiebeProfilAuswahl("icon", richtung));
 window.addEventListener("resize", () => requestAnimationFrame(richteStrahlenAufSpieler));
 
+// Symbol einer Spielkachel: eigenes Bild (falls vorhanden), sonst Emoji
+function spielSymbol(spiel) {
+  return spiel.bild ? `<img class="spiel-bild" src="${spiel.bild}" alt="">` : spiel.emoji;
+}
+
 // ---------- Spielauswahl ----------
 async function waehleSpiel(id) {
   if (!zustand.istLeiter || !zustand.code) return;
@@ -581,7 +586,7 @@ function renderSpieleAuswahl() {
     div.className = "spiel-kachel" + (klickbar ? "" : " passiv") + (spiel.kommtBald ? " kommt-bald" : "");
     if (spiel.farbe) div.style.setProperty("--spiel-farbe", spiel.farbe);
     div.innerHTML =
-      `<span class="spiel-emoji">${spiel.emoji}</span>` +
+      `<span class="spiel-emoji">${spielSymbol(spiel)}</span>` +
       `<span class="spiel-name">${escapeHtml(spiel.name)}</span>` +
       `<span class="spiel-beschreibung">${escapeHtml(spiel.beschreibung)}</span>` +
       (spiel.kommtBald ? `<span class="spiel-badge">bald verfügbar</span>` : "");
@@ -846,7 +851,7 @@ function renderOlympiadePlanung() {
     btn.className = "spiel-kachel olympiade-spiel-kachel" + (zuWenige ? " passiv" : "");
     if (spiel.farbe) btn.style.setProperty("--spiel-farbe", spiel.farbe);
     btn.innerHTML =
-      `<span class="spiel-emoji">${spiel.emoji}</span>` +
+      `<span class="spiel-emoji">${spielSymbol(spiel)}</span>` +
       `<span class="spiel-name">${escapeHtml(spiel.name)}</span>` +
       (zuWenige ? `<span class="spiel-badge">mind. ${spiel.minSpieler} Spieler</span>` : `<span class="olympiade-hinzufuegen-hinweis">+ hinzufuegen</span>`);
     if (zuWenige) btn.disabled = true;
