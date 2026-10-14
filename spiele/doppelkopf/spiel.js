@@ -123,6 +123,7 @@ const VORLAGE = `
     <div class="dk-holz">
       <div id="dk-tisch" class="dk-tisch"></div>
       <div id="dk-hand" class="dk-hand"></div>
+      <div id="dk-stapel-ich" class="dk-stapel-ich"></div>
     </div>
     <div class="dk-unter">
       <div id="dk-timer-zug" class="gv-timer" aria-hidden="true"><i></i></div>
@@ -788,6 +789,10 @@ function zeigeSpiel() {
 
   // Tisch
   $("dk-tisch").innerHTML = tischHtml(false);
+  {
+    const meine = stiche.filter((x) => x.gewinner === api.spielerId).length + (stich.length === 4 && stichGewinner() === api.spielerId ? 1 : 0);
+    $("dk-stapel-ich").innerHTML = meine > 0 ? `<div class="dk-stapel-unten">${rueckStapel(Math.min(meine, 3))}</div>` : "";
+  }
 
   // Hand
   const handBox = $("dk-hand");
@@ -840,9 +845,9 @@ function tischHtml(vb) {
     if (vb) blase = vorbehalt[id] ? (vorbehalt[id] === "gesund" ? "Gesund." : "Vorbehalt!") : "";
     else if (ansagenVon[id]) blase = ansagenVon[id] + "!";
     h += `<div class="dk-sitz dk-s${pos}${aktiv ? " aktiv" : ""}" style="--spieler-farbe:${s?.farbe ?? "#888"}">` +
-      `${avatarHtml(s?.icon, "dk-av")}<span class="dk-sitz-name">${escapeHtml(ich ? "Du" : name(id))}</span>` +
+      `<span class="dk-avring" style="--t:${aktiv ? timerAnteil() : 1}">${avatarHtml(s?.icon, "dk-av")}</span><span class="dk-sitz-name">${escapeHtml(ich ? "Du" : name(id))}</span>` +
       (blase ? `<span class="dk-blase dk-blase-${pos}">${escapeHtml(blase)}</span>` : "") + `</div>`;
-    if (anzSt > 0) h += `<div class="dk-stapel dk-st${pos}">${rueckStapel(Math.min(anzSt, 3))}</div>`;
+    if (anzSt > 0 && (vb || !ich)) h += `<div class="dk-stapel dk-st${pos}">${rueckStapel(Math.min(anzSt, 3))}</div>`;
     const k = !vb && stich.find((x) => x.spielerId === id);
     if (k) {
       const gewinner = stich.length === 4 ? stichGewinner() : null;
@@ -938,15 +943,19 @@ function tick() {
   if (api.istLeiter) leiterTick();
 }
 
+// Restzeit des Spielers am Zug (1 = voll, 0 = abgelaufen) - wird als Ring ums Profilbild gezeigt
+function timerAnteil() {
+  if (status === "vorbehalt") return Math.max(0, 1 - (Date.now() - phaseStart) / VORBEHALT_ZEIT_MS);
+  if (status === "spielen" && stich.length < 4 && amZug) return Math.max(0, 1 - (Date.now() - zugStart) / ZUG_ZEIT_MS);
+  return 1;
+}
+
 function aktualisiereTimer() {
-  if (status === "vorbehalt") {
-    const rest = Math.max(0, 1 - (Date.now() - phaseStart) / VORBEHALT_ZEIT_MS);
-    setTimer($("dk-timer-vb"), rest);
-  } else if (status === "spielen") {
-    const t = $("dk-timer-zug");
-    if (stich.length < 4 && amZug) setTimer(t, Math.max(0, 1 - (Date.now() - zugStart) / ZUG_ZEIT_MS));
-    else setTimer(t, 1);
-  }
+  const a = timerAnteil();
+  document.querySelectorAll(".dk-sitz.aktiv .dk-avring").forEach((e) => {
+    e.style.setProperty("--t", a);
+    e.classList.toggle("knapp", a < 0.2);
+  });
 }
 function setTimer(t, anteil) {
   if (!t) return;

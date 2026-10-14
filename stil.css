@@ -3312,3 +3312,22 @@ body.anl-offen { overflow: hidden; }
 
 .dk-unter { margin: 8px 0 0; }
 .dk-unter .dk-zeile { color: inherit; }
+
+/* v295: Zeit als Ring ums Profilbild, Ablage naeher an der Mitte, Stichstapel unter den Handkarten */
+.dk-timer-aus, #dk-timer-zug, #dk-timer-vb { display: none !important; }
+.dk-avring { display: inline-flex; padding: 3px; border-radius: 50%; }
+.dk-sitz.aktiv { background: none; box-shadow: none; }
+.dk-sitz.aktiv .dk-avring { background: conic-gradient(#facc15 calc(var(--t, 1) * 360deg), rgba(255,255,255,.22) 0); }
+.dk-sitz.aktiv .dk-avring.knapp { background: conic-gradient(#ef4444 calc(var(--t, 1) * 360deg), rgba(255,255,255,.22) 0); }
+.dk-a2 { top: calc(50% - 76px); }
+.dk-a0 { bottom: auto; top: calc(50% - 4px); }
+.dk-st2 { left: 50%; margin-left: -15px; top: 42px; }
+.dk-st1 { left: 8px; bottom: auto; top: calc(50% + 104px); }
+.dk-st3 { right: 8px; bottom: auto; top: calc(50% + 104px); }
+.dk-stapel-ich { display: flex; justify-content: center; min-height: 0; }
+.dk-stapel-unten { position: relative; width: 30px; height: 45px; margin: 8px 0 4px; }
+.dk-stapel-unten .dk-rk { position: absolute; inset: 0; }
+.dk-stapel-unten .dk-rk:nth-child(2) { transform: translate(3px, -3px); }
+.dk-stapel-unten .dk-rk:nth-child(3) { transform: translate(6px, -6px); }
+.dk-st1 { top: calc(50% - 150px); }
+.dk-st3 { top: calc(50% - 150px); }
