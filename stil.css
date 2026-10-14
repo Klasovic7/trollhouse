@@ -3309,3 +3309,6 @@ body.anl-offen { overflow: hidden; }
 .anl-foto { display: inline-block; vertical-align: top; }
 .anl-foto { max-height: 38vh; }
 .anl-nav { position: sticky; bottom: -16px; background: #1c1426; padding: 10px 0 14px; margin-bottom: -16px; z-index: 1; }
+
+.dk-unter { margin: 8px 0 0; }
+.dk-unter .dk-zeile { color: inherit; }

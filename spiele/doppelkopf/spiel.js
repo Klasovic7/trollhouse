@@ -122,6 +122,9 @@ const VORLAGE = `
     <div id="dk-ansagen" class="dk-ansagen"></div>
     <div class="dk-holz">
       <div id="dk-tisch" class="dk-tisch"></div>
+      <div id="dk-hand" class="dk-hand"></div>
+    </div>
+    <div class="dk-unter">
       <div id="dk-timer-zug" class="gv-timer" aria-hidden="true"><i></i></div>
       <p id="dk-zeile" class="dk-zeile"></p>
       <div id="dk-letzter" class="dk-letzter" hidden></div>
@@ -130,7 +133,6 @@ const VORLAGE = `
         <button type="button" id="dk-btn-letzter" class="btn-sekundaer">Letzter Stich</button>
         <button type="button" id="dk-btn-spielen" class="btn-primaer" disabled>Karte spielen</button>
       </div>
-      <div id="dk-hand" class="dk-hand"></div>
     </div>
   </div>
 
