@@ -142,8 +142,6 @@ const VORLAGE = `
     <h2 id="dk-erg-titel"></h2>
     <div id="dk-erg-teams" class="dk-erg-teams"></div>
     <div id="dk-erg-notiz" class="dk-erg-notiz"></div>
-    <h3>Punktestand</h3>
-    <ul id="dk-erg-liste"></ul>
     <p id="dk-erg-warten" class="hinweis-text" hidden><em>Der Spielleiter geht gleich weiter …</em></p>
     <p><button id="dk-weiter" class="btn-primaer" hidden>Weiter</button></p>
   </div>
@@ -1190,7 +1188,7 @@ function zeigeErgebnis() {
   const team = (titel, cls, ids, istGewinner, augen, stiche, sonder) => {
     const spieler = ids.map((id) => {
       const s2 = spielerVon(id);
-      return `<div class="dk-erg-sp" style="--spieler-farbe:${s2?.farbe ?? "#888"}">${avatarHtml(s2?.icon, "dk-av")}<span>${escapeHtml(id === api.spielerId ? "Du" : name(id))}</span></div>`;
+      return `<div class="dk-erg-sp" style="--spieler-farbe:${s2?.farbe ?? "#888"}">${avatarHtml(s2?.icon, "dk-av")}<b class="dk-erg-total">${punkteSumme[id] ?? 0}</b><span>${escapeHtml(id === api.spielerId ? "Du" : name(id))}</span></div>`;
     }).join("");
     const gesamt = ids.length ? (e.punkte[ids[0]] ?? 0) : 0;
     const eigeneSonder = sonder.map((d) => zeile({ text: d.text, punkte: 1 })).join("") + (istGewinner ? alte.map((d) => zeile(d)).join("") : "");
@@ -1202,27 +1200,14 @@ function zeigeErgebnis() {
       `<ul class="dk-erg-box dk-erg-box-klein">${eigeneSonder}</ul>` +
       `<div class="dk-erg-gesamt">Gesamt: ${gesamt > 0 ? "+" : ""}${gesamt}</div></div>`;
   };
-  $("dk-erg-teams").innerHTML =
-    team("Re:", "re", e.re, gewinnerRe, e.reAugen, e.reStiche, e.sonderRe) +
-    team("Kontra:", "kontra", kontraIds, !gewinnerRe, e.koAugen, e.koStiche, e.sonderKontra);
+  const teamRe = team("Re:", "re", e.re, gewinnerRe, e.reAugen, e.reStiche, e.sonderRe);
+  const teamKo = team("Kontra:", "kontra", kontraIds, !gewinnerRe, e.koAugen, e.koStiche, e.sonderKontra);
+  $("dk-erg-teams").innerHTML = gewinnerRe ? teamRe + teamKo : teamKo + teamRe;
   const notiz = [];
   if (e.bock) notiz.push("Bockrunde: alle Punkte zählen doppelt.");
   if (e.neuBock) notiz.push(`0 Punkte - die nächsten ${e.neuBock} Partien zählen doppelt (Bock).`);
   if (e.typ && e.typ !== "normal" && e.art === "solo") notiz.push("Solo: Der Solist bekommt die Punkte dreifach.");
   $("dk-erg-notiz").innerHTML = notiz.map((t) => `<p class="hinweis-text">${escapeHtml(t)}</p>`).join("");
-  const liste = $("dk-erg-liste");
-  liste.innerHTML = "";
-  const sortiert = [...alle].sort((a, b) => (punkteSumme[b] ?? 0) - (punkteSumme[a] ?? 0));
-  sortiert.forEach((id) => {
-    const s = spielerVon(id);
-    const dazu = sp.includes(id) ? (e.punkte[id] ?? 0) : null;
-    const li = document.createElement("li");
-    li.className = "dk-erg-zeile";
-    li.style.setProperty("--spieler-farbe", s?.farbe ?? "#888");
-    li.innerHTML = `<span>${escapeHtml(s?.name ?? "?")}${e.re.includes(id) ? ' <small class="dk-team-re">Re</small>' : sp.includes(id) ? ' <small class="dk-team-kontra">Kontra</small>' : ' <small>pausiert</small>'}</span>` +
-      `<span>${dazu === null ? "–" : (dazu > 0 ? "+" : "") + dazu} &nbsp;→&nbsp; <b>${punkteSumme[id] ?? 0}</b></span>`;
-    liste.appendChild(li);
-  });
   const letzte = !pflicht && runde + 1 >= anzahl;
   const b = $("dk-weiter");
   b.hidden = !api.istLeiter;

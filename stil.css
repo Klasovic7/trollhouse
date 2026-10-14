@@ -3207,7 +3207,7 @@ body.dk-aktiv #spiel-kopf-titel { display: none; }
 .dk-mini { width: 60px; text-align: center; font-size: .65rem; }
 .dk-mini-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dk-erg-augen { text-align: center; }
-.dk-erg-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.dk-erg-teams { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
 .dk-erg-team { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.05); }
 .dk-erg-team.gewinner { background: rgba(255,255,255,.1); box-shadow: 0 0 0 2px rgba(250,204,21,.55); }
 .dk-erg-team h3 { margin: 0; text-align: center; font-size: 1rem; }
@@ -3331,3 +3331,6 @@ body.anl-offen { overflow: hidden; }
 .dk-stapel-unten .dk-rk:nth-child(3) { transform: translate(6px, -6px); }
 .dk-st1 { top: calc(50% - 150px); }
 .dk-st3 { top: calc(50% - 150px); }
+
+.dk-erg-total { font-size: .95rem; font-weight: 800; color: #facc15; line-height: 1; }
+.dk-erg-sp { max-width: 90px; }
