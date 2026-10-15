@@ -454,6 +454,29 @@ export const ANLEITUNGEN = {
     }
   ],
   // -------------------------------------------------------------------------
+  tetris: [
+    {
+      t: "Alle spielen gleichzeitig",
+      x: ["Alle spielen **gleichzeitig** ihr eigenes Tetris - mit **denselben Steinen** in derselben Reihenfolge. Oben siehst du live die Spielfelder der anderen mit ihren Punkten.", "Rechts neben deinem Feld stehen die **nächsten drei Steine** sowie Punkte, Zeilen und Level. Nach einem **3-2-1-Countdown** geht es für alle gleichzeitig los."],
+      s: () => R(40, 30, 90, 130, "#0b0710", 8, 'stroke="#fff" stroke-opacity=".4"') + R(150, 30, 60, 130, "#0b0710", 8, 'stroke="#fff" stroke-opacity=".4"') + R(230, 30, 60, 60, "#0b0710", 8, 'stroke="#fff" stroke-opacity=".4"') + R(50, 130, 70, 20, "#06b6d4", 3) + R(160, 140, 40, 10, "#a855f7", 2) + T(90, 22, "Du", 11, "#fff", 800) + T(180, 22, "Luca", 10) + T(260, 22, "Kevin", 10)
+    },
+    {
+      t: "Steuerung",
+      x: ["Mit den **Tasten** unten bewegst du den Stein (◀ ▶), lässt ihn schneller fallen (▼), drehst ihn (⟲ ⟳) oder lässt ihn **sofort fallen** (⤓).", "Alternativ **wischst** du auf dem Spielfeld: seitlich = bewegen, **tippen** = drehen, **nach unten wischen** = fallen lassen. Der blasse **Schatten** zeigt, wo der Stein landet."],
+      s: () => knopf(30, 130, 40, 28, "◀", "#ffffff22") + knopf(76, 130, 40, 28, "▶", "#ffffff22") + knopf(122, 130, 40, 28, "▼", "#ffffff22") + knopf(168, 130, 40, 28, "⟲", "#ffffff22") + knopf(214, 130, 40, 28, "⟳", "#ffffff22") + knopf(260, 130, 40, 28, "⤓", "#06b6d4") + R(120, 20, 80, 30, "#06b6d4", 4) + T(160, 90, "oder wischen", 13, "#fde68a", 700)
+    },
+    {
+      t: "Müllzeilen an alle",
+      x: ["Löschst du Zeilen, schickst du **Müllzeilen an alle anderen**: 2 Zeilen = 1, 3 Zeilen = 2, 4 Zeilen = 4. Ab dem **dritten Treffer in Folge** gibt es 1 Müllzeile extra.", "Eingehender Müll steht als **roter Balken** neben deinem Feld. Er kommt erst, wenn du einen Stein ablegst, **ohne Zeilen zu löschen**. Eigene Angriffe heben ihn vorher auf. Jede Müllzeile hat **ein Loch**.", "Der Spielleiter kann Müllzeilen im Setup auch ausschalten."],
+      s: () => R(100, 30, 100, 120, "#0b0710", 8, 'stroke="#fff" stroke-opacity=".4"') + R(100, 120, 45, 15, "#8b93a7", 0) + R(155, 120, 45, 15, "#8b93a7", 0) + R(100, 135, 45, 15, "#8b93a7", 0) + R(155, 135, 45, 15, "#8b93a7", 0) + R(215, 100, 10, 50, "#ef4444", 5) + T(250, 125, "Müll!", 12, "#fecaca", 800)
+    },
+    {
+      t: "Ausscheiden und Gewinnen",
+      x: ["Stößt dein Stapel oben an, **scheidest du aus** und schaust den anderen zu. **Gewonnen** hat, wer als **Letzter** übrig bleibt. Mit der Zeit wird das Spiel immer **schneller**.", "Der Letzte bekommt **1 Punkt**, jeder bessere Platz einen mehr. Allein kannst du auf Punkte und Zeilen spielen."],
+      s: () => rang(70, 22, [["Du", "3 P.", 0], ["Mia", "2 P.", 1], ["Tom", "1 P.", 2]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Letzter Spieler gewinnt", 11, "#fde68a", 700)
+    }
+  ],
+  // -------------------------------------------------------------------------
   doppelkopf: [
     {
       t: "Worum geht's?",
@@ -525,3 +548,5 @@ fix("doppelkopf", 5, { x: [
   "Bei einer **Hochzeit** verschiebt sich das, bis die Partner gefunden sind. Ist der Partner schon im 1. Stich klar, kannst du Re/Kontra noch **vor deiner 3. Karte** ansagen - und Keine 90/60/30/Schwarz jeweils eine Karte später.",
   "Punkte gibt es für **Gewinnen**, **Keine 90/60/30**, **Gegen die Alten** und je nach Einstellung für Sonderpunkte wie **Fuchs** (Karo-Ass fangen), **Doppelkopf** (Stich mit mindestens 40 Augen) und **Karlchen** (letzter Stich mit Kreuz-Bube)."
 ] });
+plus("doppelkopf", 5, "Sagt jemand an, erscheint die Ansage kurz **groß in der Mitte**. Für diese Zeit ist der Ansage-Knopf gesperrt, damit niemand versehentlich die nächste Stufe anklickt.");
+plus("doppelkopf", 6, "Im Ergebnis steht das **Siegerteam oben**, und unter jedem Profilbild siehst du den **Gesamtstand** des Spielers.");
