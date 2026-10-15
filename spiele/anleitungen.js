@@ -2,8 +2,8 @@
 //  Spiele-Anleitungen: Übersicht aller Spiele, dann Seite für Seite durchblättern.
 //  Wird erst beim Klick auf "Spiele" (Startseite) geladen.
 // ============================================================================
-import { SPIELE } from "./register.js?v=297";
-import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=297";
+import { SPIELE } from "./register.js?v=298";
+import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=298";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fett = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");

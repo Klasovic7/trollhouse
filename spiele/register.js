@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "297";
+const SPIEL_VERSION = "298";
 
 export const SPIELE = [
   {
@@ -173,6 +173,15 @@ export const SPIELE = [
     beschreibung: "Streichhölzer in der Faust - tippt die Gesamtzahl, wer richtig liegt, ist raus",
     minSpieler: 2,
     laden: () => import(`./knobeln/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "tetris",
+    name: "Tetris-Duell",
+    emoji: "🧱",
+    farbe: "#06b6d4",
+    beschreibung: "Alle spielen gleichzeitig Tetris - Müllzeilen gehen an alle anderen",
+    minSpieler: 1,
+    laden: () => import(`./tetris/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "doppelkopf",
