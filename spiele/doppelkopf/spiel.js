@@ -36,6 +36,24 @@ const BOT_INFO = {
   bot3: { name: "Bot Otto", farbe: "#fb923c", icon: "🤖" }
 };
 const BOT_IDS = Object.keys(BOT_INFO);
+// Bot-Namen: zufaellig aus den Freunden, aber nie ein Name, den ein Mensch im Raum hat (auf allen Geraeten gleich)
+const BOT_NAMEN = ["Niklas", "Luca", "Nader", "Sinan", "Kevin"];
+let botNamenCache = { key: "", map: {} };
+function botNamen() {
+  const menschen = spielerListe.map((x) => String(x.name ?? "").trim().toLowerCase().split(/\s+/)[0]);
+  const key = spielerListe.map((x) => x.id + ":" + x.name).sort().join("|");
+  if (botNamenCache.key === key) return botNamenCache.map;
+  const pool = BOT_NAMEN.filter((n) => !menschen.includes(n.toLowerCase()));
+  let h = 2166136261;
+  for (const c of key) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const zufall = () => { h = Math.imul(h ^ (h >>> 15), 2246822507) + 1013904223 | 0; return ((h >>> 0) % 100000) / 100000; };
+  const mix = R.mischen(pool, zufall);
+  const map = {};
+  BOT_IDS.forEach((b, i) => { map[b] = mix[i] ?? BOT_INFO[b].name; });
+  botNamenCache = { key, map };
+  return map;
+}
+const botInfo = (id) => ({ ...BOT_INFO[id], name: botNamen()[id] ?? BOT_INFO[id].name });
 const isBot = (id) => typeof id === "string" && id.startsWith("bot");
 const OPT_DEF = {
   dulle: true, sau: true, super: true, schmeissen: true, pflicht: false, armut: true, bock: true,
@@ -205,7 +223,7 @@ let bereitSystem = null;
 let olympiadeAutoStart = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
-const spielerVon = (id) => (isBot(id) ? BOT_INFO[id] : spielerListe.find((s) => s.id === id));
+const spielerVon = (id) => (isBot(id) ? botInfo(id) : spielerListe.find((s) => s.id === id));
 const name = (id) => spielerVon(id)?.name ?? "?";
 const echte = (ids) => ids.filter((id) => !isBot(id));
 const istSpieler = () => sp.includes(api.spielerId);
@@ -288,6 +306,8 @@ export function beenden() {
   ergebnis = null; punkteSumme = {}; rang = null; opt = { ...OPT_DEF }; sau = null;
   runde = 0; pflicht = false; pflichtErledigt = []; armut = null; hinweis = ""; armutAuswahl = new Set(); offeneInfos = new Set();
   gewaehlt = null; zeigeLetzten = false; leiterBusy = false; schreibt = false;
+  ansageGesehen = {}; ansageInit = false; ansageSperreBis = 0;
+  document.querySelectorAll(".dk-ansage-pop").forEach((n) => n.remove());
 }
 
 export function spieler(liste) {
@@ -409,7 +429,7 @@ function zeigeSetup() {
       : n >= 1 ? "" : "Doppelkopf braucht mindestens einen Spieler.";
   const bots = n >= 1 && n < 4 ? 4 - n : 0;
   $("dk-bot-hinweis").textContent = bots
-    ? `Ihr seid ${n === 1 ? "allein" : "zu " + n + "t"} im Raum: ${bots} Bot${bots > 1 ? "s" : ""} (${BOT_IDS.slice(0, bots).map((b) => BOT_INFO[b].name).join(", ")}) ${bots > 1 ? "spielen" : "spielt"} mit.`
+    ? `Ihr seid ${n === 1 ? "allein" : "zu " + n + "t"} im Raum: ${bots} Bot${bots > 1 ? "s" : ""} (${BOT_IDS.slice(0, bots).map((b) => botInfo(b).name).join(", ")}) ${bots > 1 ? "spielen" : "spielt"} mit.`
     : "";
   $("dk-starten").hidden = !api.istLeiter;
   $("dk-setup-warten").hidden = api.istLeiter;
@@ -764,6 +784,17 @@ function ansageText(team) {
   return (team === "re" ? "Re: " : "Kontra: ") + R.ANSAGE_NAMEN[s];
 }
 
+let ansageGesehen = {}, ansageInit = false, ansageSperreBis = 0;
+function zeigeAnsagePopup(id, text) {
+  ansageSperreBis = Date.now() + 2000;
+  setTimeout(() => { if (el.wurzel) zeichne(); }, 2050);
+  const pop = document.createElement("div");
+  pop.className = "dk-ansage-pop";
+  pop.innerHTML = `<small>${escapeHtml(id === api.spielerId ? "Du" : name(id))} sagt</small><b>${escapeHtml(text)}!</b>`;
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 1900);
+}
+
 function zeigeSpiel() {
   const spielt = istSpieler();
   $("dk-kopf-links").textContent = `Runde ${runde + 1}/${anzahl} · ${spielName()}${pflicht ? " (Pflicht)" : ""}`;
@@ -787,10 +818,6 @@ function zeigeSpiel() {
 
   // Tisch
   $("dk-tisch").innerHTML = tischHtml(false);
-  {
-    const meine = stiche.filter((x) => x.gewinner === api.spielerId).length + (stich.length === 4 && stichGewinner() === api.spielerId ? 1 : 0);
-    $("dk-stapel-ich").innerHTML = meine > 0 ? `<div class="dk-stapel-unten">${rueckStapel(Math.min(meine, 3))}</div>` : "";
-  }
 
   // Hand
   const handBox = $("dk-hand");
@@ -813,11 +840,20 @@ function zeigeSpiel() {
   btn.disabled = !(meinZug && gewaehlt && legaleKarten().includes(gewaehlt));
   btn.hidden = !spielt;
 
+  // Neue Ansagen gross einblenden und den Button kurz sperren
+  for (const id of Object.keys(ansageGesehen)) if (!(id in ansagenVon)) delete ansageGesehen[id];
+  for (const [id, t] of Object.entries(ansagenVon)) {
+    if (ansageGesehen[id] === t) continue;
+    ansageGesehen[id] = t;
+    if (ansageInit) zeigeAnsagePopup(id, t);
+  }
+  ansageInit = true;
   // Ansage-Button
   const a = moeglicheAnsage();
   const ab = $("dk-btn-ansage");
   ab.hidden = !a;
   if (a) ab.textContent = a.text;
+  ab.disabled = Date.now() < ansageSperreBis;
   $("dk-btn-letzter").hidden = stiche.length === 0;
   zeigeLetztenStich();
 }
@@ -845,7 +881,7 @@ function tischHtml(vb) {
     h += `<div class="dk-sitz dk-s${pos}${aktiv ? " aktiv" : ""}" style="--spieler-farbe:${s?.farbe ?? "#888"}">` +
       `<span class="dk-avring" style="--t:${aktiv ? timerAnteil() : 1}">${avatarHtml(s?.icon, "dk-av")}</span><span class="dk-sitz-name">${escapeHtml(ich ? "Du" : name(id))}</span>` +
       (blase ? `<span class="dk-blase dk-blase-${pos}">${escapeHtml(blase)}</span>` : "") + `</div>`;
-    if (anzSt > 0 && (vb || !ich)) h += `<div class="dk-stapel dk-st${pos}">${rueckStapel(Math.min(anzSt, 3))}</div>`;
+    if (anzSt > 0) h += `<div class="dk-stapel dk-st${pos}">${rueckStapel(Math.min(anzSt, 3))}</div>`;
     const k = !vb && stich.find((x) => x.spielerId === id);
     if (k) {
       const gewinner = stich.length === 4 ? stichGewinner() : null;
@@ -901,6 +937,7 @@ function ansageKurz(team, stufe) {
 }
 
 async function ansageMachen() {
+  if (Date.now() < ansageSperreBis) return;
   const a = moeglicheAnsage();
   if (!a) return;
   try {
@@ -1072,6 +1109,21 @@ function botWaehle(id) {
     const ass = legal.filter((k) => !r.istTrumpf(k) && R.rangVon(k) === "A");
     if (ass.length) return ass[0];
     const unkostbar = legal.filter((k) => !kostbar(k));
+    const truempfe = hand.filter((k) => r.istTrumpf(k));
+    // Re mit vielen Truempfen: Truempfe ziehen (hoechsten Nicht-Kostbaren zuerst, sonst kleinsten)
+    if (team === "re" && truempfe.length >= 6) {
+      const tk = legal.filter((k) => r.istTrumpf(k) && !kostbar(k));
+      if (tk.length) return [...tk].sort((a, b) => r.staerke(b) - r.staerke(a))[0];
+    }
+    // Fehl-Zehn nur, wenn das Ass der Farbe schon gefallen ist oder in meiner Hand liegt
+    const gesp = new Set([...stiche.flatMap((x) => x.karten), ...stich].map((x) => x.karte));
+    const sicher = (k) => R.rangVon(k) !== "T" || gesp.has(R.farbeVon(k) + "A") || hand.includes(R.farbeVon(k) + "A");
+    const fehl = (unkostbar.length ? unkostbar : legal).filter((k) => !r.istTrumpf(k) && sicher(k));
+    if (fehl.length) {
+      // kurze Fehlfarbe zuerst, damit man bald Trumpf sticht; dort die kleinste Karte
+      const laenge = (k) => hand.filter((x) => !r.istTrumpf(x) && R.farbeVon(x) === R.farbeVon(k)).length;
+      return [...fehl].sort((a, b) => laenge(a) - laenge(b) || augen(a) - augen(b))[0];
+    }
     return [...(unkostbar.length ? unkostbar : legal)].sort(billig)[0];
   }
   const gIdx = R.stichGewinnerIndex(stich, r);
@@ -1098,6 +1150,11 @@ function botWaehle(id) {
     return [...(wenig.length ? wenig : legal)].sort(billig)[0];
   }
   if (gewinnend.length) {
+    // Noch Spieler hinter mir und viele Augen im Stich: lieber eine Karte, die nicht mehr zu ueberstechen ist
+    if (hinter > 0 && !unschlagbar && punkte >= 10) {
+      const fest = gewinnend.filter((k) => !unbekannt.some((u) => R.stichGewinnerIndex([...stich, { spielerId: id, karte: k }, { spielerId: "?", karte: u }], r) === stich.length));
+      if (fest.length) return fest[0];
+    }
     const guenstig = gewinnend[0];
     // Nicht mit Dulle/Dame/Sau einen fast leeren Stich holen, den noch jemand überstechen kann
     if (kostbar(guenstig) && !unschlagbar && punkte < 10 && hinter > 0) {
@@ -1195,9 +1252,7 @@ function zeigeErgebnis() {
     return `<div class="dk-erg-team ${cls}${istGewinner ? " gewinner" : ""}">` +
       `<h3>${titel}</h3><div class="dk-erg-spieler">${spieler}</div>` +
       `<div class="dk-erg-kopf"><span>Erreichte Punkte</span><b>${stiche} ${stiche === 1 ? "Stich" : "Stiche"}, ${augen} Augen</b></div>` +
-      `<ul class="dk-erg-box">${istGewinner ? erreicht.map((d) => zeile(d)).join("") : ""}</ul>` +
-      `<div class="dk-erg-kopf"><span>Sonderpunkte</span></div>` +
-      `<ul class="dk-erg-box dk-erg-box-klein">${eigeneSonder}</ul>` +
+      `<ul class="dk-erg-box">${(istGewinner ? erreicht.map((d) => zeile(d)).join("") : "") + eigeneSonder || "<li><span>–</span></li>"}</ul>` +
       `<div class="dk-erg-gesamt">Gesamt: ${gesamt > 0 ? "+" : ""}${gesamt}</div></div>`;
   };
   const teamRe = team("Re:", "re", e.re, gewinnerRe, e.reAugen, e.reStiche, e.sonderRe);

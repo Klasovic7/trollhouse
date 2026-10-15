@@ -3334,3 +3334,33 @@ body.anl-offen { overflow: hidden; }
 
 .dk-erg-total { font-size: .95rem; font-weight: 800; color: #facc15; line-height: 1; }
 .dk-erg-sp { max-width: 90px; }
+
+.dk-ansage-pop { position: fixed; z-index: 9999; left: 50%; top: 40%; transform: translate(-50%, -50%); pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 18px 34px; border-radius: 24px; background: rgba(15,10,25,.92); box-shadow: 0 0 0 3px #facc15, 0 12px 40px rgba(0,0,0,.6); animation: dk-pop 1.9s ease both; }
+.dk-ansage-pop small { font-size: 1rem; opacity: .85; }
+.dk-ansage-pop b { font-size: 2.6rem; line-height: 1.1; color: #facc15; text-align: center; }
+@keyframes dk-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } 20% { transform: translate(-50%, -50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
+.dk-erg-box-klein { display: none; }
+
+/* v297: groessere Karten, Stichstapel an festen Plaetzen */
+.dk-hf2 { top: -16px; }
+.dk-hf2 .dk-rk { width: 44px; height: 66px; margin-left: -29px; }
+.dk-hf1 { left: -16px; } .dk-hf3 { right: -16px; }
+.dk-hf1 .dk-rk, .dk-hf3 .dk-rk { width: 66px; height: 44px; margin-top: -27px; }
+.dk-hf1 .dk-rk svg, .dk-hf3 .dk-rk svg { width: 44px; height: 66px; }
+.dk-ablage { width: 66px; }
+.dk-a2 { top: calc(50% - 98px); }
+.dk-a0 { top: calc(50% - 6px); }
+.dk-a1 { left: calc(50% - 68px); }
+.dk-a3 { right: calc(50% - 68px); }
+.dk-st2 { top: 56px; left: 50%; margin-left: -18px; }
+.dk-st1 { left: 66px; right: auto; top: 50%; bottom: auto; margin-top: -22px; }
+.dk-st3 { right: 66px; left: auto; top: 50%; bottom: auto; margin-top: -22px; }
+.dk-st0 { left: 50%; right: auto; top: auto; bottom: -36px; margin-left: -18px; z-index: 4; }
+.dk-holz .dk-hand { padding-top: 40px; }
+.dk-ablage { width: 60px; }
+.dk-a1 { left: calc(50% - 62px); }
+.dk-a3 { right: calc(50% - 62px); }
+.dk-a2 { top: calc(50% - 90px); }
+.dk-s1, .dk-s3 { top: 74px; }
+.dk-st1 { left: 54px; }
+.dk-st3 { right: 54px; }
