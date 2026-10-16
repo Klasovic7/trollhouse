@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "309";
+const SPIEL_VERSION = "310";
 
 export const SPIELE = [
   {
@@ -142,24 +142,6 @@ export const SPIELE = [
     laden: () => import(`./wo-liegts/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
-    id: "finto",
-    name: "Finto",
-    emoji: "🦉",
-    farbe: "#38bdf8",
-    beschreibung: "Bluffe mit einer erfundenen Antwort und errate die echte",
-    minSpieler: 3,
-    laden: () => import(`./finto/spiel.js?v=${SPIEL_VERSION}`)
-  },
-  {
-    id: "imposter",
-    name: "Imposter",
-    emoji: "🎭",
-    farbe: "#fb7185",
-    beschreibung: "Einer kennt das Geheimwort nicht - deckt eure Karte auf und findet ihn",
-    minSpieler: 3,
-    laden: () => import(`./imposter/spiel.js?v=${SPIEL_VERSION}`)
-  },
-  {
     id: "fussball-auktion",
     name: "Länderspiel",
     emoji: "⚽",
@@ -208,6 +190,24 @@ export const SPIELE = [
     minSpieler: 1,
     mitBots: true,
     laden: () => import(`./doppelkopf/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "finto",
+    name: "Finto",
+    emoji: "🦉",
+    farbe: "#38bdf8",
+    beschreibung: "Bluffe mit einer erfundenen Antwort und errate die echte",
+    minSpieler: 3,
+    laden: () => import(`./finto/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "imposter",
+    name: "Imposter",
+    emoji: "🎭",
+    farbe: "#fb7185",
+    beschreibung: "Einer kennt das Geheimwort nicht - deckt eure Karte auf und findet ihn",
+    minSpieler: 3,
+    laden: () => import(`./imposter/spiel.js?v=${SPIEL_VERSION}`)
   }
 ];
 

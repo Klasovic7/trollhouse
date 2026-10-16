@@ -13,7 +13,7 @@ import {
 // WICHTIG: bei jedem Versionssprung hier UND in spiele/register.js
 // (SPIEL_VERSION) mit hochzaehlen, sonst bekommen manche Geraete
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
-import { SPIELE, spielInfo } from "./spiele/register.js?v=309";
+import { SPIELE, spielInfo } from "./spiele/register.js?v=310";
 
 export const APP_VERSION = "v308";
 const appVersion = document.getElementById("app-version");
