@@ -22,6 +22,7 @@ import {
 } from "../../kern/firebase.js";
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
+import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
 
 const STANDARD_ANZAHL = 10;
 // Wie lange die Rundenergebnis-Anzeige (richtiges Land + wer was getippt hat)
@@ -129,7 +130,7 @@ const VORLAGE = `
     <div id="lu-buchstaben-reihe" class="lu-buchstaben-reihe"></div>
     <p id="lu-frage-hinweis" class="hinweis-text"></p>
     <p class="lu-antwort-zeile">
-      <input id="lu-antwort-eingabe" type="text" placeholder="Land eingeben …" autocomplete="off">
+      <input id="lu-antwort-eingabe" class="tipp-versteckt" type="text" aria-label="Land eingeben" autocomplete="off">
       <button id="lu-antwort-absenden" type="button">Absenden</button>
     </p>
     <div id="lu-frage-status" class="warten-block"></div>
@@ -166,6 +167,7 @@ let aktuellesLandId = null;
 let frageSeit = 0;
 let rundenergebnisSeit = 0;
 let buchstabenReihenfolge = [];
+let tipp = null;
 let aufdeckAnzahl = 0;
 let aufdeckAnzahlGerendert = -1;
 let aufdeckFortschreibenLaeuft = false;
@@ -255,6 +257,7 @@ function verdrahteBedienelemente() {
   $("lu-anzahl").addEventListener("focus", () => { $("lu-anzahl").select(); });
 
   $("lu-starten").addEventListener("click", spielStarten);
+  tipp = bindeBuchstabenEingabe({ reihe: $("lu-buchstaben-reihe"), eingabe: $("lu-antwort-eingabe"), istBuchstabe });
   $("lu-antwort-absenden").addEventListener("click", antwortAbsenden);
   $("lu-antwort-eingabe").addEventListener("keydown", (e) => { if (e.key === "Enter") antwortAbsenden(); });
 }
@@ -489,6 +492,7 @@ function zeigeFrage() {
   $("lu-antwort-absenden").disabled = false;
   aktualisiereFrageStatus();
   rendereBuchstabenAnzeige();
+  if (tipp) tipp.zeichne();
 }
 
 // Zeigt für jeden Buchstaben des Landesnamens ein Kästchen (Leerzeichen/
@@ -515,10 +519,13 @@ function rendereBuchstabenAnzeige() {
       span.textContent = zeichen;
     } else {
       span.className = "lu-buchstabe-kasten" + (aufgedeckt.has(i) ? " lu-aufgedeckt" : "");
-      span.textContent = aufgedeckt.has(i) ? zeichen.toUpperCase() : "";
+      span.dataset.kasten = "1";
+      span.dataset.hinweis = aufgedeckt.has(i) ? zeichen.toUpperCase() : "";
+      span.textContent = span.dataset.hinweis;
     }
     reihe.appendChild(span);
   }
+  if (tipp) tipp.zeichne();
 }
 
 function antwortenDieserRunde() {
@@ -545,7 +552,7 @@ function aktualisiereFrageStatus() {
 async function antwortAbsenden() {
   if (status !== "frage" || eigeneAntwortGesetzt) return;
   const eingabeFeld = $("lu-antwort-eingabe");
-  const text = eingabeFeld.value.trim();
+  const text = (tipp ? tipp.antwort() : eingabeFeld.value).trim();
   if (!text) return;
 
   eigeneAntwortGesetzt = true;

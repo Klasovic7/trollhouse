@@ -45,6 +45,7 @@ import {
 import { escapeHtml, textMitZusatz, spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
 import { speichereWertung } from "../../kern/wertung.js";
+import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
 const AUFDECK_DAUER_MS = 10000;
@@ -183,6 +184,7 @@ let gespielt = { wort: [], speed: [], bild: [] };
 // Nur für Fragen vom Typ "wort" befüllt: parallel zu "reihenfolge" eine
 // Permutation der (nur Buchstaben-)Indizes der Lösung, in Aufdeck-Reihenfolge.
 let buchstabenReihenfolgen = [];
+let tipp = null;
 let anzahlFragen = 0;
 let anzahlEntwurf = null;
 let anzahlEntwurfTimer = null;
@@ -326,6 +328,7 @@ function verdrahteBedienelemente() {
   $("bz-team-wahl-rot").addEventListener("click", () => waehleEigenesTeam("rot"));
   $("bz-teams-zufall").addEventListener("click", zufaelligeTeams);
   $("bz-starten").addEventListener("click", spielStarten);
+  tipp = bindeBuchstabenEingabe({ reihe: $("bz-buchstaben-reihe"), eingabe: $("bz-wort-eingabe"), istBuchstabe });
   $("bz-wort-absenden").addEventListener("click", wortAbsenden);
   $("bz-wort-eingabe").addEventListener("keydown", (e) => { if (e.key === "Enter") wortAbsenden(); });
   $("bz-weiter").addEventListener("click", weiter);
@@ -670,6 +673,8 @@ function zeigeFrage() {
 
   const eigene = eigeneAntwortAnzeige(index);
   if (istTextEingabe) {
+    $("bz-wort-eingabe").classList.toggle("tipp-versteckt", istWort);
+    $("bz-wort-eingabe").placeholder = istWort ? "" : "Deine Lösung";
     if (istWort) rendereBuchstabenReihe(frage, index);
     else rendereBildAnzeige(frage);
     $("bz-wort-eingabe").disabled = !!eigene;
@@ -713,10 +718,13 @@ function rendereBuchstabenReihe(frage, pos) {
       span.textContent = zeichen;
     } else {
       span.className = "bz-buchstabe-kasten" + (aufgedeckt.has(i) ? " bz-aufgedeckt" : "");
-      span.textContent = aufgedeckt.has(i) ? zeichen.toUpperCase() : "";
+      span.dataset.kasten = "1";
+      span.dataset.hinweis = aufgedeckt.has(i) ? zeichen.toUpperCase() : "";
+      span.textContent = span.dataset.hinweis;
     }
     reihe.appendChild(span);
   }
+  if (tipp) tipp.zeichne();
 }
 
 // Zeichnet das Bild nur einmal pro Frage neu (nicht bei jedem Aufruf) - sonst
@@ -837,7 +845,7 @@ async function antworteMC(antwortIndex) {
 // entweder gelöst haben oder verbraucht sind (siehe aktualisiereAntworten()).
 async function wortAbsenden() {
   if (status !== "frage_aktiv" || eigeneAntwortAnzeige(index)) return;
-  const eingabe = $("bz-wort-eingabe").value.trim();
+  const eingabe = (frageAn(index)?.typ === "wort" && tipp ? tipp.antwort() : $("bz-wort-eingabe").value).trim();
   if (!eingabe) {
     $("bz-wort-fehler").textContent = "Bitte eine Antwort eingeben.";
     return;

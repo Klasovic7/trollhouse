@@ -62,6 +62,7 @@ const VORLAGE = `
     <div id="zg-flash" class="zg-flash-overlay" aria-hidden="true"></div>
     <p class="hinweis-text" id="zg-buzzer-hinweis">Zähl für dich mit und drück im richtigen Moment!</p>
     <p><button id="zg-buzzer" class="zg-buzzer-btn" type="button">BUZZER</button></p>
+    <p class="zg-ziel-anzeige zg-ziel-unten">Zielzeit: <strong id="zg-buzzer-ziel"></strong> Sekunden</p>
     <div id="zg-buzzer-status" class="warten-block"></div>
   </div>
 
@@ -350,6 +351,7 @@ function rundenTick() {
   } else {
     $("zg-vorbereitung-screen").hidden = true;
     $("zg-buzzer-screen").hidden = false;
+    $("zg-buzzer-ziel").textContent = String(zielSekunden);
     if (!buzzerPhaseGezeigt) {
       buzzerPhaseGezeigt = true;
       aktualisiereBuzzerStatus();

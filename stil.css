@@ -3433,3 +3433,18 @@ body.tt-aktiv #spiel-kopf-titel { display: none; }
 .wl-modus-titel small { font-weight: 500; opacity: 0.7; }
 .wl-modus button::before { content: "☐ "; opacity: 0.7; }
 .wl-modus button.aktiv::before { content: "☑ "; opacity: 1; }
+
+/* Direkte Eingabe in Buchstabenfelder (kern/buchstabeneingabe.js) */
+.tipp-versteckt {
+  position: absolute; left: 0; top: 0; width: 1px; height: 1px;
+  opacity: 0; border: 0; padding: 0; margin: 0; font-size: 16px; pointer-events: none;
+}
+.lu-antwort-zeile, .bz-antwort-zeile { position: relative; }
+.lu-antwort-zeile:has(.tipp-versteckt) button,
+.bz-antwort-zeile:has(.tipp-versteckt) button { flex: 1; }
+.lu-buchstabe-kasten, .bz-buchstabe-kasten { cursor: text; }
+.lu-buchstabe-kasten.tipp-getippt, .bz-buchstabe-kasten.tipp-getippt { border-color: var(--akzent, #ff5b36); }
+.lu-buchstabe-kasten.tipp-cursor, .bz-buchstabe-kasten.tipp-cursor {
+  box-shadow: 0 0 0 2px var(--akzent, #ff5b36);
+}
+.zg-ziel-unten { margin: 14px 0 0; text-align: center; }
