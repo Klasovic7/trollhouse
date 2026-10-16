@@ -47,6 +47,7 @@ async function ladeWelt() {
     const topo = await antwort.json();
     let deGrenzen = null;
     try {
+      // { land: Umriss Deutschlands, grenzen: alle Bundesland-Linien inkl. Außengrenze }
       deGrenzen = await (await fetch(new URL("./de-grenzen.json", import.meta.url))).json();
     } catch (_) { /* Bundeslandgrenzen sind optional */ }
     welt = {
@@ -398,7 +399,11 @@ class Globus {
 
     // Bundeslandgrenzen (nur wenn Deutschland im Spiel ist)
     if (this.bundeslaender && welt.deGrenzen) {
-      ctx.beginPath(); this.pfad(welt.deGrenzen);
+      // Deutschland aus den detaillierten Bundesland-Daten übermalen, damit Küste und
+      // Grenzen exakt zu den lila Linien passen
+      ctx.beginPath(); this.pfad(welt.deGrenzen.land);
+      ctx.fillStyle = "#dfe8c6"; ctx.fill();
+      ctx.beginPath(); this.pfad(welt.deGrenzen.grenzen);
       ctx.lineJoin = "round";
       ctx.strokeStyle = "rgba(130,70,170,0.8)"; ctx.lineWidth = this.zoom > 6 ? 1.4 : 1; ctx.stroke();
     }
