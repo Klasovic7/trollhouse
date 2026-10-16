@@ -3392,3 +3392,27 @@ body.tt-aktiv #spiel-kopf-titel { display: none; }
 .tt-tasten button:active { background: rgba(255,255,255,.3); }
 .tt-tasten button[data-a="drop"] { background: rgba(6,182,212,.45); }
 .tt-spiel.zuschauer .tt-mitte, .tt-spiel.zuschauer .tt-tasten { display: none; }
+
+/* ======================================================================
+   Wo liegt's? - Globus, Stadtname
+   ====================================================================== */
+.wl-stadt { font-size: 1.7rem; line-height: 1.15; margin: 2px 0 0; }
+.wl-land { margin: 2px 0 12px; color: var(--club-muted, var(--text-hell)); font-weight: 600; }
+.wl-globus {
+  position: relative; width: 100%; aspect-ratio: 1 / 1; margin: 4px 0 10px;
+  border-radius: 20px; overflow: hidden; touch-action: none; user-select: none;
+  -webkit-user-select: none; -webkit-touch-callout: none;
+  background: radial-gradient(circle at 50% 45%, #14233f 0%, #0a1226 70%, #060b18 100%);
+}
+.wl-canvas { display: block; touch-action: none; cursor: grab; }
+.wl-canvas:active { cursor: grabbing; }
+.wl-zoomknoepfe {
+  position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 8px;
+}
+.wl-zoomknoepfe button {
+  width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 50%;
+  font-size: 1.5rem; line-height: 1; font-weight: 700;
+  background: rgba(255, 255, 255, 0.92); color: #1f2330;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.wl-zoomknoepfe button:hover { background: #fff; }
