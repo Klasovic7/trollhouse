@@ -15,12 +15,13 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
+import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml, avatarBild } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import * as D3 from "./geo.js";
 import { STAEDTE_WELT, STAEDTE_DE, SEHENSWUERDIGKEITEN } from "./staedte.js";
 
-// Was gesucht wird: Städte weltweit (ohne Deutschland), deutsche Städte oder Sehenswürdigkeiten
+// Was gesucht wird (mehrere Kataloge gleichzeitig möglich): Städte weltweit
+// (ohne Deutschland), deutsche Städte, Sehenswürdigkeiten
 const MODI = {
   welt: { name: "Städte weltweit", daten: STAEDTE_WELT, einzahl: "Stadt" },
   de: { name: "Städte Deutschland", daten: STAEDTE_DE, einzahl: "Stadt" },
@@ -62,6 +63,23 @@ function kmText(km) {
   if (km == null) return "kein Tipp";
   if (km < 1) return "unter 1 km";
   return Math.round(km).toLocaleString("de-DE") + " km";
+}
+
+// Profilbilder für die Nadeln (einmal laden, danach aus dem Cache)
+const bildCache = new Map();
+function holeBild(url, beiFertig) {
+  let eintrag = bildCache.get(url);
+  if (!eintrag) {
+    const img = new Image();
+    eintrag = { img, fertig: false, wartende: [] };
+    img.onload = () => { eintrag.fertig = true; eintrag.wartende.splice(0).forEach((f) => f()); };
+    img.onerror = () => { eintrag.wartende.length = 0; };
+    img.src = url;
+    bildCache.set(url, eintrag);
+  }
+  if (eintrag.fertig && eintrag.img.naturalWidth) return eintrag.img;
+  if (!eintrag.fertig) eintrag.wartende.push(beiFertig);
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -403,27 +421,40 @@ class Globus {
 
   zeichneNadel(x, y, m) {
     const { ctx } = this;
-    const kopfY = y - 22;
+    const R = 15;                      // Radius des Nadelkopfs (Profilbild)
+    const kopfY = y - 30;
     ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2;
+    ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
     // Nadel
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, kopfY);
-    ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 2.2; ctx.stroke();
-    // Kopf
-    ctx.beginPath(); ctx.arc(x, kopfY, 10, 0, Math.PI * 2);
-    ctx.fillStyle = m.farbe; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, kopfY + R - 2);
+    ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 2.4; ctx.stroke();
+    // weißer Rand + Schatten
+    ctx.beginPath(); ctx.arc(x, kopfY, R + 2, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff"; ctx.fill();
     ctx.restore();
-    ctx.beginPath(); ctx.arc(x, kopfY, 10, 0, Math.PI * 2);
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    // Farbring des Spielers
+    ctx.beginPath(); ctx.arc(x, kopfY, R, 0, Math.PI * 2);
+    ctx.fillStyle = m.farbe; ctx.fill();
     // Spitze
-    ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(x, y, 2.4, 0, Math.PI * 2);
     ctx.fillStyle = "#111827"; ctx.fill();
-    if (m.initial) {
-      ctx.fillStyle = "#fff"; ctx.font = "700 11px -apple-system, Helvetica, Arial, sans-serif";
+    // Profilbild (falls geladen), sonst Anfangsbuchstabe
+    const bild = m.bild ? holeBild(m.bild, () => this.zeichneSpaeter()) : null;
+    if (bild) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, kopfY, R - 3, 0, Math.PI * 2); ctx.clip();
+      // Bild mittig quadratisch zuschneiden (Gesicht liegt meist oben)
+      const q = Math.min(bild.naturalWidth, bild.naturalHeight);
+      const sx = (bild.naturalWidth - q) / 2;
+      const sy = Math.max(0, (bild.naturalHeight - q) * 0.2);
+      ctx.drawImage(bild, sx, sy, q, q, x - R + 3, kopfY - R + 3, (R - 3) * 2, (R - 3) * 2);
+      ctx.restore();
+    } else if (m.initial) {
+      ctx.fillStyle = "#fff"; ctx.font = "700 14px -apple-system, Helvetica, Arial, sans-serif";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText(m.initial, x, kopfY + 0.5);
     }
-    if (m.text) this.zeichneText(m.text, x + 13, kopfY - 2, "left");
+    if (m.text) this.zeichneText(m.text, x + R + 5, kopfY - 2, "left");
   }
 
   zeichneZiel(x, y, m) {
@@ -464,7 +495,7 @@ const VORLAGE = `
       zusätzlich einen Volltreffer-Punkt. Pro Runde habt ihr 60 Sekunden.</p>
 
     <div id="wl-modus-block" class="wl-modus-block">
-      <span class="wl-modus-titel">Was wird gesucht?</span>
+      <span class="wl-modus-titel">Was wird gesucht? <small>(mehrere möglich)</small></span>
       <div id="wl-modus" class="wl-modus" role="group" aria-label="Was wird gesucht?">
         <button type="button" data-modus="welt">🌍 Städte weltweit</button>
         <button type="button" data-modus="de">🇩🇪 Städte Deutschland</button>
@@ -531,7 +562,8 @@ let anzahlEntwurf = null;
 let anzahlEntwurfTimer = null;
 let verwendet = [];
 let stadtIdx = null;
-let modus = "welt";
+let modi = ["welt"];
+let ortsCache = { schluessel: "", liste: [] };
 let frageSeit = 0;
 let ergebnisSeit = 0;
 
@@ -547,14 +579,24 @@ let olympiadeAutoStart = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
+// Gemeinsame Ortsliste aller gewählten Kataloge (feste Reihenfolge, damit der
+// Index auf allen Geräten dasselbe meint). Jeder Eintrag: [name, land, lat, lon, katalog]
 function ortsListe() {
-  return (MODI[modus] || MODI.welt).daten;
+  const schluessel = modi.join(",");
+  if (ortsCache.schluessel !== schluessel) {
+    const liste = [];
+    for (const id of Object.keys(MODI)) {
+      if (modi.includes(id)) MODI[id].daten.forEach((r) => liste.push([...r, id]));
+    }
+    ortsCache = { schluessel, liste };
+  }
+  return ortsCache.liste;
 }
 
 function stadt(idx) {
   const s = ortsListe()[idx];
   // Bei Sehenswürdigkeiten wird bewusst kein Ort/Land angezeigt (wäre ein Hinweis)
-  return s ? { name: s[0], land: modus === "sehens" ? "" : s[1], lat: s[2], lon: s[3] } : null;
+  return s ? { name: s[0], land: s[4] === "sehens" ? "" : s[1], lat: s[2], lon: s[3] } : null;
 }
 
 function neueStadtIdx(bisher) {
@@ -584,7 +626,7 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.wlStatus) {
     await updateDoc(api.raumRef(), {
-      wlStatus: "setup", wlModus: "welt", wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
+      wlStatus: "setup", wlModi: ["welt"], wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
       wlVerwendet: [], wlStadtIdx: null, wlFrageSeit: 0, wlErgebnisSeit: 0
     });
   }
@@ -608,11 +650,14 @@ function verdrahte() {
   $("wl-modus").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-modus]");
     if (!btn || !api.istLeiter || api.olympiadeAnzahl) return;
-    const neu = btn.dataset.modus;
-    if (!MODI[neu] || neu === modus) return;
-    modus = neu;                      // sofort lokal anzeigen
+    const id = btn.dataset.modus;
+    if (!MODI[id]) return;
+    // an-/abwählen, mindestens ein Katalog bleibt immer aktiv
+    const neu = modi.includes(id) ? modi.filter((m) => m !== id) : [...modi, id];
+    if (neu.length === 0) return;
+    modi = Object.keys(MODI).filter((m) => neu.includes(m));   // sofort lokal anzeigen
     zeigeSetup();
-    updateDoc(api.raumRef(), { wlModus: neu }).catch(() => {});
+    updateDoc(api.raumRef(), { wlModi: modi }).catch(() => {});
   });
   $("wl-starten").addEventListener("click", spielStarten);
   $("wl-setzen").addEventListener("click", nadelAbschicken);
@@ -661,7 +706,8 @@ export function raumDaten(daten) {
   anzahlEntwurf = daten.wlAnzahlEntwurf ?? null;
   verwendet = daten.wlVerwendet ?? [];
   stadtIdx = daten.wlStadtIdx ?? null;
-  modus = MODI[daten.wlModus] ? daten.wlModus : "welt";
+  const gewaehlt = Array.isArray(daten.wlModi) ? Object.keys(MODI).filter((m) => daten.wlModi.includes(m)) : [];
+  modi = gewaehlt.length ? gewaehlt : ["welt"];
 
   const neueRunde = daten.wlRundeIndex ?? 0;
   const neuFrageSeit = daten.wlFrageSeit ?? 0;
@@ -709,11 +755,14 @@ function zeigeSetup() {
   const max = Math.min(MAX_ANZAHL, ortsListe().length);
   feld.max = max;
   $("wl-modus").querySelectorAll("button").forEach((b) => {
-    b.classList.toggle("aktiv", b.dataset.modus === modus);
+    const an = modi.includes(b.dataset.modus);
+    b.classList.toggle("aktiv", an);
+    b.setAttribute("aria-pressed", an ? "true" : "false");
     b.disabled = !api.istLeiter || Boolean(api.olympiadeAnzahl);
   });
-  $("wl-modus-info").textContent = `${ortsListe().length} ${modus === "sehens" ? "Sehenswürdigkeiten" : "Städte"} im Katalog` +
-    (modus === "welt" ? " (ohne deutsche Städte)." : modus === "de" ? " in Deutschland." : " weltweit.");
+  $("wl-modus-info").textContent = `${ortsListe().length} Orte im Topf` +
+    (modi.length > 1 ? ` (${modi.map((m) => MODI[m].daten.length).join(" + ")}).` : ".") +
+    (modi.includes("welt") ? " Weltweite Städte ohne deutsche." : "");
   if (api.olympiadeAnzahl) {
     const n = Math.min(Math.max(1, api.olympiadeAnzahl), max);
     feld.value = String(n);
@@ -753,7 +802,7 @@ async function spielStarten() {
   try {
     await raeumeAuf();
     await updateDoc(api.raumRef(), {
-      wlStatus: "frage", wlModus: modus, wlRundeIndex: 0, wlAnzahlRunden: anzahl,
+      wlStatus: "frage", wlModi: modi, wlRundeIndex: 0, wlAnzahlRunden: anzahl,
       wlVerwendet: [idx], wlStadtIdx: idx, wlFrageSeit: Date.now(), wlErgebnisSeit: 0
     });
   } catch (e) {
@@ -773,7 +822,7 @@ export async function vorZurueck() {
   try {
     await raeumeAuf();
     await updateDoc(api.raumRef(), {
-      wlStatus: null, wlModus: "welt", wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
+      wlStatus: null, wlModi: ["welt"], wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
       wlVerwendet: [], wlStadtIdx: null, wlFrageSeit: 0, wlErgebnisSeit: 0
     });
     await api.zurueckZurAuswahl();
@@ -816,7 +865,7 @@ function zeigeFrage() {
 function zeichneEigeneNadel() {
   if (!globusFrage) return;
   globusFrage.setzeMarkierungen(meineNadel
-    ? [{ typ: "nadel", lat: meineNadel.lat, lon: meineNadel.lon, farbe: eigeneFarbe(), initial: initiale(api.spielerName) }]
+    ? [{ typ: "nadel", lat: meineNadel.lat, lon: meineNadel.lon, farbe: eigeneFarbe(), initial: initiale(api.spielerName), bild: avatarBild(spielerListe.find((x) => x.id === api.spielerId)?.icon) }]
     : []);
 }
 
@@ -952,7 +1001,7 @@ function rendereErgebnisListe(neuPassen = false) {
     if (e.km == null) return;
     const sp = spielerListe.find((x) => x.id === e.id);
     if (!sp) return;
-    markierungen.push({ typ: "nadel", lat: e.lat, lon: e.lon, farbe: sp.farbe || "#7c3aed", initial: initiale(sp.name) });
+    markierungen.push({ typ: "nadel", lat: e.lat, lon: e.lon, farbe: sp.farbe || "#7c3aed", initial: initiale(sp.name), bild: avatarBild(sp.icon) });
     linien.push({ von: [e.lon, e.lat], nach: [s.lon, s.lat], farbe: sp.farbe || "#7c3aed" });
   });
   markierungen.push({ typ: "ziel", lat: s.lat, lon: s.lon, text: s.name });

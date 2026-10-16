@@ -3430,3 +3430,6 @@ body.tt-aktiv #spiel-kopf-titel { display: none; }
 .wl-modus button:disabled { opacity: 1; cursor: default; }
 .wl-modus button:disabled:not(.aktiv) { opacity: 0.45; }
 .wl-modus-block .hinweis-text { margin-top: 10px; }
+.wl-modus-titel small { font-weight: 500; opacity: 0.7; }
+.wl-modus button::before { content: "☐ "; opacity: 0.7; }
+.wl-modus button.aktiv::before { content: "☑ "; opacity: 1; }
