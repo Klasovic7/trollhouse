@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "302";
+const SPIEL_VERSION = "303";
 
 export const SPIELE = [
   {
@@ -169,6 +169,7 @@ export const SPIELE = [
     id: "knobeln",
     name: "Knobeln",
     emoji: "🔥",
+    bild: "bilder/knobeln-streichhoelzer.webp",
     farbe: "#f59e0b",
     beschreibung: "Streichhölzer in der Faust - tippt die Gesamtzahl, wer richtig liegt, ist raus",
     minSpieler: 2,
