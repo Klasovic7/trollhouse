@@ -18,7 +18,7 @@ import {
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml, avatarBild } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import * as D3 from "./geo.js";
-import { STAEDTE_WELT, STAEDTE_DE, SEHENSWUERDIGKEITEN } from "./staedte.js";
+import { STAEDTE_WELT, STAEDTE_DE, SEHENSWUERDIGKEITEN, SEHENS_ART } from "./staedte.js";
 
 // Was gesucht wird (mehrere Kataloge gleichzeitig möglich): Städte weltweit
 // (ohne Deutschland), deutsche Städte, Sehenswürdigkeiten
@@ -636,7 +636,14 @@ function stadt(idx) {
   const s = ortsListe()[idx];
   // Nur bei weltweiten Städten steht das Land dabei. Bei Sehenswürdigkeiten und deutschen
   // Städten (Bundesland) wäre es ein Hinweis, deshalb bleibt die Zeile leer.
-  return s ? { name: s[0], land: s[4] === "welt" ? s[1] : "", lat: s[2], lon: s[3] } : null;
+  if (!s) return null;
+  let name = s[0];
+  // Die Art steht nur dabei, wenn sie nicht schon im Namen vorkommt (z. B. "Blaue Moschee")
+  if (s[4] === "sehens" && SEHENS_ART[name] && !name.toLowerCase().includes(SEHENS_ART[name].toLowerCase())) {
+    // Namen mit Klammerzusatz, z. B. "Chinesische Mauer (Badaling)" -> "Chinesische Mauer, Badaling (Mauer)"
+    name = name.replace(/\s*\(([^)]*)\)/, ", $1") + ` (${SEHENS_ART[name]})`;
+  }
+  return { name, land: s[4] === "welt" ? s[1] : "", lat: s[2], lon: s[3] };
 }
 
 function neueStadtIdx(bisher) {
