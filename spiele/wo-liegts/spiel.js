@@ -45,7 +45,12 @@ async function ladeWelt() {
   try {
     const antwort = await fetch(new URL("./welt.json", import.meta.url));
     const topo = await antwort.json();
+    let deGrenzen = null;
+    try {
+      deGrenzen = await (await fetch(new URL("./de-grenzen.json", import.meta.url))).json();
+    } catch (_) { /* Bundeslandgrenzen sind optional */ }
     welt = {
+      deGrenzen,
       land: D3.feature(topo, topo.objects.land),
       grenzen: D3.mesh(topo, topo.objects.countries, (a, b) => a !== b),
       gitter: D3.geoGraticule10()
@@ -93,8 +98,13 @@ class Globus {
   constructor(behaelter, optionen = {}) {
     this.behaelter = behaelter;
     this.beiTipp = optionen.beiTipp || null;
+    this.bundeslaender = Boolean(optionen.bundeslaender);
     this.rot = [-10, -30];      // [Lambda, Phi] von d3 (Mitte = -Lambda, -Phi)
     this.zoom = 1;
+    if (optionen.start) {       // Startansicht, z. B. direkt auf Deutschland
+      this.rot = [-optionen.start.lon, -optionen.start.lat];
+      this.zoom = optionen.start.zoom;
+    }
     this.w = 0; this.h = 0; this.dpr = 1;
     this.markierungen = [];     // {typ:"nadel"|"ziel", lat, lon, farbe, text}
     this.linien = [];           // {von:[lon,lat], nach:[lon,lat], farbe}
@@ -386,6 +396,13 @@ class Globus {
     ctx.beginPath(); this.pfad(welt.grenzen);
     ctx.strokeStyle = "rgba(90,70,110,0.6)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
 
+    // Bundeslandgrenzen (nur wenn Deutschland im Spiel ist)
+    if (this.bundeslaender && welt.deGrenzen) {
+      ctx.beginPath(); this.pfad(welt.deGrenzen);
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "rgba(130,70,170,0.8)"; ctx.lineWidth = this.zoom > 6 ? 1.4 : 1; ctx.stroke();
+    }
+
     // Atmosphäre / Rand
     if (k < Math.max(this.w, this.h) * 0.9) {
       ctx.beginPath(); ctx.arc(cx, cy, k, 0, Math.PI * 2);
@@ -595,8 +612,9 @@ function ortsListe() {
 
 function stadt(idx) {
   const s = ortsListe()[idx];
-  // Bei Sehenswürdigkeiten wird bewusst kein Ort/Land angezeigt (wäre ein Hinweis)
-  return s ? { name: s[0], land: s[4] === "sehens" ? "" : s[1], lat: s[2], lon: s[3] } : null;
+  // Nur bei weltweiten Städten steht das Land dabei. Bei Sehenswürdigkeiten und deutschen
+  // Städten (Bundesland) wäre es ein Hinweis, deshalb bleibt die Zeile leer.
+  return s ? { name: s[0], land: s[4] === "welt" ? s[1] : "", lat: s[2], lon: s[3] } : null;
 }
 
 function neueStadtIdx(bisher) {
@@ -845,12 +863,22 @@ function tippsDieserRunde() {
   return alleTipps.filter((t) => t.rundeIndex === rundeIndex && ids.has(t.spielerId));
 }
 
+// Nur Deutschland gewählt: Globus startet direkt über Deutschland (mit Bundeslandgrenzen)
+function globusOptionen() {
+  const nurDe = modi.length === 1 && modi[0] === "de";
+  return {
+    bundeslaender: modi.includes("de"),
+    start: nurDe ? { lon: 10.45, lat: 51.1, zoom: 12 } : null
+  };
+}
+
 function zeigeFrage() {
   const s = stadt(stadtIdx);
   $("wl-stadt").textContent = s ? s.name : "?";
   $("wl-land").textContent = s ? s.land : "";
   zerstoereGlobus();
   globusFrage = new Globus($("wl-globus-frage"), {
+    ...globusOptionen(),
     beiTipp: (lat, lon) => {
       if (eigenerTippGesetzt || status !== "frage") return;
       meineNadel = { lat, lon };
@@ -966,7 +994,7 @@ function zeigeErgebnis() {
   $("wl-erg-stadt").textContent = s ? s.name : "?";
   $("wl-erg-land").textContent = s ? s.land : "";
   zerstoereGlobus();
-  globusErgebnis = new Globus($("wl-globus-ergebnis"));
+  globusErgebnis = new Globus($("wl-globus-ergebnis"), { bundeslaender: modi.includes("de") });
   rendereErgebnisListe(true);
   $("wl-weiter").hidden = !api.istLeiter;
   $("wl-weiter").textContent = rundeIndex + 1 >= anzahlRunden ? "Zum Endstand" : "Nächste Runde";
