@@ -2,8 +2,8 @@
 //  Spiele-Anleitungen: Übersicht aller Spiele, dann Seite für Seite durchblättern.
 //  Wird erst beim Klick auf "Spiele" (Startseite) geladen.
 // ============================================================================
-import { SPIELE } from "./register.js?v=321";
-import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=321";
+import { SPIELE } from "./register.js?v=322";
+import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=322";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fett = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -61,7 +61,7 @@ export function oeffneAnleitungen(startId = null) {
       </div>
       <div class="anl-titel"><span class="anl-titel-sym">${symbol(sp)}</span><h2>${esc(sp.name)}</h2></div>
       <div class="anl-folie" id="anl-folie">
-        <div class="anl-bildrahmen"><img class="anl-foto" src="bilder/anleitung/${id}-${seite + 1}.webp?v=321" alt="Screenshot: ${esc(f.t)}" loading="eager"></div>
+        <div class="anl-bildrahmen"><img class="anl-foto" src="bilder/anleitung/${id}-${seite + 1}.webp?v=322" alt="Screenshot: ${esc(f.t)}" loading="eager"></div>
         <h3>${esc(f.t)}</h3>
         ${f.x.map((a) => `<p>${fett(a)}</p>`).join("")}
       </div>
