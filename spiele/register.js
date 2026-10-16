@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "304";
+const SPIEL_VERSION = "305";
 
 export const SPIELE = [
   {
@@ -134,7 +134,7 @@ export const SPIELE = [
     name: "Wo liegt's?",
     emoji: "🌍",
     farbe: "#10b981",
-    beschreibung: "Setz die Stecknadel auf dem Globus - wer liegt am nächsten dran?",
+    beschreibung: "Städte oder Sehenswürdigkeiten auf dem Globus finden - wer liegt am nächsten dran?",
     minSpieler: 2,
     laden: () => import(`./wo-liegts/spiel.js?v=${SPIEL_VERSION}`)
   },

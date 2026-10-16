@@ -18,7 +18,14 @@ import {
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import * as D3 from "./geo.js";
-import { STAEDTE } from "./staedte.js";
+import { STAEDTE_WELT, STAEDTE_DE, SEHENSWUERDIGKEITEN } from "./staedte.js";
+
+// Was gesucht wird: Städte weltweit (ohne Deutschland), deutsche Städte oder Sehenswürdigkeiten
+const MODI = {
+  welt: { name: "Städte weltweit", daten: STAEDTE_WELT, einzahl: "Stadt" },
+  de: { name: "Städte Deutschland", daten: STAEDTE_DE, einzahl: "Stadt" },
+  sehens: { name: "Sehenswürdigkeiten", daten: SEHENSWUERDIGKEITEN, einzahl: "Sehenswürdigkeit" }
+};
 
 const STANDARD_ANZAHL = 8;
 const MAX_ANZAHL = 25;
@@ -451,10 +458,20 @@ class Globus {
 const VORLAGE = `
   <div id="wl-setup" class="bildschirm-karte" hidden>
     <h1>🌍 Wo liegt's?</h1>
-    <p class="hinweis-text">Eine Stadt wird genannt - alle setzen gleichzeitig eine Stecknadel auf den Globus.
+    <p class="hinweis-text">Ein Ort wird genannt - alle setzen gleichzeitig eine Stecknadel auf den Globus.
       Drehen: mit einem Finger ziehen. Zoomen: zwei Finger auseinander oder mit + / −. Nadel setzen: kurz tippen.
       Wer (Luftlinie) am nächsten dran ist, bekommt die meisten Punkte, wer weniger als 100 km danebenliegt,
       zusätzlich einen Volltreffer-Punkt. Pro Runde habt ihr 60 Sekunden.</p>
+
+    <div id="wl-modus-block" class="wl-modus-block">
+      <span class="wl-modus-titel">Was wird gesucht?</span>
+      <div id="wl-modus" class="wl-modus" role="group" aria-label="Was wird gesucht?">
+        <button type="button" data-modus="welt">🌍 Städte weltweit</button>
+        <button type="button" data-modus="de">🇩🇪 Städte Deutschland</button>
+        <button type="button" data-modus="sehens">🗽 Sehenswürdigkeiten</button>
+      </div>
+      <p id="wl-modus-info" class="hinweis-text"></p>
+    </div>
 
     <div id="wl-anzahl-zeile" class="setup-anzahlblock" hidden>
       <div class="setup-anzahl-zeile">
@@ -514,6 +531,7 @@ let anzahlEntwurf = null;
 let anzahlEntwurfTimer = null;
 let verwendet = [];
 let stadtIdx = null;
+let modus = "welt";
 let frageSeit = 0;
 let ergebnisSeit = 0;
 
@@ -529,14 +547,19 @@ let olympiadeAutoStart = false;
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
+function ortsListe() {
+  return (MODI[modus] || MODI.welt).daten;
+}
+
 function stadt(idx) {
-  const s = STAEDTE[idx];
+  const s = ortsListe()[idx];
   return s ? { name: s[0], land: s[1], lat: s[2], lon: s[3] } : null;
 }
 
 function neueStadtIdx(bisher) {
-  const frei = STAEDTE.map((_, i) => i).filter((i) => !bisher.includes(i));
-  const pool = frei.length ? frei : STAEDTE.map((_, i) => i);
+  const alle = ortsListe().map((_, i) => i);
+  const frei = alle.filter((i) => !bisher.includes(i));
+  const pool = frei.length ? frei : alle;
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -560,7 +583,7 @@ export async function starten(uebergebeneApi) {
 
   if (api.istLeiter && !api.raum?.wlStatus) {
     await updateDoc(api.raumRef(), {
-      wlStatus: "setup", wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
+      wlStatus: "setup", wlModus: "welt", wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
       wlVerwendet: [], wlStadtIdx: null, wlFrageSeit: 0, wlErgebnisSeit: 0
     });
   }
@@ -581,6 +604,15 @@ function verdrahte() {
     feld.value = String(w);
   });
   feld.addEventListener("focus", () => feld.select());
+  $("wl-modus").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-modus]");
+    if (!btn || !api.istLeiter || api.olympiadeAnzahl) return;
+    const neu = btn.dataset.modus;
+    if (!MODI[neu] || neu === modus) return;
+    modus = neu;                      // sofort lokal anzeigen
+    zeigeSetup();
+    updateDoc(api.raumRef(), { wlModus: neu }).catch(() => {});
+  });
   $("wl-starten").addEventListener("click", spielStarten);
   $("wl-setzen").addEventListener("click", nadelAbschicken);
   $("wl-weiter").addEventListener("click", weiterNachErgebnis);
@@ -628,6 +660,7 @@ export function raumDaten(daten) {
   anzahlEntwurf = daten.wlAnzahlEntwurf ?? null;
   verwendet = daten.wlVerwendet ?? [];
   stadtIdx = daten.wlStadtIdx ?? null;
+  modus = MODI[daten.wlModus] ? daten.wlModus : "welt";
 
   const neueRunde = daten.wlRundeIndex ?? 0;
   const neuFrageSeit = daten.wlFrageSeit ?? 0;
@@ -672,8 +705,14 @@ function alleVerstecken() {
 
 function zeigeSetup() {
   const feld = $("wl-anzahl");
-  const max = Math.min(MAX_ANZAHL, STAEDTE.length);
+  const max = Math.min(MAX_ANZAHL, ortsListe().length);
   feld.max = max;
+  $("wl-modus").querySelectorAll("button").forEach((b) => {
+    b.classList.toggle("aktiv", b.dataset.modus === modus);
+    b.disabled = !api.istLeiter || Boolean(api.olympiadeAnzahl);
+  });
+  $("wl-modus-info").textContent = `${ortsListe().length} ${modus === "sehens" ? "Sehenswürdigkeiten" : "Städte"} im Katalog` +
+    (modus === "welt" ? " (ohne deutsche Städte)." : modus === "de" ? " in Deutschland." : " weltweit.");
   if (api.olympiadeAnzahl) {
     const n = Math.min(Math.max(1, api.olympiadeAnzahl), max);
     feld.value = String(n);
@@ -681,11 +720,11 @@ function zeigeSetup() {
     feld.disabled = true;
   } else if (api.istLeiter) {
     if (!feld.value) feld.value = String(STANDARD_ANZAHL);
-    $("wl-anzahl-max").textContent = `Bis zu ${max} Runden, jede mit einer neuen Stadt.`;
+    $("wl-anzahl-max").textContent = `Bis zu ${max} Runden, jeweils mit einem neuen Ort.`;
     feld.disabled = false;
   } else {
     feld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
-    $("wl-anzahl-max").textContent = `Bis zu ${max} Runden, jede mit einer neuen Stadt.`;
+    $("wl-anzahl-max").textContent = `Bis zu ${max} Runden, jeweils mit einem neuen Ort.`;
     feld.disabled = true;
   }
   $("wl-anzahl-zeile").hidden = false;
@@ -706,7 +745,7 @@ async function spielStarten() {
     return;
   }
   if (!welt) { $("wl-setup-fehler").textContent = ladeFehler || "Die Weltkarte ist nicht verfügbar."; return; }
-  const max = Math.min(MAX_ANZAHL, STAEDTE.length);
+  const max = Math.min(MAX_ANZAHL, ortsListe().length);
   let anzahl = parseInt($("wl-anzahl").value, 10);
   if (!Number.isFinite(anzahl) || anzahl < 1) anzahl = 1;
   if (anzahl > max) anzahl = max;
@@ -715,7 +754,7 @@ async function spielStarten() {
   try {
     await raeumeAuf();
     await updateDoc(api.raumRef(), {
-      wlStatus: "frage", wlRundeIndex: 0, wlAnzahlRunden: anzahl,
+      wlStatus: "frage", wlModus: modus, wlRundeIndex: 0, wlAnzahlRunden: anzahl,
       wlVerwendet: [idx], wlStadtIdx: idx, wlFrageSeit: Date.now(), wlErgebnisSeit: 0
     });
   } catch (e) {
@@ -735,7 +774,7 @@ export async function vorZurueck() {
   try {
     await raeumeAuf();
     await updateDoc(api.raumRef(), {
-      wlStatus: null, wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
+      wlStatus: null, wlModus: "welt", wlRundeIndex: 0, wlAnzahlRunden: 0, wlAnzahlEntwurf: 0,
       wlVerwendet: [], wlStadtIdx: null, wlFrageSeit: 0, wlErgebnisSeit: 0
     });
     await api.zurueckZurAuswahl();

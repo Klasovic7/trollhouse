@@ -3416,3 +3416,17 @@ body.tt-aktiv #spiel-kopf-titel { display: none; }
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 .wl-zoomknoepfe button:hover { background: #fff; }
+
+.wl-modus-block { margin: 14px 0 6px; }
+.wl-modus-titel { display: block; font-weight: 700; margin-bottom: 8px; }
+.wl-modus { display: flex; flex-direction: column; gap: 8px; }
+.wl-modus button {
+  margin: 0; width: 100%; text-align: left; padding: 12px 14px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07); color: inherit;
+  border: 2px solid rgba(255, 255, 255, 0.14); font-weight: 600;
+}
+.wl-modus button:hover { background: rgba(255, 255, 255, 0.12); }
+.wl-modus button.aktiv { border-color: var(--akzent); background: rgba(255, 91, 54, 0.2); }
+.wl-modus button:disabled { opacity: 1; cursor: default; }
+.wl-modus button:disabled:not(.aktiv) { opacity: 0.45; }
+.wl-modus-block .hinweis-text { margin-top: 10px; }
