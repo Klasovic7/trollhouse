@@ -1,0 +1,29 @@
+
+/* ======================================================================
+   Passgenau - Einstellungen, Zeitleiste, Spielfeld (Canvas)
+   ====================================================================== */
+.pg-mitte { text-align: center; }
+.pg-vorb-text { font-size: 1.15rem; margin: 0 0 6px; }
+.pg-opt-block { margin: 14px 0 6px; }
+.pg-opt-titel { display: block; font-weight: 700; margin-bottom: 8px; }
+.pg-opt { display: flex; gap: 8px; flex-wrap: wrap; }
+.pg-opt button {
+  margin: 0; flex: 1; min-width: 64px; padding: 10px 8px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07); color: inherit;
+  border: 2px solid rgba(255, 255, 255, 0.14); font-weight: 600;
+}
+.pg-opt button.aktiv { border-color: var(--akzent); background: rgba(124, 58, 237, 0.25); }
+.pg-kopf { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pg-zeit-text { font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.pg-kopf-btns { display: flex; gap: 6px; }
+.pg-mini { margin: 0; padding: 7px 10px; font-size: 0.85rem; border-radius: 10px; }
+.pg-zeitbalken { height: 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.18); overflow: hidden; margin-bottom: 10px; }
+.pg-zeitbalken > div { height: 100%; width: 100%; background: #22c55e; transition: width 0.15s linear; }
+.pg-zeitbalken > div.knapp { background: #ef4444; }
+.pg-canvas-wrap { position: relative; width: 100%; }
+.pg-canvas-wrap canvas { display: block; width: 100%; border-radius: 12px; background: rgba(0, 0, 0, 0.18); touch-action: none; }
+.pg-fertig-overlay {
+  position: absolute; left: 8px; right: 8px; bottom: 14px; padding: 10px; text-align: center;
+  font-weight: 800; border-radius: 12px; background: rgba(22, 163, 74, 0.93); color: #fff; pointer-events: none;
+}
+.pg-hinweis { text-align: center; margin-top: 8px; }
