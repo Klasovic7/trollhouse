@@ -2,13 +2,13 @@
 import { updateDoc } from "./firebase.js";
 
 export const FARBEN = [
-  { name: "Schwarz",  hex: "#222222" },
+  { name: "Gelb",     hex: "#f5c518" },
+  { name: "Türkis",   hex: "#22d3ee" },
   { name: "Hellgrau", hex: "#c7cdd3" },
   { name: "Braun",    hex: "#8a5a34" },
   { name: "Blau",     hex: "#2563eb" },
   { name: "Rot",      hex: "#e53e3e" },
   { name: "Orange",   hex: "#f97316" },
-  { name: "Gelb",     hex: "#f5c518" },
   { name: "Grün",     hex: "#16a34a" },
   { name: "Pink",     hex: "#ec4899" },
   { name: "Lila",     hex: "#9333ea" }
