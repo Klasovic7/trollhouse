@@ -54,6 +54,12 @@ async function ladeWelt() {
       deGrenzen,
       land: D3.feature(topo, topo.objects.land),
       grenzen: D3.mesh(topo, topo.objects.countries, (a, b) => a !== b),
+      // Für den Deutschland-Modus: Karte ohne Deutschland (das kommt dann aus den
+      // genaueren Bundesland-Daten), damit keine zweite, ungenauere Grenze danebenliegt
+      landOhneDe: { type: "FeatureCollection", features: D3.feature(topo, topo.objects.countries).features.filter((f) => f.id !== "276") },
+      landDe: D3.feature(topo, topo.objects.countries).features.find((f) => f.id === "276"),
+      grenzenOhneDe: D3.mesh(topo, topo.objects.countries, (a, b) => a !== b && a.id !== "276" && b.id !== "276"),
+      kuesteOhneDe: D3.mesh(topo, topo.objects.countries, (a, b) => a === b && a.id !== "276"),
       gitter: D3.geoGraticule10()
     };
   } catch (e) {
@@ -388,19 +394,29 @@ class Globus {
     ctx.beginPath(); this.pfad(welt.gitter);
     ctx.strokeStyle = "rgba(255,255,255,0.16)"; ctx.lineWidth = 0.6; ctx.stroke();
 
-    // Land
-    ctx.beginPath(); this.pfad(welt.land);
-    ctx.fillStyle = "#dfe8c6"; ctx.fill();
-    ctx.strokeStyle = "#5c7a4a"; ctx.lineWidth = 0.7; ctx.stroke();
+    const deModus = this.bundeslaender && welt.deGrenzen;
+    if (!deModus) {
+      // Land
+      ctx.beginPath(); this.pfad(welt.land);
+      ctx.fillStyle = "#dfe8c6"; ctx.fill();
+      ctx.strokeStyle = "#5c7a4a"; ctx.lineWidth = 0.7; ctx.stroke();
 
-    // Ländergrenzen
-    ctx.beginPath(); this.pfad(welt.grenzen);
-    ctx.strokeStyle = "rgba(90,70,110,0.6)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
+      // Ländergrenzen
+      ctx.beginPath(); this.pfad(welt.grenzen);
+      ctx.strokeStyle = "rgba(90,70,110,0.6)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
+    } else {
+      // Deutschland-Modus: Nachbarländer wie gehabt, Deutschland selbst aus den genaueren
+      // Bundesland-Daten (lila). Keine graue Weltkarten-Linie um Deutschland herum.
+      ctx.beginPath(); this.pfad(welt.landOhneDe);
+      ctx.fillStyle = "#dfe8c6"; ctx.fill();
+      ctx.strokeStyle = "#dfe8c6"; ctx.lineWidth = 1; ctx.stroke(); // Nähte zwischen den Ländern schließen
+      ctx.beginPath(); this.pfad(welt.landDe);
+      ctx.fill(); ctx.stroke(); // Hintergrund, damit zwischen Deutschland und den Nachbarn keine Lücke bleibt
+      ctx.beginPath(); this.pfad(welt.kuesteOhneDe);
+      ctx.strokeStyle = "#5c7a4a"; ctx.lineWidth = 0.7; ctx.stroke();
+      ctx.beginPath(); this.pfad(welt.grenzenOhneDe);
+      ctx.strokeStyle = "rgba(90,70,110,0.6)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
 
-    // Bundeslandgrenzen (nur wenn Deutschland im Spiel ist)
-    if (this.bundeslaender && welt.deGrenzen) {
-      // Deutschland aus den detaillierten Bundesland-Daten übermalen, damit Küste und
-      // Grenzen exakt zu den lila Linien passen
       ctx.beginPath(); this.pfad(welt.deGrenzen.land);
       ctx.fillStyle = "#dfe8c6"; ctx.fill();
       ctx.beginPath(); this.pfad(welt.deGrenzen.grenzen);
