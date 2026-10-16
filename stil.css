@@ -3482,3 +3482,6 @@ body.tt-aktiv #spiel-kopf-titel { display: none; }
 .spiel-kopf-icon img.spiel-kopf-bild { width: auto; height: 62px; max-width: 76px; border-radius: 0; object-fit: contain; }
 @media (max-width: 420px) { .spiel-kopf-icon img.spiel-kopf-bild { height: 54px; max-width: 66px; } }
 .pg-fertig-overlay.pg-zeit-aus { background: rgba(185, 28, 28, 0.93); }
+
+/* Doppelkopf: gemalte Karten */
+img.dk-karte-bild { -webkit-user-drag: none; user-select: none; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }

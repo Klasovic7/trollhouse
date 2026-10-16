@@ -154,11 +154,23 @@ function index(rang, farbe) {
   return one + `<g transform="rotate(180 50 75)">${one}</g>`;
 }
 
+// Gemalte Karten (webp). Alle anderen Karten bleiben vorerst SVG.
+const BILD_KARTEN = {
+  C9: "kreuz-9", CT: "kreuz-10", CJ: "kreuz-bube", CQ: "kreuz-dame", CK: "kreuz-koenig", CA: "kreuz-ass",
+};
+export const KARTEN_BILDER = Object.values(BILD_KARTEN).map((n) => `bilder/doppelkopf/${n}.webp`);
+
 const cache = new Map();
 /** Karten-ID wie "HT0" -> SVG-Text (Seitenverhältnis 2:3) */
 export function kartenSvg(id) {
   const farbe = id[0], rang = id[1];
   if (cache.has(id)) return cache.get(id);
+  const bild = BILD_KARTEN[farbe + rang];
+  if (bild) {
+    const html = `<img class="dk-karte-svg dk-karte-bild" src="bilder/doppelkopf/${bild}.webp?v=318" alt="${farbe}${rang}" draggable="false">`;
+    cache.set(id, html);
+    return html;
+  }
   let mitte = "";
   if (rang === "A") mitte = pip(farbe, 50, 75, 2.300);
   else if (rang === "9" || rang === "T") {
