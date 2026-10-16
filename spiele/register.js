@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "311";
+const SPIEL_VERSION = "312";
 
 export const SPIELE = [
   {
@@ -190,6 +190,15 @@ export const SPIELE = [
     minSpieler: 1,
     mitBots: true,
     laden: () => import(`./doppelkopf/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "passgenau",
+    name: "Passgenau",
+    emoji: "🧩",
+    farbe: "#f59e0b",
+    beschreibung: "Legt alle Teile passgenau ins Feld - wer zuerst fertig ist, gewinnt",
+    minSpieler: 2,
+    laden: () => import(`./passgenau/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "finto",
