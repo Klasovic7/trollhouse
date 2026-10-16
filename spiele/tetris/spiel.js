@@ -46,6 +46,15 @@ const VORLAGE = `
       <span>Müllzeilen an alle anderen</span>
       <span class="gv-modus-gruppe" id="tt-opt-muell"></span>
     </div>
+    <div class="gv-modus-zeile">
+      <span>Bots</span>
+      <span class="gv-modus-gruppe" id="tt-opt-bots"></span>
+    </div>
+    <div class="gv-modus-zeile" id="tt-zeile-staerke">
+      <span>Bot-Stärke</span>
+      <span class="gv-modus-gruppe" id="tt-opt-staerke"></span>
+    </div>
+    <p class="hinweis-text" id="tt-bot-hinweis"></p>
     <p class="hinweis-text">Steuerung: Tasten unten oder auf dem Spielfeld wischen (links/rechts bewegen, tippen = drehen, nach unten wischen = fallen lassen).</p>
     <p id="tt-setup-fehler" class="fehler-text"></p>
     <p><button id="tt-starten" class="btn-primaer" hidden>Spiel starten</button></p>
@@ -108,9 +117,37 @@ let rafId = null;
 let leiterTimer = null;
 let beendeBusy = false;
 let tasten = null;
+let botsAnz = 0;               // Anzahl Bots (aus dem Raum-Dokument)
+let staerke = "mittel";
+let bots = {};                 // nur auf dem Geraet des Spielleiters: botId -> { g, naechster }
+let botTimer = null;
+const BOT_NAMEN = ["Niklas", "Luca", "Nader", "Sinan", "Kevin"];
+const BOT_IDS = ["bot1", "bot2", "bot3"];
+const BOT_FARBEN = ["#94a3b8", "#f472b6", "#fb923c"];
+const MAX_SPIELER = 6;
+const isBot = (id) => typeof id === "string" && id.startsWith("bot");
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
-const spielerVon = (id) => spielerListe.find((s) => s.id === id);
+// Bot-Namen: zufaellig aus den Freunden, nie ein Name, den ein Mensch im Raum hat (auf allen Geraeten gleich)
+let botNamenCache = { key: "", map: {} };
+function botNamen() {
+  const menschen = spielerListe.map((x) => String(x.name ?? "").trim().toLowerCase().split(/\s+/)[0]);
+  const key = spielerListe.map((x) => x.id + ":" + x.name).sort().join("|");
+  if (botNamenCache.key === key) return botNamenCache.map;
+  const pool = BOT_NAMEN.filter((n) => !menschen.includes(n.toLowerCase()));
+  let h = 2166136261;
+  for (const c of key) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const zufall = () => { h = Math.imul(h ^ (h >>> 15), 2246822507) + 1013904223 | 0; return ((h >>> 0) % 100000) / 100000; };
+  const mix = pool.slice();
+  for (let i = mix.length - 1; i > 0; i--) { const j = Math.floor(zufall() * (i + 1)); [mix[i], mix[j]] = [mix[j], mix[i]]; }
+  const map = {};
+  BOT_IDS.forEach((b, i) => { map[b] = mix[i] ?? ("Bot " + (i + 1)); });
+  botNamenCache = { key, map };
+  return map;
+}
+const spielerVon = (id) => (isBot(id)
+  ? { id, name: botNamen()[id] ?? "Bot", farbe: BOT_FARBEN[BOT_IDS.indexOf(id)] ?? "#94a3b8", icon: "🤖" }
+  : spielerListe.find((s) => s.id === id));
 const name = (id) => spielerVon(id)?.name ?? "?";
 const dok = (id) => (docs[id] && docs[id].spiel === nr ? docs[id] : undefined);
 const docRef = (id) => doc(api.db, "raeume", api.code, "ttSpieler", id);
@@ -158,13 +195,13 @@ function frei(m, x, y) {
   return true;
 }
 
-function neuesSpiel() {
+function erzeugeG(id, bot) {
   const rnd = zufallsgenerator(seed);
-  const folge = [];
-  const holeRnd = zufallsgenerator((seed ^ 0x9E3779B9) + (api.spielerId.length * 7919));
-  G = {
+  const holeRnd = zufallsgenerator((seed ^ 0x9E3779B9) + id.length * 7919 + (bot ? id.charCodeAt(id.length - 1) * 131 : 0));
+  const g = {
+    id, bot,
     brett: Array.from({ length: HOEHE }, () => Array(BREITE).fill(0)),
-    rnd, folge, holeRnd, folgeIdx: 0,
+    rnd, folge: [], holeRnd, folgeIdx: 0,
     cur: null,
     punkte: 0, zeilen: 0, level: 0, combo: -1,
     lebt: true, phase: "countdown", start: performance.now(), spielStart: performance.now(),
@@ -173,8 +210,16 @@ function neuesSpiel() {
     letzterSchreib: 0, letzterPuls: 0, schreibtGerade: false, schmutzig: true,
     tod: 0
   };
+  const alt = G;
+  G = g;
   nachfuellen();
-  G.cur = stein(naechster());
+  g.cur = stein(naechster());
+  G = alt;
+  return g;
+}
+
+function neuesSpiel() {
+  G = erzeugeG(api.spielerId, false);
   Object.values(docs).forEach((d) => verarbeiteDoc(d));
 }
 
@@ -313,41 +358,42 @@ function sterbe() {
   G.tod = Date.now();
   G.schmutzig = true;
   schreibe(true);
-  zeigeOverlay(`<b>Ausgeschieden</b><span>${G.punkte} Punkte · ${G.zeilen} Zeilen</span><small>Du schaust den anderen zu …</small>`);
+  if (!G.bot) zeigeOverlay(`<b>Ausgeschieden</b><span>${G.punkte} Punkte · ${G.zeilen} Zeilen</span><small>Du schaust den anderen zu …</small>`);
 }
 
 // ---- Firebase ----------------------------------------------------------------
-function feldString() {
-  return G.brett.map((z) => z.join("")).join("");
-}
-
 async function schreibe(sofort = false) {
-  if (!G || !api) return;
+  const g = G;
+  if (!g || !api) return;
   const jetzt = Date.now();
-  if (!sofort && jetzt - G.letzterSchreib < SCHREIB_MS) return;
-  if (G.schreibtGerade) { G.schmutzig = true; return; }
-  if (jetzt - G.letzterSchreib < 250 && !G.tod) { G.schmutzig = true; return; }
-  G.letzterSchreib = jetzt;
-  G.letzterPuls = jetzt;
-  G.schmutzig = false;
-  G.schreibtGerade = true;
+  if (!sofort && jetzt - g.letzterSchreib < SCHREIB_MS) return;
+  if (g.schreibtGerade) { g.schmutzig = true; return; }
+  if (jetzt - g.letzterSchreib < 250 && !g.tod) { g.schmutzig = true; return; }
+  g.letzterSchreib = jetzt;
+  g.letzterPuls = jetzt;
+  g.schmutzig = false;
+  g.schreibtGerade = true;
   try {
-    await setDoc(docRef(api.spielerId), {
-      spielerId: api.spielerId, spiel: nr, punkte: G.punkte, zeilen: G.zeilen, lebt: G.lebt, tod: G.tod,
-      gesendet: G.gesendet, pending: G.pending, feld: feldString()
+    await setDoc(docRef(g.id), {
+      spielerId: g.id, spiel: nr, punkte: g.punkte, zeilen: g.zeilen, lebt: g.lebt, tod: g.tod,
+      gesendet: g.gesendet, pending: g.pending, feld: g.brett.map((z) => z.join("")).join(""), bot: g.bot
     });
   } catch (e) { zeigeDebug("Tetris: " + e.message); }
-  if (G) G.schreibtGerade = false;
+  g.schreibtGerade = false;
 }
 
 function verarbeiteDoc(d) {
-  if (!G || !d || d.spielerId === api.spielerId || d.spiel !== nr) return;
-  const gesehen = G.gesehen[d.spielerId] ?? 0;
-  const delta = (d.gesendet ?? 0) - gesehen;
-  if (delta > 0) {
-    G.gesehen[d.spielerId] = d.gesendet;
-    if (muellAn && G.lebt) { G.pending += delta; G.schmutzig = true; }
-  }
+  if (!d || d.spiel !== nr) return;
+  const sims = [G, ...Object.values(bots).map((b) => b.g)];
+  sims.forEach((g) => {
+    if (!g || d.spielerId === g.id) return;
+    const gesehen = g.gesehen[d.spielerId] ?? 0;
+    const delta = (d.gesendet ?? 0) - gesehen;
+    if (delta > 0) {
+      g.gesehen[d.spielerId] = d.gesendet;
+      if (muellAn && g.lebt) { g.pending += delta; g.schmutzig = true; }
+    }
+  });
 }
 
 function starteDocsListener() {
@@ -380,11 +426,17 @@ export async function starten(uebergebeneApi) {
   leiterTimer = setInterval(leiterTick, 1000);
 }
 
+function stoppeBots() {
+  if (botTimer) { clearInterval(botTimer); botTimer = null; }
+  bots = {};
+}
+
 export function beenden() {
   document.body.classList.remove("tt-aktiv");
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
   if (docsUnsub) { docsUnsub(); docsUnsub = null; }
   if (leiterTimer) { clearInterval(leiterTimer); leiterTimer = null; }
+  stoppeBots();
   if (tasten) { tasten(); tasten = null; }
   bereitSystem = null;
   G = null; docs = {}; zuletzt = {}; status = null; gestartetNr = -1; ids = []; rang = null; nr = 0;
@@ -405,6 +457,8 @@ export function raumDaten(daten) {
   seed = daten.ttSeed ?? 0;
   ids = daten.ttIds ?? [];
   muellAn = daten.ttMuell !== false;
+  botsAnz = daten.ttBots ?? null;
+  staerke = daten.ttStaerke ?? "mittel";
   nr = daten.ttNr ?? 0;
   rang = daten.ttRang ?? null;
   if (status === "laeuft" && (gestartetNr !== nr || alterStatus !== "laeuft") && ids.includes(api.spielerId)) {
@@ -413,8 +467,11 @@ export function raumDaten(daten) {
     zuletzt = {};
     ids.forEach((id) => { zuletzt[id] = Date.now(); });
     startLoop();
+    stoppeBots();
+    if (api.istLeiter) starteBots();
   }
   if (status !== "laeuft" && rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  if (status !== "laeuft") stoppeBots();
   if (status !== alterStatus || nr !== alteNr) beendeBusy = false;
   zeichne();
 }
@@ -451,9 +508,35 @@ function zeigeSetup() {
     if (!api.istLeiter) return;
     updateDoc(api.raumRef(), { ttMuell: b.dataset.v === "true" }).catch(() => {});
   }));
+  const nb = botAnzahl();
+  const maxBots = Math.min(3, MAX_SPIELER - spielerListe.length);
+  const bg = $("tt-opt-bots");
+  bg.innerHTML = Array.from({ length: maxBots + 1 }, (_, n) =>
+    `<button type="button" class="gv-modus-btn${nb === n ? " aktiv" : ""}" data-b="${n}"${api.istLeiter ? "" : " disabled"}>${n}</button>`).join("");
+  bg.querySelectorAll("[data-b]").forEach((b) => b.addEventListener("click", () => {
+    if (!api.istLeiter) return;
+    updateDoc(api.raumRef(), { ttBots: Number(b.dataset.b) }).catch(() => {});
+  }));
+  const sg = $("tt-opt-staerke");
+  sg.innerHTML = [["leicht", "Leicht"], ["mittel", "Mittel"], ["schwer", "Schwer"]].map(([v, t]) =>
+    `<button type="button" class="gv-modus-btn${staerke === v ? " aktiv" : ""}" data-s="${v}"${api.istLeiter ? "" : " disabled"}>${t}</button>`).join("");
+  sg.querySelectorAll("[data-s]").forEach((b) => b.addEventListener("click", () => {
+    if (!api.istLeiter) return;
+    updateDoc(api.raumRef(), { ttStaerke: b.dataset.s }).catch(() => {});
+  }));
+  $("tt-zeile-staerke").hidden = nb === 0;
+  $("tt-bot-hinweis").textContent = nb > 0
+    ? `Mit dabei: ${BOT_IDS.slice(0, nb).map((b) => spielerVon(b).name).join(", ")}. Die Bots laufen auf dem Handy des Spielleiters - bleib im Spiel, solange gespielt wird.`
+    : "";
   $("tt-starten").hidden = !api.istLeiter;
   $("tt-setup-warten").hidden = api.istLeiter;
   bereitSystem?.render();
+}
+
+function botAnzahl() {
+  const menschen = spielerListe.length;
+  const wunsch = botsAnz ?? (menschen === 1 ? 1 : 0);
+  return Math.max(0, Math.min(wunsch, 3, MAX_SPIELER - menschen));
 }
 
 async function spielStarten() {
@@ -463,9 +546,9 @@ async function spielStarten() {
   try {
     const snap = await getDocs(collection(api.db, "raeume", api.code, "ttSpieler"));
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-    const teilnehmer = spielerListe.map((s) => s.id);
+    const teilnehmer = [...spielerListe.map((s) => s.id), ...BOT_IDS.slice(0, botAnzahl())];
     const batch = writeBatch(api.db);
-    teilnehmer.forEach((id) => batch.update(api.spielerRef(id), { punkte: 0 }));
+    teilnehmer.filter((id) => !isBot(id)).forEach((id) => batch.update(api.spielerRef(id), { punkte: 0 }));
     batch.update(api.raumRef(), {
       ttStatus: "laeuft", ttIds: teilnehmer, ttSeed: Math.floor(Math.random() * 4294967296),
       ttNr: nr + 1, ttRang: null
@@ -500,7 +583,9 @@ async function leiterTick() {
     }
   }
   const lebende = ids.filter((id) => (dok(id) ? dok(id).lebt !== false : true));
-  const vorbei = ids.length >= 2 ? lebende.length <= 1 : lebende.length === 0;
+  const menschenLeben = lebende.some((id) => !isBot(id));
+  const hatMenschen = ids.some((id) => !isBot(id));
+  const vorbei = ids.length >= 2 ? (lebende.length <= 1 || (hatMenschen && !menschenLeben)) : lebende.length === 0;
   if (!vorbei) return;
   beendeBusy = true;
   const reihe = ids.map((id) => ({ id, d: dok(id) ?? {} })).sort((a, b) => {
@@ -513,10 +598,10 @@ async function leiterTick() {
   try {
     const n = ids.length;
     const batch = writeBatch(api.db);
-    ergebnis.forEach((e) => batch.update(api.spielerRef(e.id), { punkte: n - e.platz + 1 }));
+    ergebnis.filter((e) => !isBot(e.id)).forEach((e) => batch.update(api.spielerRef(e.id), { punkte: n - e.platz + 1 }));
     batch.update(api.raumRef(), { ttStatus: "beendet", ttRang: ergebnis });
     await batch.commit();
-    if (n >= 2) speichereWertung(api, "tetris", Object.fromEntries(ergebnis.map((e) => [e.id, n - e.platz + 1])));
+    if (n >= 2) speichereWertung(api, "tetris", Object.fromEntries(ergebnis.filter((e) => !isBot(e.id)).map((e) => [e.id, n - e.platz + 1])));
   } catch (e) {
     beendeBusy = false;
     zeigeDebug("Tetris: " + e.message);
@@ -712,6 +797,97 @@ function startLoop() {
     rafId = requestAnimationFrame(schritt);
   };
   rafId = requestAnimationFrame(schritt);
+}
+
+// ---- Bots (laufen auf dem Geraet des Spielleiters) -----------------------------
+const BOT_TEMPO = { leicht: 1300, mittel: 850, schwer: 520 };
+const BOT_FEHLER = { leicht: 0.3, mittel: 0.1, schwer: 0 };
+
+function mitG(g, fn) {
+  const alt = G;
+  G = g;
+  try { return fn(); } finally { G = alt; }
+}
+
+function starteBots() {
+  stoppeBots();
+  ids.filter(isBot).forEach((id) => {
+    const g = erzeugeG(id, true);
+    bots[id] = { g, naechster: performance.now() + 3000 + Math.random() * 600 };
+  });
+  Object.values(docs).forEach((d) => verarbeiteDoc(d));
+  if (Object.keys(bots).length) botTimer = setInterval(botSchritt, 100);
+}
+
+function botSchritt() {
+  if (status !== "laeuft") return;
+  const jetzt = performance.now();
+  Object.values(bots).forEach((b) => {
+    const g = b.g;
+    if (!g.lebt) { if (g.schmutzig) mitG(g, () => schreibe(true)); return; }
+    if (g.phase === "countdown") {
+      if (jetzt - g.start >= 3000) { g.phase = "spiel"; g.spielStart = jetzt; }
+      return;
+    }
+    if (jetzt >= b.naechster) {
+      mitG(g, botZug);
+      const basis = BOT_TEMPO[staerke] ?? BOT_TEMPO.mittel;
+      b.naechster = jetzt + Math.max(220, basis * Math.pow(0.93, g.level)) * (0.8 + Math.random() * 0.4);
+    }
+    if (g.lebt && (g.schmutzig || Date.now() - g.letzterPuls > PULS_MS)) mitG(g, () => schreibe(Date.now() - g.letzterPuls > PULS_MS));
+  });
+}
+
+// Bewertung eines Brettes nach dem Ablegen (je hoeher, desto besser)
+function botBewerte(brett, zeilen) {
+  const hoehen = Array(BREITE).fill(0);
+  let loecher = 0;
+  for (let c = 0; c < BREITE; c++) {
+    let gefunden = false;
+    for (let r = 0; r < HOEHE; r++) {
+      if (brett[r][c]) { if (!gefunden) { hoehen[c] = HOEHE - r; gefunden = true; } } else if (gefunden) loecher++;
+    }
+  }
+  const summe = hoehen.reduce((a, b) => a + b, 0);
+  let rau = 0;
+  for (let c = 0; c < BREITE - 1; c++) rau += Math.abs(hoehen[c] - hoehen[c + 1]);
+  const max = Math.max(...hoehen);
+  return -0.51 * summe + 0.76 * zeilen - 0.36 * loecher * 1.6 - 0.18 * rau - (max > 14 ? (max - 14) * 1.5 : 0);
+}
+
+function botZug() {
+  if (!G.lebt) return;
+  const t = G.cur.t;
+  const kandidaten = [];
+  let m = FORMEN[t].map((z) => [...z]);
+  const drehungen = t === 2 ? 1 : 4;
+  for (let rot = 0; rot < drehungen; rot++) {
+    for (let x = -2; x < BREITE; x++) {
+      if (!frei(m, x, -3)) continue;
+      let y = -3;
+      while (frei(m, x, y + 1)) y++;
+      // Brett-Kopie mit dem Stein
+      const b = G.brett.map((z) => [...z]);
+      let drueber = false;
+      for (let r = 0; r < m.length; r++) for (let c = 0; c < m[r].length; c++) {
+        if (!m[r][c]) continue;
+        if (y + r < 0) { drueber = true; continue; }
+        b[y + r][x + c] = t;
+      }
+      let zeilen = 0;
+      for (let r = HOEHE - 1; r >= 0; r--) {
+        if (b[r].every(Boolean)) { b.splice(r, 1); b.unshift(Array(BREITE).fill(0)); zeilen++; r++; }
+      }
+      kandidaten.push({ m, x, y, wert: botBewerte(b, zeilen) - (drueber ? 100 : 0) });
+    }
+    m = drehe(m);
+  }
+  if (!kandidaten.length) { sterbe(); return; }
+  kandidaten.sort((a, b) => b.wert - a.wert);
+  let wahl = kandidaten[0];
+  if (Math.random() < (BOT_FEHLER[staerke] ?? 0.1)) wahl = kandidaten[Math.min(kandidaten.length - 1, 1 + Math.floor(Math.random() * 3))];
+  G.cur = { t, m: wahl.m, x: wahl.x, y: wahl.y };
+  setzeStein();
 }
 
 // ---- Steuerung ----------------------------------------------------------------

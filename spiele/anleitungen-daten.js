@@ -472,7 +472,7 @@ export const ANLEITUNGEN = {
     },
     {
       t: "Ausscheiden und Gewinnen",
-      x: ["Stößt dein Stapel oben an, **scheidest du aus** und schaust den anderen zu. **Gewonnen** hat, wer als **Letzter** übrig bleibt. Mit der Zeit wird das Spiel immer **schneller**.", "Der Letzte bekommt **1 Punkt**, jeder bessere Platz einen mehr. Allein kannst du auf Punkte und Zeilen spielen."],
+      x: ["Stößt dein Stapel oben an, **scheidest du aus** und schaust den anderen zu. **Gewonnen** hat, wer als **Letzter** übrig bleibt. Mit der Zeit wird das Spiel immer **schneller**.", "Der Letzte bekommt **1 Punkt**, jeder bessere Platz einen mehr. Auch allein kannst du spielen: Im Setup nimmst du **1 bis 3 Bots** dazu und stellst ihre **Stärke** ein (Leicht, Mittel, Schwer). Die Bots laufen auf dem Handy des Spielleiters."],
       s: () => rang(70, 22, [["Du", "3 P.", 0], ["Mia", "2 P.", 1], ["Tom", "1 P.", 2]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Letzter Spieler gewinnt", 11, "#fde68a", 700)
     }
   ],

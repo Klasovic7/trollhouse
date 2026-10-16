@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "299";
+const SPIEL_VERSION = "300";
 
 export const SPIELE = [
   {
@@ -179,8 +179,9 @@ export const SPIELE = [
     name: "Tetris-Duell",
     emoji: "🧱",
     farbe: "#06b6d4",
-    beschreibung: "Alle spielen gleichzeitig Tetris - Müllzeilen gehen an alle anderen",
+    beschreibung: "Alle spielen gleichzeitig Tetris - mit Müllzeilen, auch gegen Bots",
     minSpieler: 1,
+    mitBots: true,
     laden: () => import(`./tetris/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
