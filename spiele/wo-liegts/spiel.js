@@ -57,7 +57,6 @@ async function ladeWelt() {
       // Für den Deutschland-Modus: Karte ohne Deutschland (das kommt dann aus den
       // genaueren Bundesland-Daten), damit keine zweite, ungenauere Grenze danebenliegt
       landOhneDe: { type: "FeatureCollection", features: D3.feature(topo, topo.objects.countries).features.filter((f) => f.id !== "276") },
-      landDe: D3.feature(topo, topo.objects.countries).features.find((f) => f.id === "276"),
       grenzenOhneDe: D3.mesh(topo, topo.objects.countries, (a, b) => a !== b && a.id !== "276" && b.id !== "276"),
       kuesteOhneDe: D3.mesh(topo, topo.objects.countries, (a, b) => a === b && a.id !== "276"),
       gitter: D3.geoGraticule10()
@@ -410,8 +409,10 @@ class Globus {
       ctx.beginPath(); this.pfad(welt.landOhneDe);
       ctx.fillStyle = "#dfe8c6"; ctx.fill();
       ctx.strokeStyle = "#dfe8c6"; ctx.lineWidth = 1; ctx.stroke(); // Nähte zwischen den Ländern schließen
-      ctx.beginPath(); this.pfad(welt.landDe);
-      ctx.fill(); ctx.stroke(); // Hintergrund, damit zwischen Deutschland und den Nachbarn keine Lücke bleibt
+      if (welt.deGrenzen.luecken) { // schmale Lücken zwischen den genaueren deutschen und den gröberen Nachbar-Daten
+        ctx.beginPath(); this.pfad(welt.deGrenzen.luecken);
+        ctx.fill(); ctx.stroke();
+      } // Hintergrund, damit zwischen Deutschland und den Nachbarn keine Lücke bleibt
       ctx.beginPath(); this.pfad(welt.kuesteOhneDe);
       ctx.strokeStyle = "#5c7a4a"; ctx.lineWidth = 0.7; ctx.stroke();
       ctx.beginPath(); this.pfad(welt.grenzenOhneDe);
