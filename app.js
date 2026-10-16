@@ -13,9 +13,9 @@ import {
 // WICHTIG: bei jedem Versionssprung hier UND in spiele/register.js
 // (SPIEL_VERSION) mit hochzaehlen, sonst bekommen manche Geraete
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
-import { SPIELE, spielInfo } from "./spiele/register.js?v=313";
+import { SPIELE, spielInfo } from "./spiele/register.js?v=314";
 
-export const APP_VERSION = "v313";
+export const APP_VERSION = "v314";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -1140,7 +1140,9 @@ function aktualisiereRaumNavigation(spielId) {
   // das aktive Spiel setzt den Text direkt danach über api.fortschritt() wieder.
   spielKopfFortschritt.hidden = true;
   spielKopfFortschritt.textContent = "";
-  if (info?.emoji) {
+  if (info?.bild) {
+    spielKopfIcon.innerHTML = `<img class="spiel-kopf-bild" src="${info.bild}" alt="">`;
+  } else if (info?.emoji) {
     spielKopfIcon.textContent = info.emoji;
   } else {
     spielKopfIcon.innerHTML = '<span class="spiel-logo-badge"><img src="bilder/logo-fuchs-transparent.png" alt=""></span>';

@@ -68,7 +68,6 @@ const EMOJI_POOL = [...EMOJI_TEXTE, ...EMOJI_BILDER.map((b) => b.pfad)];
 
 const VORLAGE = `
   <div id="md-setup" class="bildschirm-karte" hidden>
-    <h1>🧩 Merk's dir!</h1>
     <p class="hinweis-text">Merkt euch die Reihenfolge von 20 Emojis. Danach tippt ihr Stelle für Stelle
       das Emoji an, das dort war - wer daneben tippt, scheidet aus. Wer am längsten dabei bleibt, gewinnt
       und bekommt einen Extrapunkt.</p>

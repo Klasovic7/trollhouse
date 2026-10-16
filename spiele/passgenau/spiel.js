@@ -4,7 +4,7 @@
 //  Alle bekommen dasselbe Feld und dieselben Teile (je nach Einstellung 3-5).
 //  Die Teile müssen so aufs Feld gelegt werden, dass sie es genau ausfüllen -
 //  alle Teile liegen innerhalb, keines überlappt. Teile lassen sich drehen
-//  (Tipp aufs Teil oder Button) und spiegeln. Wer zuerst fertig ist, bekommt
+//  (Tipp aufs Teil oder Button). Wer zuerst fertig ist, bekommt
 //  die meisten Punkte, dann der zweitschnellste usw.; wer es im Zeitlimit
 //  nicht schafft, bekommt 0. Raumfelder beginnen mit "pg"; die Fertig-Zeiten
 //  liegen in der Subcollection "pgFertig".
@@ -27,12 +27,13 @@ const TEILE_OPTIONEN = [3, 4, 5];
 const STANDARD_TEILE = 4;
 const ZEIT_OPTIONEN = [60, 90, 120, 180];
 const STANDARD_ZEIT = 90;
-const AUSWERTUNG_PUFFER_MS = 3500;
+const AUSWERTUNG_PUFFER_MS = 6000; // so lange bleibt die Lösung sichtbar
 
 const FARBEN = ["#ef4444", "#f59e0b", "#22c55e", "#06b6d4", "#6366f1", "#ec4899"];
 
-// Teile-Bibliothek (Tri-, Tetra- und Pentominos). Spiegeln ist erlaubt, daher
-// reicht je eine Form.
+// Teile-Bibliothek (Tri-, Tetra- und Pentominos). Beim Aufbau des Feldes darf
+// jede Form auch gespiegelt liegen; die Teile werden den Spielern aber nur
+// gedreht angezeigt (Spiegeln gibt es nicht) - so bleibt jedes Rätsel lösbar.
 const FORMEN = [
   [[0, 0], [1, 0], [2, 0]],
   [[0, 0], [0, 1], [1, 1]],
@@ -152,7 +153,6 @@ function erzeugeRaetsel(anzahlTeile) {
       let z = normiere(l);
       const drehungen = zufall(4);
       for (let r = 0; r < drehungen; r++) z = dreheZellen(z);
-      if (Math.random() < 0.5) z = spiegleZellen(z);
       return z;
     }));
     return { z: brett, t: teile };
@@ -162,10 +162,9 @@ function erzeugeRaetsel(anzahlTeile) {
 
 const VORLAGE = `
   <div id="pg-setup" class="bildschirm-karte" hidden>
-    <h1>🧩 Passgenau</h1>
     <p class="hinweis-text">Alle bekommen dasselbe Feld und dieselben Teile. Zieht die Teile aufs Feld,
-      bis es komplett gefüllt ist - kein Teil darf überstehen oder überlappen. Ein Tipp aufs Teil dreht es,
-      mit „Spiegeln“ kippt ihr es um. Wer zuerst fertig ist, bekommt die meisten Punkte.</p>
+      bis es komplett gefüllt ist - kein Teil darf überstehen oder überlappen. Ein Tipp aufs Teil dreht es.
+      Wer zuerst fertig ist, bekommt die meisten Punkte.</p>
 
     <div id="pg-einstellungen" hidden>
       <div class="setup-anzahl-zeile">
@@ -203,7 +202,6 @@ const VORLAGE = `
       <span id="pg-zeit-text" class="pg-zeit-text"></span>
       <span class="pg-kopf-btns">
         <button id="pg-drehen" type="button" class="pg-mini">↻ Drehen</button>
-        <button id="pg-spiegeln" type="button" class="pg-mini">⇋ Spiegeln</button>
       </span>
     </div>
     <div class="pg-zeitbalken"><div id="pg-zeitbalken-fuell"></div></div>
@@ -294,7 +292,6 @@ function verdrahteBedienelemente() {
   $("pg-starten").addEventListener("click", spielStarten);
   $("pg-weiter").addEventListener("click", weiter);
   $("pg-drehen").addEventListener("click", () => spielfeld?.drehe());
-  $("pg-spiegeln").addEventListener("click", () => spielfeld?.spiegle());
 
   const baueOpt = (id, werte, label, feldName) => {
     const box = $(id);
@@ -404,6 +401,7 @@ export function raumDaten(daten) {
       auswertungLaeuft = false;
       if (spielfeld) { spielfeld.abbauen(); spielfeld = null; }
       $("pg-fertig-overlay").hidden = true;
+      $("pg-fertig-overlay").classList.remove("pg-zeit-aus");
     }
   } else if (status === "ausgewertet") {
     rundenIndex = neuerIndex;
@@ -546,9 +544,13 @@ function rundenTick() {
     $("pg-zeit-text").textContent = `⏱ ${Math.ceil(rest / 1000)} s`;
     $("pg-zeitbalken-fuell").style.width = `${(rest / limit) * 100}%`;
     $("pg-zeitbalken-fuell").classList.toggle("knapp", rest < 15000);
-    if (rest <= 0 && spielfeld && !spielfeld.gesperrt) {
-      spielfeld.sperren();
-      if (!eigenFertig()) $("pg-hinweis").textContent = "Zeit abgelaufen!";
+    if (rest <= 0 && spielfeld && !spielfeld.loesungSichtbar && !eigenFertig()) {
+      spielfeld.zeigeLoesung();
+      const o = $("pg-fertig-overlay");
+      o.hidden = false;
+      o.classList.add("pg-zeit-aus");
+      o.textContent = "⏰ Zeit abgelaufen - so geht's";
+      $("pg-hinweis").textContent = "Gleich geht's weiter …";
     }
   }
   if (api.istLeiter) pruefeAuswertung(elapsedGesamt);
@@ -566,9 +568,10 @@ function aktualisiereStatus() {
   if (ich) {
     if (spielfeld) spielfeld.sperren();
     $("pg-fertig-overlay").hidden = false;
+    $("pg-fertig-overlay").classList.remove("pg-zeit-aus");
     $("pg-fertig-overlay").textContent = `✅ Geschafft in ${formatZeit(ich.ms)}`;
     $("pg-hinweis").textContent = "Warte auf die anderen …";
-  } else {
+  } else if (!(spielfeld && spielfeld.loesungSichtbar)) {
     $("pg-fertig-overlay").hidden = true;
   }
   renderWarteAvatare($("pg-status"), spielerListe.filter((sp) => !fertigIds.has(sp.id) && sp.id !== api.spielerId));
@@ -733,6 +736,7 @@ function baueSpielfeld(canvas, wrap, raetsel, beiFertig) {
   let zieh = null; // { teil, fx, fy, startX, startY, startZeit, bewegt, px, py, lift }
   let c = 40, W = 300, H = 400, bx = 0, by = 0, abl = 0.72;
   let gezeichnet = false;
+  let loesungSichtbar = false;
   let rafId = 0;
 
   function layout() {
@@ -811,33 +815,47 @@ function baueSpielfeld(canvas, wrap, raetsel, beiFertig) {
     ctx.fill();
 
     const belegt = belegung();
-    const lueckenFarbe = "rgba(220,38,38,0.55)";
+    // 1) Teile füllen
     reihenfolge.forEach((id) => {
       const t = teile[id];
       const o = ursprung(t);
-      const gezogen = zieh && zieh.teil === t;
-      ctx.globalAlpha = gezogen ? 0.92 : 1;
-      const eigen = new Set(t.zellen.map(([x, y]) => schluessel(x, y)));
+      ctx.globalAlpha = zieh && zieh.bewegt && zieh.teil === t ? 0.92 : 1;
       t.zellen.forEach(([x, y]) => {
         const px = o.x + x * o.s, py = o.y + y * o.s;
         ctx.fillStyle = t.farbe;
         ctx.fillRect(px, py, o.s + 0.5, o.s + 0.5);
-        if (t.ort === "brett" && !gezogen) {
-          const k = schluessel(x + t.gx, y + t.gy);
-          if (!feldSet.has(k) || (belegt.get(k) ?? 0) > 1) {
-            ctx.fillStyle = lueckenFarbe;
-            ctx.fillRect(px, py, o.s + 0.5, o.s + 0.5);
-          }
-        }
         ctx.fillStyle = "rgba(255,255,255,0.18)";
         ctx.fillRect(px + 2, py + 2, o.s - 4, Math.max(2, o.s * 0.18));
       });
+      ctx.globalAlpha = 1;
+    });
+    // 2) Überlappungen und Zellen außerhalb schraffieren (Streifen in den Farben der beteiligten Teile)
+    const farbenJeZelle = new Map();
+    teile.forEach((t) => {
+      if (t.ort !== "brett" || (zieh && zieh.bewegt && zieh.teil === t)) return;
+      t.zellen.forEach(([x, y]) => {
+        const k = schluessel(x + t.gx, y + t.gy);
+        if (!farbenJeZelle.has(k)) farbenJeZelle.set(k, []);
+        farbenJeZelle.get(k).push(t.farbe);
+      });
+    });
+    farbenJeZelle.forEach((farben, k) => {
+      const draussen = !feldSet.has(k);
+      if (farben.length < 2 && !draussen) return;
+      const [x, y] = k.split(",").map(Number);
+      const a = farben[0], b = farben.length > 1 ? farben[1] : "#dc2626";
+      hatch(bx + x * c, by + y * c, c, a, b);
+    });
+    // 3) Umrandungen
+    reihenfolge.forEach((id) => {
+      const t = teile[id];
+      const o = ursprung(t);
+      const eigen = new Set(t.zellen.map(([x, y]) => schluessel(x, y)));
       ctx.strokeStyle = ausgewaehlt === t ? "#ffffff" : "rgba(0,0,0,0.45)";
       ctx.lineWidth = ausgewaehlt === t ? 3 : 1.6;
       t.zellen.forEach(([x, y]) => {
         kanten(x, y, (nx, ny) => eigen.has(schluessel(nx, ny)), o.x, o.y, o.s);
       });
-      ctx.globalAlpha = 1;
     });
 
     // Einrast-Vorschau beim Ziehen
@@ -853,6 +871,25 @@ function baueSpielfeld(canvas, wrap, raetsel, beiFertig) {
         ctx.setLineDash([]);
       }
     }
+  }
+
+  // Diagonale Streifen in zwei Farben innerhalb einer Zelle
+  function hatch(x, y, s, farbeA, farbeB) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, s, s);
+    ctx.clip();
+    ctx.fillStyle = farbeA;
+    ctx.fillRect(x, y, s, s);
+    ctx.strokeStyle = farbeB;
+    ctx.lineWidth = Math.max(4, s * 0.17);
+    ctx.beginPath();
+    for (let d = -s; d < s * 2; d += Math.max(9, s * 0.34)) {
+      ctx.moveTo(x + d, y + s);
+      ctx.lineTo(x + d + s, y);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   function roundRect(x, y, w, h, r) {
@@ -937,6 +974,40 @@ function baueSpielfeld(canvas, wrap, raetsel, beiFertig) {
     pruefe();
   }
 
+  // Sucht eine Lösung (nur Drehungen) - wird nur gebraucht, wenn die Zeit abläuft.
+  function loese() {
+    const lagenJeTeil = teile.map((t) => {
+      const m = new Map();
+      let z = normiere(t.zellen);
+      for (let r = 0; r < 4; r++) { m.set(JSON.stringify(z), z); z = dreheZellen(z); }
+      return [...m.values()];
+    });
+    const felder = [...feldSet].map((k) => k.split(",").map(Number)).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+    const belegtL = new Set();
+    const benutzt = new Array(teile.length).fill(false);
+    const ergebnis = new Array(teile.length).fill(null);
+    function suche() {
+      const z = felder.find(([x, y]) => !belegtL.has(schluessel(x, y)));
+      if (!z) return true;
+      for (let i = 0; i < teile.length; i++) {
+        if (benutzt[i]) continue;
+        for (const v of lagenJeTeil[i]) {
+          const ox = z[0] - v[0][0], oy = z[1] - v[0][1];
+          const ps = v.map(([x, y]) => [x + ox, y + oy]);
+          if (!ps.every(([x, y]) => feldSet.has(schluessel(x, y)) && !belegtL.has(schluessel(x, y)))) continue;
+          ps.forEach(([x, y]) => belegtL.add(schluessel(x, y)));
+          benutzt[i] = true;
+          ergebnis[i] = { zellen: v, gx: ox, gy: oy };
+          if (suche()) return true;
+          ps.forEach(([x, y]) => belegtL.delete(schluessel(x, y)));
+          benutzt[i] = false;
+        }
+      }
+      return false;
+    }
+    return suche() ? ergebnis : null;
+  }
+
   function runter(e) {
     if (gesperrt) return;
     const r = canvas.getBoundingClientRect();
@@ -1002,7 +1073,13 @@ function baueSpielfeld(canvas, wrap, raetsel, beiFertig) {
     get gesperrt() { return gesperrt; },
     layout,
     drehe() { transformiere(ausgewaehlt ?? teile.find((t) => t.ort === "ablage") ?? teile[0], dreheZellen); },
-    spiegle() { transformiere(ausgewaehlt ?? teile.find((t) => t.ort === "ablage") ?? teile[0], spiegleZellen); },
+    get loesungSichtbar() { return loesungSichtbar; },
+    zeigeLoesung() {
+      gesperrt = true; zieh = null; ausgewaehlt = null; loesungSichtbar = true;
+      const l = loese();
+      if (l) l.forEach((p, i) => { teile[i].zellen = p.zellen; teile[i].ort = "brett"; teile[i].gx = p.gx; teile[i].gy = p.gy; });
+      zeichne();
+    },
     sperren() { gesperrt = true; zieh = null; zeichne(); },
     entsperren() { gesperrt = false; },
     abbauen() {
