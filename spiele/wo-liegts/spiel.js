@@ -553,7 +553,8 @@ function ortsListe() {
 
 function stadt(idx) {
   const s = ortsListe()[idx];
-  return s ? { name: s[0], land: s[1], lat: s[2], lon: s[3] } : null;
+  // Bei Sehenswürdigkeiten wird bewusst kein Ort/Land angezeigt (wäre ein Hinweis)
+  return s ? { name: s[0], land: modus === "sehens" ? "" : s[1], lat: s[2], lon: s[3] } : null;
 }
 
 function neueStadtIdx(bisher) {
@@ -740,10 +741,8 @@ function zeigeSetup() {
 
 async function spielStarten() {
   $("wl-setup-fehler").textContent = "";
-  if (spielerListe.length < 2) {
-    $("wl-setup-fehler").textContent = "Für Wo liegt's braucht ihr mindestens zwei Spieler.";
-    return;
-  }
+  // TEST: Alleine spielen ist gerade erlaubt (zum Testen). Später wieder:
+  // if (spielerListe.length < 2) { ... "mindestens zwei Spieler" ... return; }
   if (!welt) { $("wl-setup-fehler").textContent = ladeFehler || "Die Weltkarte ist nicht verfügbar."; return; }
   const max = Math.min(MAX_ANZAHL, ortsListe().length);
   let anzahl = parseInt($("wl-anzahl").value, 10);
