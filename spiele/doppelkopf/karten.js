@@ -167,7 +167,7 @@ export function kartenSvg(id) {
   if (cache.has(id)) return cache.get(id);
   const bild = BILD_KARTEN[farbe + rang];
   if (bild) {
-    const html = `<img class="dk-karte-svg dk-karte-bild" src="bilder/doppelkopf/${bild}.webp?v=322" alt="${farbe}${rang}" draggable="false">`;
+    const html = `<img class="dk-karte-svg dk-karte-bild" src="bilder/doppelkopf/${bild}.webp?v=323" alt="${farbe}${rang}" draggable="false">`;
     cache.set(id, html);
     return html;
   }

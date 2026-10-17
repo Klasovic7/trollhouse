@@ -527,7 +527,6 @@ class Globus {
 // ---------------------------------------------------------------------------
 const VORLAGE = `
   <div id="wl-setup" class="bildschirm-karte" hidden>
-    <h1>🌍 Wo liegt's?</h1>
     <p class="hinweis-text">Ein Ort wird genannt - alle setzen gleichzeitig eine Stecknadel auf den Globus.
       Drehen: mit einem Finger ziehen. Zoomen: zwei Finger auseinander oder mit + / −. Nadel setzen: kurz tippen.
       Wer (Luftlinie) am nächsten dran ist, bekommt die meisten Punkte, wer weniger als 100 km danebenliegt,

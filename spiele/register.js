@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "322";
+const SPIEL_VERSION = "323";
 
 export const SPIELE = [
   {
@@ -199,7 +199,9 @@ export const SPIELE = [
     bild: "bilder/passgenau-bloecke.webp",
     farbe: "#f59e0b",
     beschreibung: "Legt alle Teile passgenau ins Feld - wer zuerst fertig ist, gewinnt",
-    minSpieler: 2,
+    // TEST: alleine spielbar. Später wieder: minSpieler: 2 und mitBots entfernen.
+    minSpieler: 1,
+    mitBots: true,
     laden: () => import(`./passgenau/spiel.js?v=${SPIEL_VERSION}`)
   },
   {

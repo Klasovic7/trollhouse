@@ -3366,7 +3366,7 @@ body.anl-offen { overflow: hidden; }
 .dk-st3 { right: 54px; }
 
 /* ---- Tetris-Duell ---- */
-body.tt-aktiv #spiel-kopf-titel { display: none; }
+body.tt-aktiv:has(#tt-spiel-screen:not([hidden])) #spiel-kopf-titel { display: none; }
 .tt-spiel { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0 12px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .tt-gegner { display: flex; justify-content: center; gap: 10px; min-height: 26px; flex-wrap: wrap; }
 .tt-gegner-karte { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 6px; border-radius: 10px; background: rgba(255,255,255,.06); border-bottom: 3px solid var(--spieler-farbe); font-size: .72rem; font-weight: 700; max-width: 90px; }
