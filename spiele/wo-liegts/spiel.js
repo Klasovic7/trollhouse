@@ -383,43 +383,63 @@ class Globus {
     const cx = this.w / 2, cy = this.h / 2;
 
     // Meer
-    const meer = ctx.createRadialGradient(cx - k * 0.35, cy - k * 0.4, k * 0.1, cx, cy, k * 1.02);
-    meer.addColorStop(0, "#3b8fd9");
-    meer.addColorStop(1, "#134b8f");
+    // Leuchten der Atmosphäre außerhalb der Kugel
+    if (k < Math.max(this.w, this.h) * 0.9) {
+      const aura = ctx.createRadialGradient(cx, cy, k * 0.98, cx, cy, k * 1.1);
+      aura.addColorStop(0, "rgba(90,170,255,0.55)");
+      aura.addColorStop(0.35, "rgba(60,130,230,0.22)");
+      aura.addColorStop(1, "rgba(40,100,200,0)");
+      ctx.beginPath(); ctx.arc(cx, cy, k * 1.1, 0, Math.PI * 2);
+      ctx.fillStyle = aura; ctx.fill();
+    }
+    const meer = ctx.createRadialGradient(cx - k * 0.3, cy - k * 0.35, k * 0.05, cx, cy, k * 1.02);
+    meer.addColorStop(0, "#2d7fd3");
+    meer.addColorStop(0.55, "#1456a8");
+    meer.addColorStop(1, "#0a2d68");
     ctx.beginPath(); this.pfad({ type: "Sphere" });
     ctx.fillStyle = meer; ctx.fill();
 
     // Gradnetz
     ctx.beginPath(); this.pfad(welt.gitter);
-    ctx.strokeStyle = "rgba(255,255,255,0.16)"; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.09)"; ctx.lineWidth = 0.6; ctx.stroke();
 
     const deModus = this.bundeslaender && welt.deGrenzen;
+    const LAND = "#8db976";
+    const kuesteLinie = "rgba(30,70,45,0.55)";
+    const saum = (pfadDaten) => { // heller Streifen flaches Wasser entlang der Küste
+      ctx.beginPath(); this.pfad(pfadDaten);
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "rgba(120,200,245,0.10)"; ctx.lineWidth = 7; ctx.stroke();
+      ctx.strokeStyle = "rgba(140,215,250,0.18)"; ctx.lineWidth = 3; ctx.stroke();
+    };
     if (!deModus) {
       // Land
+      saum(welt.land);
       ctx.beginPath(); this.pfad(welt.land);
-      ctx.fillStyle = "#dfe8c6"; ctx.fill();
-      ctx.strokeStyle = "#5c7a4a"; ctx.lineWidth = 0.7; ctx.stroke();
+      ctx.fillStyle = LAND; ctx.fill();
+      ctx.strokeStyle = kuesteLinie; ctx.lineWidth = 0.7; ctx.stroke();
 
       // Ländergrenzen
       ctx.beginPath(); this.pfad(welt.grenzen);
-      ctx.strokeStyle = "rgba(90,70,110,0.6)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
+      ctx.strokeStyle = "rgba(20,50,30,0.35)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
     } else {
+      saum(welt.landOhneDe); saum(welt.deGrenzen.land);
       // Deutschland-Modus: Nachbarländer wie gehabt, Deutschland selbst aus den genaueren
       // Bundesland-Daten (lila). Keine graue Weltkarten-Linie um Deutschland herum.
       ctx.beginPath(); this.pfad(welt.landOhneDe);
-      ctx.fillStyle = "#dfe8c6"; ctx.fill();
-      ctx.strokeStyle = "#dfe8c6"; ctx.lineWidth = 1; ctx.stroke(); // Nähte zwischen den Ländern schließen
+      ctx.fillStyle = LAND; ctx.fill();
+      ctx.strokeStyle = LAND; ctx.lineWidth = 1; ctx.stroke(); // Nähte zwischen den Ländern schließen
       if (welt.deGrenzen.luecken) { // schmale Lücken zwischen den genaueren deutschen und den gröberen Nachbar-Daten
         ctx.beginPath(); this.pfad(welt.deGrenzen.luecken);
         ctx.fill(); ctx.stroke();
       } // Hintergrund, damit zwischen Deutschland und den Nachbarn keine Lücke bleibt
       ctx.beginPath(); this.pfad(welt.kuesteOhneDe);
-      ctx.strokeStyle = "#5c7a4a"; ctx.lineWidth = 0.7; ctx.stroke();
+      ctx.strokeStyle = kuesteLinie; ctx.lineWidth = 0.7; ctx.stroke();
       ctx.beginPath(); this.pfad(welt.grenzenOhneDe);
-      ctx.strokeStyle = "rgba(90,70,110,0.6)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
+      ctx.strokeStyle = "rgba(20,50,30,0.35)"; ctx.lineWidth = this.zoom > 6 ? 1 : 0.6; ctx.stroke();
 
       ctx.beginPath(); this.pfad(welt.deGrenzen.land);
-      ctx.fillStyle = "#dfe8c6"; ctx.fill();
+      ctx.fillStyle = LAND; ctx.fill();
       ctx.beginPath(); this.pfad(welt.deGrenzen.grenzen);
       ctx.lineJoin = "round";
       ctx.strokeStyle = "rgba(130,70,170,0.8)"; ctx.lineWidth = this.zoom > 6 ? 1.4 : 1; ctx.stroke();
@@ -428,12 +448,20 @@ class Globus {
     // Atmosphäre / Rand
     if (k < Math.max(this.w, this.h) * 0.9) {
       ctx.beginPath(); ctx.arc(cx, cy, k, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(160,205,255,0.55)"; ctx.lineWidth = 2; ctx.stroke();
-      const glanz = ctx.createRadialGradient(cx, cy, k * 0.82, cx, cy, k);
-      glanz.addColorStop(0, "rgba(10,25,60,0)");
-      glanz.addColorStop(1, "rgba(10,25,60,0.38)");
+      // Beleuchtung: Licht von links oben, Schatten zum Rand unten rechts
+      const licht = ctx.createRadialGradient(cx - k * 0.38, cy - k * 0.42, k * 0.05, cx - k * 0.1, cy - k * 0.1, k * 1.25);
+      licht.addColorStop(0, "rgba(255,255,255,0.13)");
+      licht.addColorStop(0.45, "rgba(255,255,255,0)");
+      licht.addColorStop(1, "rgba(0,8,35,0.5)");
       ctx.beginPath(); ctx.arc(cx, cy, k, 0, Math.PI * 2);
-      ctx.fillStyle = glanz; ctx.fill();
+      ctx.fillStyle = licht; ctx.fill();
+      // heller Atmosphärenrand innen
+      const rand = ctx.createRadialGradient(cx, cy, k * 0.9, cx, cy, k);
+      rand.addColorStop(0, "rgba(110,180,255,0)");
+      rand.addColorStop(1, "rgba(110,180,255,0.38)");
+      ctx.beginPath(); ctx.arc(cx, cy, k, 0, Math.PI * 2);
+      ctx.fillStyle = rand; ctx.fill();
+      ctx.strokeStyle = "rgba(150,205,255,0.7)"; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
     // Verbindungslinien
