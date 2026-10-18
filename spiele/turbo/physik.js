@@ -52,7 +52,7 @@ export function schritt(a, e, dt, S) {
   const halb = tmp.w / 2;
   const abst = Math.abs(tmp.lat);
   a.fl = abst <= halb ? 0 : abst <= halb + KERB ? 1 : 2;
-  const gripFak = a.fl === 2 ? 0.42 : a.fl === 1 ? 0.9 : 1;
+  const gripFak = (a.fl === 2 ? 0.42 : a.fl === 1 ? 0.9 : 1) * S.grip;
   const vmaxFl = a.fl === 2 ? 0.62 : 1;
   const gy = tmp.y;
 
@@ -63,11 +63,11 @@ export function schritt(a, e, dt, S) {
     const gas = e.gas !== false;
     a.bremsend = false; a.rueck = false;
     if (e.bremse) {
-      if (vF > 1.5) { acc = -P.BREMSE * (Math.abs(a.lenk) > 0.3 && vF > 22 ? 0.35 : 1); a.bremsend = true; }
+      if (vF > 1.5) { acc = -P.BREMSE * (0.55 + 0.45 * S.grip) * (Math.abs(a.lenk) > 0.3 && vF > 22 ? 0.35 : 1); a.bremsend = true; }
       else if (vF > -P.RUECKWAERTS) { acc = -P.BESCHL * 0.8; a.rueck = true; }
     } else if (gas) {
       const q = klemme(vF / vmax, 0, 1.3);
-      acc = P.BESCHL * (1 - q * q) + (a.boost > 0 ? P.BOOST_BESCHL * (1 - klemme(vF / vmax, 0, 1)) : 0);
+      acc = P.BESCHL * S.traktion * (1 - q * q) + (a.boost > 0 ? P.BOOST_BESCHL * (1 - klemme(vF / vmax, 0, 1)) : 0);
       if (vF < 0) acc = P.BREMSE;           // aus dem Rueckwaertsgang schnell wieder nach vorn
     } else { const c = 2.2 * dt; if (Math.abs(vF) <= c) vF = 0; else vF -= Math.sign(vF) * c; }
     acc -= 0.0012 * vF * Math.abs(vF);       // Luftwiderstand

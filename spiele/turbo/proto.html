@@ -146,8 +146,16 @@
   @keyframes dreh { 0%, 20% { transform: rotate(0); } 65%, 100% { transform: rotate(-90deg); } }
   @media (orientation: portrait) and (pointer: coarse) { #quer { display: grid; } }
 
+  #strecken { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; margin: 10px 0 4px; }
+  .sw { text-align: left; background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.14); color: #fff; border-radius: 10px; padding: 6px 9px; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .sw b { font-size: 13px; } .sw small { font-size: 10px; opacity: .65; }
+  .sw.an { background: rgba(6,182,212,.22); border-color: #22d3ee; }
   @media (max-height: 520px) {
-    #menue .karte { display: grid !important; grid-template-columns: minmax(0, .85fr) minmax(0, 1.35fr); grid-template-areas: "logo regeln" "rek regeln" "btn regeln"; gap: 8px 16px; width: min(780px, 94vw) !important; align-items: center; padding: 10px 14px; }
+    #menue .karte { grid-template-areas: "logo wahl" "rek regeln" "btn regeln" !important; }
+    #strecken { grid-area: wahl; margin: 0; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .sw { padding: 4px 7px; } .sw b { font-size: 11.5px; } .sw small { font-size: 9px; }
+    #menue .regeln li:nth-child(3) { display: none; }
+    #menue .karte { display: grid !important; grid-template-columns: minmax(0, .85fr) minmax(0, 1.35fr); grid-template-areas: "logo wahl" "rek regeln" "btn regeln"; gap: 8px 16px; width: min(780px, 94vw) !important; align-items: center; padding: 10px 14px; }
     #menue .logo { grid-area: logo; font-size: 26px; }
     #menue .regeln { grid-area: regeln; grid-template-columns: 1fr !important; font-size: 11.5px; gap: 4px; margin: 0; }
     #menue .regeln li { padding: 5px 8px; } #menue .regeln li:nth-child(4) { display: none; }
@@ -185,6 +193,7 @@
 <div id="menue" class="overlay"><div class="karte">
   <div class="logo">TROLLHOUSE<small>TURBO · ZEITJAGD</small></div>
   <p>Gleiche Strecke für alle, von <b>A nach B</b>. <b>5 Minuten</b> Zeit – jeder Versuch startet aus dem Stand und endet an der Ziellinie. Die schnellste Zeit zählt.</p>
+  <div id="strecken"></div>
   <ul class="regeln">
     <li><b>Lenken</b> links, <b>Gas</b> und <b>Bremse</b> rechts. Gas gibt es nicht von allein.</li>
     <li><b>Neustart</b> jederzeit mit <b>↻</b> oben. Nach dem Ziel geht es automatisch aus dem Stand von vorn los. Mit <b>Bremse + Lenken</b> driftest du.</li>

@@ -17,8 +17,9 @@ export function botEingabe(a, S, opt = {}) {
   let lenk = Math.max(-1, Math.min(1, winkel * 2.4 * (opt.lenkFaktor || 1)));
 
   // Tempo: maximale Kruemmung in den naechsten ~ (v^2/(2*b)) Metern
-  const aQuer = opt.aQuer || 30;
-  const bremsWeg = (v * v) / (2 * 34) + 12;
+  const gr = S.grip || 1;
+  const aQuer = (opt.aQuer || 30) * gr;
+  const bremsWeg = (v * v) / (2 * 34 * (0.55 + 0.45 * gr)) + 12;
   const m = Math.round(bremsWeg / ds);
   let vZiel = 999;
   for (let q = 0; q <= m; q += 2) {
@@ -27,7 +28,7 @@ export function botEingabe(a, S, opt = {}) {
     const vk = Math.sqrt(aQuer / kr);
     // so weit vorne duerfte man schon langsamer sein: v_ziel^2 + 2*b*dist >= v_kurve^2 -> hier vereinfacht
     const dist = q * ds;
-    const erlaubt = Math.sqrt(vk * vk + 2 * 30 * dist);
+    const erlaubt = Math.sqrt(vk * vk + 2 * 30 * (0.55 + 0.45 * gr) * dist);
     if (erlaubt < vZiel) vZiel = erlaubt;
   }
   const bremse = a.vF > vZiel + 1.5;

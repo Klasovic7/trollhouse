@@ -8,6 +8,7 @@
 //  (Dokument = spielerId) und wird den anderen oben rechts angezeigt.
 // ============================================================================
 import { doc, setDoc, collection, onSnapshot, serverTimestamp } from "../../kern/firebase.js";
+import { STRECKEN } from "./strecke.js";
 
 let api = null, rahmen = null, stil = null, unsub = null, hoerer = null;
 let spielerListe = [], zeiten = [];
@@ -18,16 +19,16 @@ function sende() {
     .filter((z) => z.zeit > 0 && z.spielerId !== api.spielerId)
     .map((z) => {
       const sp = spielerListe.find((s) => s.id === z.spielerId);
-      return { name: (sp && sp.name) || "?", zeit: z.zeit, farbe: sp && sp.farbe };
+      return { name: (sp && sp.name) || "?", zeit: z.zeit, farbe: sp && sp.farbe, strecke: z.strecke || "tal" };
     })
     .sort((a, b) => a.zeit - b.zeit);
   rahmen.contentWindow.postMessage({ typ: "gegner", liste }, "*");
 }
 
-function speichereBestzeit(zeit) {
+function speichereBestzeit(zeit, strecke) {
   if (!api || !api.spielerId) return;
   setDoc(doc(api.db, "raeume", api.code, "turboZeiten", api.spielerId), {
-    spielerId: api.spielerId, zeit: zeit > 0 ? zeit : null, zeitpunkt: serverTimestamp()
+    spielerId: api.spielerId, zeit: zeit > 0 ? zeit : null, strecke: strecke || "tal", zeitpunkt: serverTimestamp()
   }).catch((e) => console.warn("Turbo: Bestzeit nicht gespeichert", e));
 }
 
@@ -53,7 +54,9 @@ export async function starten(uebergebeneApi) {
   rahmen.setAttribute("allow", "autoplay; fullscreen");
   rahmen.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:0;background:#0a0e1a;z-index:2147483000;display:block";
   rahmen.addEventListener("load", sende);
-  rahmen.src = "spiele/turbo/proto.html?embed=1&v=" + Date.now();
+  // Alle im Raum starten auf derselben Strecke: sie wird aus dem Raumcode gewaehlt
+  let h = 0; for (const ch of String(api.code || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  rahmen.src = "spiele/turbo/proto.html?embed=1&strecke=" + STRECKEN[h % STRECKEN.length].id + "&v=" + Date.now();
   document.body.appendChild(rahmen);
   document.body.classList.add("turbo-voll");
 
@@ -64,7 +67,7 @@ export async function starten(uebergebeneApi) {
       zeigeRahmen(false);
       const b = document.getElementById("btn-verlassen");
       if (b) b.click();
-    } else if (d.typ === "bestzeit") speichereBestzeit(d.zeit);
+    } else if (d.typ === "bestzeit") speichereBestzeit(d.zeit, d.strecke);
   };
   window.addEventListener("message", hoerer);
 

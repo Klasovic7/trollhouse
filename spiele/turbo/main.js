@@ -4,7 +4,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { baueStrecke, startPose, WAND_ABSTAND } from "./strecke.js";
+import { baueStrecke, startPose, WAND_ABSTAND, STRECKEN, streckeNachId } from "./strecke.js";
 import { neuesAuto, schritt, P } from "./physik.js";
 import { botEingabe } from "./bot.js";
 import { baueWelt, baueHimmel } from "./welt.js";
@@ -18,7 +18,6 @@ const BOT = params.has("bot");
 const DEBUG = params.has("debug");
 const FAST = params.has("fast");
 const SESSION_S = Number(params.get("zeit")) || 300;
-const MEDAILLEN = { autor: 26.8, gold: 28.8, silber: 31.5, bronze: 36 };   // Sekunden, Stehstart A->B (Test-Bot: ~27,3 s)
 const touch = matchMedia("(pointer: coarse)").matches;
 const fmt = (t) => { if (t == null || !isFinite(t)) return "--:--.--"; const m = Math.floor(t / 60); const s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(2); };
 const fmtD = (d) => (d >= 0 ? "+" : "-") + Math.abs(d).toFixed(2);
@@ -37,16 +36,19 @@ if (params.get("q") === "low") { Q.pr = 0.8; Q.bloom = false; Q.schatten = 1024;
 if (params.get("pr")) Q.pr = Number(params.get("pr"));
 if (params.has("nobloom")) Q.bloom = false;
 
-const S = baueStrecke();
+const STRECKE_ID = params.get("strecke") || (() => { try { return localStorage.getItem("tt_strecke"); } catch (_) { return null; } })() || "tal";
+const S = baueStrecke(streckeNachId(STRECKE_ID));
+const MEDAILLEN = S.def.medaillen || { autor: 26.8, gold: 28.8, silber: 31.5, bronze: 36 };   // Sekunden, Stehstart, aus Test-Bot geeicht
 const world = baueWelt(S, { schatten: Q.schatten });
 const { scene } = world;
 
 // Himmels-Reflexion fuer Lack und Glas
 {
   const pm = new THREE.PMREMGenerator(renderer);
-  const es = new THREE.Scene(); es.add(baueHimmel(world.sunDir));
+  const es = new THREE.Scene(); es.add(baueHimmel(world.sunDir, world.thema.himmel));
   scene.environment = pm.fromScene(es, 0.03).texture;
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = world.thema.env;
+  renderer.toneMappingExposure = world.thema.belichtung;
   pm.dispose();
 }
 
@@ -57,6 +59,10 @@ scene.add(camera);
 const FARBEN = [0xff3b30, 0xffb000, 0x2d9cff, 0x35d07f, 0xc44dff];
 const farbe = FARBEN[Number(params.get("farbe") || 0) % FARBEN.length];
 const car = baueAuto(farbe); scene.add(car.gruppe);
+if (world.thema.flutlicht) {   // Scheinwerfer bei Nacht
+  const spot = new THREE.SpotLight(0xfff1d6, 1500, 95, 0.46, 0.6, 2);
+  spot.position.set(0, 0.9, 1.6); spot.target.position.set(0, 0, 26); car.gruppe.add(spot, spot.target);
+}
 const geist = baueAuto(0x66e0ff, { geist: true }); geist.gruppe.visible = false; scene.add(geist.gruppe);
 const rauch = new Partikel(420), funken = new Partikel(260, { additiv: true }), feuer = new Partikel(220, { additiv: true });
 scene.add(rauch.punkte, funken.punkte, feuer.punkte);
@@ -67,7 +73,7 @@ let composer = null, bloomPass = null;
 function baueComposer() {
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.55, 1.35);
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), world.thema.bloom, 0.55, world.thema.flutlicht ? 0.9 : 1.35);
   composer.addPass(bloomPass);
   composer.addPass(new OutputPass());
 }
@@ -110,10 +116,23 @@ window.addEventListener("message", (e) => {
   const d = e.data || {};
   if (d.typ === "gegner" && Array.isArray(d.liste)) {
     const box = $("gegner");
-    box.innerHTML = d.liste.length ? d.liste.slice(0, 5).map((g, i) => `<div class="z"><span>${i + 1}. ${String(g.name || "?").replace(/[<>&]/g, "")}</span><i>${fmt(g.zeit)}</i></div>`).join("") : '<div class="leer">noch keine Zeiten</div>';
+    box.innerHTML = (d.liste = d.liste.filter((g) => !g.strecke || g.strecke === S.id)).length ? d.liste.slice(0, 5).map((g, i) => `<div class="z"><span>${i + 1}. ${String(g.name || "?").replace(/[<>&]/g, "")}</span><i>${fmt(g.zeit)}</i></div>`).join("") : '<div class="leer">noch keine Zeiten</div>';
   }
 });
-const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postMessage({ typ: "bestzeit", zeit: z }, "*"); };
+const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postMessage({ typ: "bestzeit", zeit: z, strecke: S.id }, "*"); };
+{
+  const wahl = $("strecken");
+  STRECKEN.forEach((t) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "sw" + (t.id === S.id ? " an" : "");
+    b.innerHTML = "<b>" + t.name + "</b><small>" + t.kurz + "</small>";
+    b.addEventListener("click", () => {
+      if (t.id === S.id) return;
+      try { localStorage.setItem("tt_strecke", t.id); } catch (_) {}
+      const u = new URL(location.href); u.searchParams.set("strecke", t.id); location.replace(u.toString());
+    });
+    wahl.appendChild(b);
+  });
+}
 $("b-start").addEventListener("click", () => starte());
 $("b-nochmal").addEventListener("click", () => starte());
 document.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -141,8 +160,9 @@ let simT = 0, sessionStart = 0, lapStart = 0, cpNext = 0, prevP = a.s;
 let best = null, bestSplits = [], curSplits = [], letzte = null, runden = 0;
 let ghostRec = [], ghostBest = null, recAkk = 0;
 let cdKurz = false, sessionLaeuft = false, cdZeit = 0, cdLetzte = 0, ende = null, falsch = 0;
-try { const g = parseFloat(localStorage.getItem("tt_rekord_v1")); if (g > 0) $("rekord").textContent = fmt(g); } catch (_) {}
-let rekord = (() => { try { return parseFloat(localStorage.getItem("tt_rekord_v1")) || null; } catch (_) { return null; } })();
+const REKORD_KEY = "tt_rekord_v2_" + S.id;
+let rekord = (() => { try { return parseFloat(localStorage.getItem(REKORD_KEY)) || (S.id === "tal" ? parseFloat(localStorage.getItem("tt_rekord_v1")) : 0) || null; } catch (_) { return null; } })();
+if (rekord > 0) $("rekord").textContent = fmt(rekord);
 
 function medaille(t) {
   if (t <= MEDAILLEN.autor) return ["AUTOR", "#6ee7a0"];
@@ -189,7 +209,7 @@ function beendeSession() {
     $("e-medal").style.color = c;
     $("e-runden").textContent = runden;
     let neu = false;
-    if (best != null && (rekord == null || best < rekord)) { rekord = best; neu = true; try { localStorage.setItem("tt_rekord_v1", String(best)); } catch (_) {} }
+    if (best != null && (rekord == null || best < rekord)) { rekord = best; neu = true; try { localStorage.setItem(REKORD_KEY, String(best)); } catch (_) {} }
     $("e-rekord").textContent = rekord != null ? fmt(rekord) + (neu ? "  (neu!)" : "") : "--";
     $("ende").classList.remove("weg");
   }, 1600);
@@ -470,6 +490,7 @@ function frame(now) {
   zeigeAuto(dt, now / 1000);
   world.folge(a.x, a.y, a.z);
   world.boostAnim(now / 1000);
+  world.tick(now / 1000, camera.position);
   kamera(dt, now / 1000);
   world.himmel.position.copy(camera.position);
   world.himmel.material.uniforms.time.value = now / 1000;
