@@ -127,10 +127,24 @@ export function schritt(a, e, dt, S) {
     }
   }
 
+  // --- Endmauern (Start hinten, Ende hinter dem Auslauf)
+  S.nahe(a.x, a.z, a.i, tmp);
+  if (tmp.over !== 0) {
+    const vorw = tmp.over > 0;
+    const vt = a.vx * tmp.tx + a.vz * tmp.tz;       // Tempo entlang der Strecke
+    const ue = Math.abs(tmp.over);
+    a.x -= tmp.tx * Math.sign(tmp.over) * ue; a.z -= tmp.tz * Math.sign(tmp.over) * ue;
+    if ((vorw && vt > 0) || (!vorw && vt < 0)) {
+      a.vx -= 1.3 * vt * tmp.tx; a.vz -= 1.3 * vt * tmp.tz;
+      a.vx *= 0.6; a.vz *= 0.6;
+      if (Math.abs(vt) > 3) ev.push({ t: "wand", staerke: Math.abs(vt), seite: 0, x: a.x, z: a.z, y: a.y });
+    }
+  }
+
   // --- Boost-Felder
   if (!a.luft) {
     for (const b of S.boosts) {
-      let d = a.s - b.s; if (d > S.laenge / 2) d -= S.laenge; if (d < -S.laenge / 2) d += S.laenge;
+      const d = a.s - b.s;
       if (Math.abs(d) < 3.2 && Math.abs(a.lat - b.lat) < 3.6) {
         if (a.boost < P.BOOST_ZEIT * 0.6) ev.push({ t: "boost" });
         a.boost = P.BOOST_ZEIT;

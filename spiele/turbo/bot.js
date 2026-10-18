@@ -6,7 +6,7 @@ export function botEingabe(a, S, opt = {}) {
   const vorschau = 9 + v * 0.34;
   const i0 = a.i;
   const k = Math.round(vorschau / ds);
-  const ti = (i0 + k) % n;
+  const ti = Math.min(n - 1, i0 + k);
   // Ziel: Mittellinie, leicht zur Kurvenaussenseite versetzt waere besser; hier einfach Mitte
   const tx = S.x[ti], tz = S.z[ti];
   const ft = Math.sin(a.theta), fz = Math.cos(a.theta);
@@ -22,7 +22,7 @@ export function botEingabe(a, S, opt = {}) {
   const m = Math.round(bremsWeg / ds);
   let vZiel = 999;
   for (let q = 0; q <= m; q += 2) {
-    const kr = Math.abs(S.kr[(i0 + q) % n]);
+    const kr = Math.abs(S.kr[Math.min(n - 1, i0 + q)]);
     if (kr < 1e-4) continue;
     const vk = Math.sqrt(aQuer / kr);
     // so weit vorne duerfte man schon langsamer sein: v_ziel^2 + 2*b*dist >= v_kurve^2 -> hier vereinfacht

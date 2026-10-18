@@ -4,7 +4,7 @@
 //  Das eigentliche Spiel (Three.js, 3D) liegt als eigene Seite in proto.html
 //  und läuft hier im Vollbild darüber (Rahmen direkt am <body>, damit Kopfzeile
 //  und Chat-Knopf verdeckt sind). Jede*r fährt für sich allein auf derselben
-//  Strecke. Einzig die beste Rundenzeit geht in die Subcollection "turboZeiten"
+//  Strecke. Einzig die beste Zeit geht in die Subcollection "turboZeiten"
 //  (Dokument = spielerId) und wird den anderen oben rechts angezeigt.
 // ============================================================================
 import { doc, setDoc, collection, onSnapshot, serverTimestamp } from "../../kern/firebase.js";

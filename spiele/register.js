@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "331";
+const SPIEL_VERSION = "332";
 
 export const SPIELE = [
   {
@@ -220,7 +220,7 @@ export const SPIELE = [
     name: "Turbo",
     emoji: "🏎️",
     farbe: "#06b6d4",
-    beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke, die schnellste Runde zählt",
+    beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke, die schnellste Zeit zählt, von A nach B",
     // TEST: Prototyp, nur alleine spielbar (noch ohne Raum-Wertung).
     minSpieler: 1,
     mitBots: true,

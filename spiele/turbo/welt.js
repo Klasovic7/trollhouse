@@ -170,9 +170,9 @@ function baueHimmel(sunDir) {
 // ---------- Hilfsfunktion: Band entlang der Strecke (Spalten: i -> [lat, dy])
 function sweep(S, cols, { uk = 1, vk = 1 / 8, uMode = "lat", seitenwechsel = false } = {}) {
   const n = S.n, m = cols.length;
-  const pos = new Float32Array((n + 1) * m * 3), uv = new Float32Array((n + 1) * m * 2);
-  for (let k = 0; k <= n; k++) {
-    const i = k % n;
+  const pos = new Float32Array(n * m * 3), uv = new Float32Array(n * m * 2);
+  for (let k = 0; k < n; k++) {
+    const i = k;
     const rx = -S.tz[i], rz = S.tx[i];
     for (let j = 0; j < m; j++) {
       const [lat, y] = cols[j](i);
@@ -182,7 +182,7 @@ function sweep(S, cols, { uk = 1, vk = 1 / 8, uMode = "lat", seitenwechsel = fal
     }
   }
   const idx = [];
-  for (let k = 0; k < n; k++) for (let j = 0; j < m - 1; j++) {
+  for (let k = 0; k < n - 1; k++) for (let j = 0; j < m - 1; j++) {
     const a = k * m + j, b = k * m + j + 1, c = (k + 1) * m + j, d = (k + 1) * m + j + 1;
     if (seitenwechsel) idx.push(a, c, b, b, c, d); else idx.push(a, b, c, b, d, c);
   }
@@ -267,8 +267,11 @@ export function baueWelt(S, opt = {}) {
   const matZiel = new THREE.MeshStandardMaterial({ map: texZiel(), roughness: 0.8 });
   const zielG = sweep(S, [(i) => [-S.w[i] / 2, 0.025], (i) => [S.w[i] / 2, 0.025]], { uMode: "col", vk: 1 / 24 });
   // nur wenige Stuetzpunkte um s=0 verwenden -> eigener Streifen
-  const zielMesh = bauePad(S, 0, 2.2, (i) => S.w[i] / 2, matZiel, 0.035, 1, 8);
-  zielMesh.receiveShadow = true; scene.add(zielMesh); void zielG;
+  for (const sPad of [S.startS, S.zielS]) {
+    const zm = bauePad(S, sPad, 2.2, (i) => S.w[i] / 2, matZiel, 0.035, 1, 8);
+    zm.receiveShadow = true; scene.add(zm);
+  }
+  void zielG;
   const boostTex = texBoost();
   const matBoost = new THREE.MeshStandardMaterial({ map: boostTex, emissive: 0xffffff, emissiveMap: boostTex, emissiveIntensity: 1.6, roughness: 0.4 });
   const boostMeshes = [];
@@ -281,7 +284,7 @@ export function baueWelt(S, opt = {}) {
   const TER = 1500, SEG = 190;
   const tg = new THREE.PlaneGeometry(TER, TER, SEG, SEG); tg.rotateX(-Math.PI / 2);
   const tp = tg.attributes.position, cols = new Float32Array(tp.count * 3);
-  const cx = 100, cz = 150;
+  const cx = -15, cz = 160;
   const hoeheAn = (x, z) => {
     const dist = S.abstand(x, z, 120);
     const mask = smooth(34, 115, dist);
@@ -391,8 +394,8 @@ export function baueWelt(S, opt = {}) {
     const plane = new THREE.PlaneGeometry(9, 1.8);
     const gruppe = new THREE.Group();
     let k = 0;
-    for (let s = 40; s < S.laenge; s += 62) {
-      const i = Math.round(s / S.ds) % S.n;
+    for (let s = 40; s < S.laenge - 20; s += 62) {
+      const i = Math.min(S.n - 1, Math.round(s / S.ds));
       const sg = (k % 2) ? 1 : -1;
       const lat = sg * (S.w[i] / 2 + WAND_ABSTAND + 0.8);
       const geo = plane.clone();
@@ -409,10 +412,10 @@ export function baueWelt(S, opt = {}) {
   }
 
   // --- Tribuene an der Start-/Zielgeraden
-  {
-    const i0 = Math.round(18 / S.ds);
+  const tribuene = (sPos, sg) => {
+    const i0 = Math.round(sPos / S.ds);
     const rx = -S.tz[i0], rz = S.tx[i0];
-    const lat = S.w[i0] / 2 + WAND_ABSTAND + 5;
+    const lat = sg * (S.w[i0] / 2 + WAND_ABSTAND + 5);
     const g = new THREE.Group();
     const th = Math.atan2(S.tx[i0], S.tz[i0]);
     const matB = new THREE.MeshStandardMaterial({ color: 0xdadde4, roughness: 0.9 });
@@ -437,13 +440,14 @@ export function baueWelt(S, opt = {}) {
     for (const zz of [-26, 26]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, 9, 0.4), matB); p.position.set(0.2, 4.5, zz); g.add(p); }
     // Platzierung rechts der Strecke; lokales +x zeigt nach aussen
     g.position.set(S.x[i0] + rx * lat, S.y[i0] + GROUND * 0 - 0.2, S.z[i0] + rz * lat);
-    g.rotation.y = th + Math.PI;     // lokales +x zeigt nach rechts/aussen, lokales z liegt entlang der Strecke
+    g.rotation.y = sg > 0 ? th + Math.PI : th;     // lokales +x zeigt nach rechts/aussen, lokales z liegt entlang der Strecke
     // lokales +x muss nach aussen (= rechts) zeigen: rechts = (-tz, tx) -> bei rotation.y=th-pi/2 ist lokal x = (cos(th-pi/2),..)
     scene.add(g);
-  }
+  };
+  tribuene(S.startS + 22, 1);
+  tribuene(S.zielS - 8, -1);
 
   // --- Start-Bogen und Checkpoint-Tore
-  const tore = [];
   function bogen(i, breite, hoehe, farbe, texte, gross) {
     const g = new THREE.Group();
     const w = S.w[i] / 2 + 1.6;
@@ -472,17 +476,20 @@ export function baueWelt(S, opt = {}) {
     scene.add(g);
     return g;
   }
-  const startBogen = bogen(0, 0, 9.5, 0xffffff, texBanner("START · ZIEL", "TROLLHOUSE TURBO"), true);
-  S.checkpoints.forEach((p, k) => {
-    const i = Math.round(p * S.n) % S.n;
-    tore.push(bogen(i, 0, 6.2, 0x00e5ff, texBanner("CP " + (k + 1), ""), false));
-  });
-  const setzeTor = (k, status) => {   // 0 = offen, 1 = gruen (geschafft), 2 = aktuell naechstes
-    const g = tore[k]; if (!g) return;
-    const col = status === 1 ? 0x35ff7a : status === 2 ? 0xffe14d : 0x00e5ff;
-    g.userData.mat.color.setHex(col); g.userData.mat.emissive.setHex(col);
-    if (g.userData.vorhang) g.userData.vorhang.material.color.setHex(col);
-  };
+  const startBogen = bogen(Math.round(S.startS / S.ds), 0, 9.5, 0xffffff, texBanner("START", "TROLLHOUSE TURBO"), true);
+  const zielBogen = bogen(Math.round(S.zielS / S.ds), 0, 9.5, 0xffffff, texBanner("ZIEL", "TROLLHOUSE TURBO"), true);
+  // Endmauern quer ueber die Strecke (Start hinten, Ende hinter dem Auslauf)
+  {
+    const matM = new THREE.MeshStandardMaterial({ map: bandeT, roughness: 0.75 });
+    for (const [i, vz] of [[0, -1], [S.n - 1, 1]]) {
+      const br = S.w[i] + 2 * (WAND_ABSTAND + 0.7);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(br, 2.4, 1.6), matM);
+      m.position.set(S.x[i] + S.tx[i] * vz * 0.8, S.y[i] + 1.2, S.z[i] + S.tz[i] * vz * 0.8);
+      m.rotation.y = Math.atan2(S.tx[i], S.tz[i]); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+    }
+  }
+  const tore = [];
+  const setzeTor = () => {};
 
   // Schatten folgt dem Auto
   function folge(x, y, z) {
@@ -491,7 +498,7 @@ export function baueWelt(S, opt = {}) {
   }
   const boostAnim = (t) => { boostTex.offset.y = -t * 1.2; };
 
-  return { scene, himmel, sonne, hemi, folge, sunDir, setzeTor, tore, boostAnim, hor, startBogen, hoeheAn };
+  return { scene, himmel, sonne, hemi, folge, sunDir, setzeTor, tore, boostAnim, hor, startBogen, zielBogen, hoeheAn };
 }
 
 // Flaches Stueck entlang der Strecke (Boost-Feld, Zielstreifen)
@@ -501,7 +508,7 @@ function bauePad(S, s, laenge, halbFn, mat, yOff, uRep, vRep, lat0 = 0) {
   const pos = [], uv = [], idx = [];
   const cnt = Math.max(1, i1 - i0);
   for (let k = 0; k <= cnt; k++) {
-    const i = ((i0 + k) % n + n) % n;
+    const i = Math.max(0, Math.min(n - 1, i0 + k));
     const rx = -S.tz[i], rz = S.tx[i];
     const hw = halbFn(i);
     for (const sg of [-1, 1]) {

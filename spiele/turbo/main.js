@@ -18,7 +18,7 @@ const BOT = params.has("bot");
 const DEBUG = params.has("debug");
 const FAST = params.has("fast");
 const SESSION_S = Number(params.get("zeit")) || 300;
-const MEDAILLEN = { autor: 31.0, gold: 33.2, silber: 36.5, bronze: 41 };   // Sekunden, Stehstart (grob am Test-Bot geeicht: ~31,8 s)
+const MEDAILLEN = { autor: 26.8, gold: 28.8, silber: 31.5, bronze: 36 };   // Sekunden, Stehstart A->B (Test-Bot: ~27,3 s)
 const touch = matchMedia("(pointer: coarse)").matches;
 const fmt = (t) => { if (t == null || !isFinite(t)) return "--:--.--"; const m = Math.floor(t / 60); const s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(2); };
 const fmtD = (d) => (d >= 0 ? "+" : "-") + Math.abs(d).toFixed(2);
@@ -137,7 +137,7 @@ let zustand = "menu";                 // menu | countdown | run | ende
 let a = neuesAuto(startPose(S));
 let lapDist = 0;
 let imZiel = false, imZielT = 0, zielZeit = 0;   // nach dem Ziel kurz ausrollen, dann Neustart aus dem Stand
-let simT = 0, sessionStart = 0, lapStart = 0, cpNext = 0, prevP = a.s / S.laenge;
+let simT = 0, sessionStart = 0, lapStart = 0, cpNext = 0, prevP = a.s;
 let best = null, bestSplits = [], curSplits = [], letzte = null, runden = 0;
 let ghostRec = [], ghostBest = null, recAkk = 0;
 let cdZeit = 0, cdLetzte = 0, ende = null, falsch = 0;
@@ -160,7 +160,7 @@ function platziere(pose) {
 function neustart() {
   imZiel = false;
   platziere(startPose(S));
-  cpNext = 0; lapDist = 0; lapStart = simT; prevP = a.s / S.laenge; curSplits = []; ghostRec = []; recAkk = 0; falsch = 0;
+  cpNext = 0; lapDist = 0; lapStart = simT; prevP = a.s; curSplits = []; ghostRec = []; recAkk = 0; falsch = 0;
   setzeTore(); blitz();
   if (zustand === "countdown") { cdZeit = 0; }
 }
@@ -172,7 +172,7 @@ function starte() {
   $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
   setzeTore();
   zustand = "countdown"; cdZeit = 0; cdLetzte = 4;
-  simT = 0; lapStart = 0; prevP = a.s / S.laenge;
+  simT = 0; lapStart = 0; prevP = a.s;
 }
 function beendeSession() {
   zustand = "ende"; ende = performance.now();
@@ -193,19 +193,17 @@ function beendeSession() {
 
 // ---------------- Runden-Logik (laeuft im Physikschritt)
 function rundenLogik(dt) {
-  const L = S.laenge, p = a.s / L;
+  const p = a.s;
   if (imZiel) { prevP = p; return; }
-  // Fortschritt entlang der Strecke (verhindert Abkuerzen / Rueckwaerts-Tricks)
-  let dp = p - prevP; if (dp < -0.5) dp += 1; else if (dp > 0.5) dp -= 1; lapDist += dp * L;
-  // Ziellinie vorwaerts
-  if (prevP > 0.85 && p < 0.15) {
-    if (lapDist >= L * 0.9) {
-      const f = (1 - prevP) / ((1 - prevP) + p);
+  // Ziellinie (A -> B): einmal vorwaerts ueberfahren
+  if (prevP < S.zielS && p >= S.zielS) {
+    {
+      const f = (S.zielS - prevP) / Math.max(1e-6, p - prevP);
       const tc = simT - dt * (1 - f);
       const zeit = tc - lapStart;
       runden++; letzte = zeit;
       $("letzte").textContent = fmt(zeit); $("runden").textContent = runden;
-      const neuBest = best == null || zeit < best;
+      const neuBest = best == null || zeit < best - 1e-4;
       if (neuBest) {
         const alt = best; best = zeit; bestSplits = curSplits.slice(); ghostBest = ghostRec.slice();
         $("best").textContent = fmt(best); meldeBestzeit(best);
@@ -213,7 +211,7 @@ function rundenLogik(dt) {
         toast((alt == null ? "ZIEL  " : "NEUE BESTZEIT  ") + fmt(zeit) + (alt != null ? "   " + fmtD(zeit - alt) : "") + (m ? "  ·  " + m : ""), "#ffe14d", 2400);
       } else toast("ZIEL  " + fmt(zeit) + "   " + fmtD(zeit - best), "#ffffff", 1800);
       ton.ziel();
-      imZiel = true; imZielT = 0; zielZeit = zeit; lapDist = 0;
+      imZiel = true; imZielT = 0; zielZeit = zeit;
     }
   }
   // Falsche Richtung
@@ -282,7 +280,8 @@ function zeigeAuto(dt, t) {
   car.gruppe.rotation.y = a.theta;
   // Nicken aus Steigung bzw. Flugbahn
   const i = a.i, n = S.n, k = 3;
-  const sl = (S.y[(i + k) % n] - S.y[(i - k + n) % n]) / (2 * k * S.ds);
+  const i1 = Math.min(n - 1, i + k), i0 = Math.max(0, i - k);
+  const sl = (S.y[i1] - S.y[i0]) / Math.max(1e-3, (i1 - i0) * S.ds);
   const tsin = Math.cos(Math.atan2(S.tx[i], S.tz[i]) - a.theta);
   let nick = -Math.atan(sl * (tsin >= 0 ? 1 : -1));
   if (a.luft) nick = -Math.atan2(a.vy, Math.max(8, a.vF)) * 0.9;
@@ -479,9 +478,9 @@ function frame(now) {
 // Test-/Debug-Zugriff
 window.__tm = { S, geist, get a() { return a; }, camera, renderer, scene, world, starte, neustart, get zustand() { return zustand; }, set zustand(v) { zustand = v; }, Q, groesse,
   setzeAuto(s, lat = 0, v = 0) {
-    const i = Math.round(s / S.ds) % S.n, rx = -S.tz[i], rz = S.tx[i];
+    const i = Math.max(0, Math.min(S.n - 1, Math.round(s / S.ds))), rx = -S.tz[i], rz = S.tx[i];
     a = neuesAuto({ x: S.x[i] + rx * lat, z: S.z[i] + rz * lat, y: S.y[i], theta: Math.atan2(S.tx[i], S.tz[i]), i });
-    a.s = s; a.vx = S.tx[i] * v; a.vz = S.tz[i] * v; prevP = a.s / S.laenge; cam.init = false;
+    a.s = s; a.vx = S.tx[i] * v; a.vz = S.tz[i] * v; prevP = a.s; cam.init = false;
   },
   get simT() { return simT; }, get best() { return best; }, get runden() { return runden; }, get cpNext() { return cpNext; } };
 
