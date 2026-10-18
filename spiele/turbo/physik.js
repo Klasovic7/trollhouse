@@ -69,7 +69,7 @@ export function schritt(a, e, dt, S) {
       const q = klemme(vF / vmax, 0, 1.3);
       acc = P.BESCHL * (1 - q * q) + (a.boost > 0 ? P.BOOST_BESCHL * (1 - klemme(vF / vmax, 0, 1)) : 0);
       if (vF < 0) acc = P.BREMSE;           // aus dem Rueckwaertsgang schnell wieder nach vorn
-    } else acc = -1.5;
+    } else { const c = 2.2 * dt; if (Math.abs(vF) <= c) vF = 0; else vF -= Math.sign(vF) * c; }
     acc -= 0.0012 * vF * Math.abs(vF);       // Luftwiderstand
     vF += acc * dt;
 

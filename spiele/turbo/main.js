@@ -84,9 +84,9 @@ window.addEventListener("resize", groesse);
 groesse();
 
 // ---------------- Eingabe
-const taste = { l: false, r: false, b: false };
-const tstate = { l: false, r: false, b: false };
-const keyMap = { ArrowLeft: "l", KeyA: "l", ArrowRight: "r", KeyD: "r", ArrowDown: "b", KeyS: "b", Space: "b", ShiftLeft: "b" };
+const taste = { l: false, r: false, b: false, g: false };
+const tstate = { l: false, r: false, b: false, g: false };
+const keyMap = { ArrowLeft: "l", KeyA: "l", ArrowRight: "r", KeyD: "r", ArrowDown: "b", KeyS: "b", Space: "b", ShiftLeft: "b", ArrowUp: "g", KeyW: "g" };
 window.addEventListener("keydown", (e) => {
   if (keyMap[e.code]) { taste[keyMap[e.code]] = true; e.preventDefault(); }
   if (e.repeat) return;
@@ -101,9 +101,19 @@ function binde(id, key) {
   el.addEventListener("pointerdown", an); el.addEventListener("pointerup", aus); el.addEventListener("pointercancel", aus); el.addEventListener("lostpointercapture", aus);
   el.addEventListener("contextmenu", (e) => e.preventDefault());
 }
-binde("t-l", "l"); binde("t-r", "r"); binde("t-b", "b");
+binde("t-l", "l"); binde("t-r", "r"); binde("t-b", "b"); binde("t-g", "g");
 $("b-restart").addEventListener("click", () => neustart());
 $("b-ton").addEventListener("click", () => schalteTon());
+const verlassen = () => { if (window.parent !== window) window.parent.postMessage({ typ: "turbo-verlassen" }, "*"); else history.back(); };
+$("b-exit").addEventListener("click", verlassen); $("b-quer-zurueck").addEventListener("click", verlassen);
+window.addEventListener("message", (e) => {
+  const d = e.data || {};
+  if (d.typ === "gegner" && Array.isArray(d.liste)) {
+    const box = $("gegner");
+    box.innerHTML = d.liste.length ? d.liste.slice(0, 5).map((g, i) => `<div class="z"><span>${i + 1}. ${String(g.name || "?").replace(/[<>&]/g, "")}</span><i>${fmt(g.zeit)}</i></div>`).join("") : '<div class="leer">noch keine Zeiten</div>';
+  }
+});
+const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postMessage({ typ: "bestzeit", zeit: z }, "*"); };
 $("b-start").addEventListener("click", () => starte());
 $("b-nochmal").addEventListener("click", () => starte());
 document.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -113,12 +123,14 @@ function eingabe() {
   let b = taste.b || tstate.b;
   const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
   if (gp) { const ax = gp.axes[0] || 0; if (Math.abs(ax) > 0.12) l = ax; if (gp.buttons[6] && gp.buttons[6].value > 0.3 || gp.buttons[1] && gp.buttons[1].pressed) b = true; }
-  return { lenk: l, bremse: b, gas: true };
+  let g = taste.g || tstate.g;
+  if (gp && gp.buttons[7] && gp.buttons[7].value > 0.1 || gp && gp.buttons[0] && gp.buttons[0].pressed) g = true;
+  return { lenk: l, bremse: b, gas: g };
 }
 
 // ---------------- Ton
 const ton = new Ton();
-function schalteTon() { ton.stumm(!ton.aus); $("b-ton").textContent = ton.aus ? "Ton aus" : "Ton an"; }
+function schalteTon() { ton.stumm(!ton.aus); $("b-ton").textContent = ton.aus ? "🔇" : "🔊"; }
 
 // ---------------- Spielzustand
 let zustand = "menu";                 // menu | countdown | run | ende
@@ -154,7 +166,7 @@ function starte() {
   ton.start();
   $("menue").classList.add("weg"); $("ende").classList.add("weg"); document.body.classList.add("im-spiel");
   platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
-  $("best").textContent = fmt(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
+  $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
   setzeTore();
   zustand = "countdown"; cdZeit = 0; cdLetzte = 4;
   simT = 0; lapStart = 0; prevP = a.s / S.laenge;
@@ -192,7 +204,7 @@ function rundenLogik(dt) {
       const neuBest = best == null || zeit < best;
       if (neuBest) {
         const alt = best; best = zeit; bestSplits = curSplits.slice(); ghostBest = ghostRec.slice();
-        $("best").textContent = fmt(best);
+        $("best").textContent = fmt(best); meldeBestzeit(best);
         const [m, c] = medaille(best); const mt = $("medal"); mt.textContent = m; mt.style.color = c;
         toast((alt == null ? "ERSTE RUNDE  " : "NEUE BESTZEIT  ") + fmt(zeit) + (alt != null ? "   " + fmtD(zeit - alt) : "") + (m ? "  ·  " + m : ""), "#ffe14d", 2400);
       } else toast("Runde  " + fmt(zeit) + "   " + fmtD(zeit - best), "#ffffff", 1800);
