@@ -91,7 +91,7 @@ export function baueStrecke() {
     { s: n * ds * 0.52, lat: 0 },
     { s: n * ds * 0.83, lat: 0 },
   ];
-  S.checkpoints = [0.25, 0.5, 0.75];
+  S.checkpoints = [];   // Checkpoints bewusst abgeschafft: eine Runde = einmal komplett herum
 
   // Raster fuer Abstandsabfragen (Gelaende, Baeume)
   const ZELLE = 40;

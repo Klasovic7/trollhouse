@@ -91,7 +91,6 @@ window.addEventListener("keydown", (e) => {
   if (keyMap[e.code]) { taste[keyMap[e.code]] = true; e.preventDefault(); }
   if (e.repeat) return;
   if (e.code === "KeyR" || e.code === "Enter") { if (zustand === "run" || zustand === "countdown") neustart(); else if (zustand === "menu") starte(); else if (zustand === "ende") starte(); }
-  if (e.code === "Backspace" || e.code === "KeyC") respawnCP();
   if (e.code === "KeyM") schalteTon();
 });
 window.addEventListener("keyup", (e) => { if (keyMap[e.code]) taste[keyMap[e.code]] = false; });
@@ -104,7 +103,6 @@ function binde(id, key) {
 }
 binde("t-l", "l"); binde("t-r", "r"); binde("t-b", "b");
 $("b-restart").addEventListener("click", () => neustart());
-$("b-cp").addEventListener("click", () => respawnCP());
 $("b-ton").addEventListener("click", () => schalteTon());
 $("b-start").addEventListener("click", () => starte());
 $("b-nochmal").addEventListener("click", () => starte());
@@ -125,6 +123,7 @@ function schalteTon() { ton.stumm(!ton.aus); $("b-ton").textContent = ton.aus ? 
 // ---------------- Spielzustand
 let zustand = "menu";                 // menu | countdown | run | ende
 let a = neuesAuto(startPose(S));
+let lapDist = 0;
 let simT = 0, sessionStart = 0, lapStart = 0, cpNext = 0, prevP = a.s / S.laenge;
 let best = null, bestSplits = [], curSplits = [], letzte = null, runden = 0;
 let ghostRec = [], ghostBest = null, recAkk = 0;
@@ -147,23 +146,14 @@ function platziere(pose) {
 }
 function neustart() {
   platziere(startPose(S));
-  cpNext = 0; lapStart = simT; prevP = a.s / S.laenge; curSplits = []; ghostRec = []; recAkk = 0; falsch = 0;
+  cpNext = 0; lapDist = 0; lapStart = simT; prevP = a.s / S.laenge; curSplits = []; ghostRec = []; recAkk = 0; falsch = 0;
   setzeTore(); blitz();
   if (zustand === "countdown") { cdZeit = 0; }
-}
-function respawnCP() {
-  if (zustand !== "run") return;
-  // letzter erreichter Checkpoint (oder Start)
-  const k = cpNext - 1;
-  const i = k < 0 ? startPose(S).i : Math.round(S.checkpoints[k] * S.n) % S.n;
-  const pose = { x: S.x[i], z: S.z[i], y: S.y[i], theta: Math.atan2(S.tx[i], S.tz[i]), i };
-  platziere(pose); a.s = i * S.ds; prevP = a.s / S.laenge; blitz();
-  toast("Zurück zum Checkpoint", "#ffe14d", 900);
 }
 function starte() {
   ton.start();
   $("menue").classList.add("weg"); $("ende").classList.add("weg"); document.body.classList.add("im-spiel");
-  platziere(startPose(S)); cpNext = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
+  platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
   $("best").textContent = fmt(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
   setzeTore();
   zustand = "countdown"; cdZeit = 0; cdLetzte = 4;
@@ -189,22 +179,11 @@ function beendeSession() {
 // ---------------- Runden-Logik (laeuft im Physikschritt)
 function rundenLogik(dt) {
   const L = S.laenge, p = a.s / L;
-  // Checkpoints
-  for (let k = 0; k < S.checkpoints.length; k++) {
-    const cp = S.checkpoints[k];
-    if (k === cpNext && prevP < cp && p >= cp && p - prevP < 0.2) {
-      const f = (cp - prevP) / (p - prevP);
-      const tc = simT - dt * (1 - f);
-      const split = tc - lapStart;
-      curSplits[k] = split; cpNext++;
-      let txt = "CP " + (k + 1) + "  " + split.toFixed(2), farbe = "#7df3ff";
-      if (bestSplits[k] != null) { const d = split - bestSplits[k]; txt += "   " + fmtD(d); farbe = d <= 0 ? "#6dff9a" : "#ff6b6b"; $("delta").textContent = fmtD(d); $("delta").style.color = farbe; clearTimeout(deltaT); deltaT = setTimeout(() => { $("delta").textContent = ""; }, 2500); }
-      toast(txt, farbe, 1400); ton.cp(); setzeTore();
-    }
-  }
+  // Fortschritt entlang der Strecke (verhindert Abkuerzen / Rueckwaerts-Tricks)
+  let dp = p - prevP; if (dp < -0.5) dp += 1; else if (dp > 0.5) dp -= 1; lapDist += dp * L;
   // Ziellinie vorwaerts
   if (prevP > 0.85 && p < 0.15) {
-    if (cpNext >= S.checkpoints.length) {
+    if (lapDist >= L * 0.9) {
       const f = (1 - prevP) / ((1 - prevP) + p);
       const tc = simT - dt * (1 - f);
       const zeit = tc - lapStart;
@@ -218,7 +197,7 @@ function rundenLogik(dt) {
         toast((alt == null ? "ERSTE RUNDE  " : "NEUE BESTZEIT  ") + fmt(zeit) + (alt != null ? "   " + fmtD(zeit - alt) : "") + (m ? "  ·  " + m : ""), "#ffe14d", 2400);
       } else toast("Runde  " + fmt(zeit) + "   " + fmtD(zeit - best), "#ffffff", 1800);
       ton.ziel();
-      lapStart = tc; cpNext = 0; curSplits = []; ghostRec = []; recAkk = 0; setzeTore();
+      lapStart = tc; lapDist = 0; ghostRec = []; recAkk = 0;
     }
   }
   // Falsche Richtung
