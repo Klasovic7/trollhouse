@@ -54,6 +54,11 @@
   #toast.an { opacity: 1; transform: translate(-50%, 0) scale(1); }
   #falsch { position: absolute; top: 40%; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: 900; color: #ff5470; display: none; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
   #falsch.an { display: block; }
+  #ampel { position: fixed; left: 50%; top: 24%; transform: translateX(-50%); display: none; gap: 2.2vmin; padding: 1.8vmin 2.6vmin; background: #0b0d12; border-radius: 4vmin; border: .5vmin solid #2a2f3a; box-shadow: 0 1vmin 5vmin rgba(0,0,0,.6); pointer-events: none; z-index: 5; }
+  #ampel.an { display: flex; }
+  #ampel i { width: 11vmin; height: 11vmin; max-width: 74px; max-height: 74px; border-radius: 50%; background: #2a1215; box-shadow: inset 0 .6vmin 1.4vmin rgba(0,0,0,.7); transition: background .05s; }
+  #ampel i.rot { background: #ff2d2d; box-shadow: 0 0 4vmin 1vmin rgba(255,40,40,.75), inset 0 -.8vmin 1.4vmin rgba(120,0,0,.5); }
+  #ampel i.gruen { background: #2dff7a; box-shadow: 0 0 5vmin 1.4vmin rgba(45,255,122,.8); }
   #cd { position: fixed; inset: 0; display: grid; place-items: center; font-size: 30vmin; font-weight: 900; font-style: italic; opacity: 0; pointer-events: none;
     text-shadow: 0 6px 40px rgba(0,0,0,.6); color: #fff; }
   #cd.an { animation: zahl .9s ease-out forwards; }
@@ -175,7 +180,7 @@
 </div>
 <div id="steuer"><div class="paar"><button id="t-l">◀</button><button id="t-r">▶</button></div><div class="paar"><button id="t-b">BREMSE</button><button id="t-g">GAS</button></div></div>
 <div id="quer"><div><div class="ph"></div><b style="font-size:20px">Bitte Handy quer halten</b><p style="opacity:.8;margin:10px 0 18px">Turbo lässt sich nur im Querformat steuern.</p><button class="gross" id="b-quer-zurueck" style="margin:0;font-size:15px;padding:11px 24px">Zurück</button></div></div>
-<div id="cd"></div><div id="blitz"></div><div id="dbg"></div>
+<div id="ampel"><i></i><i></i><i></i></div><div id="cd"></div><div id="blitz"></div><div id="dbg"></div>
 
 <div id="menue" class="overlay"><div class="karte">
   <div class="logo">TROLLHOUSE<small>TURBO · ZEITJAGD</small></div>

@@ -140,7 +140,7 @@ let imZiel = false, imZielT = 0, zielZeit = 0;   // nach dem Ziel kurz ausrollen
 let simT = 0, sessionStart = 0, lapStart = 0, cpNext = 0, prevP = a.s;
 let best = null, bestSplits = [], curSplits = [], letzte = null, runden = 0;
 let ghostRec = [], ghostBest = null, recAkk = 0;
-let cdZeit = 0, cdLetzte = 0, ende = null, falsch = 0;
+let cdKurz = false, sessionLaeuft = false, cdZeit = 0, cdLetzte = 0, ende = null, falsch = 0;
 try { const g = parseFloat(localStorage.getItem("tt_rekord_v1")); if (g > 0) $("rekord").textContent = fmt(g); } catch (_) {}
 let rekord = (() => { try { return parseFloat(localStorage.getItem("tt_rekord_v1")) || null; } catch (_) { return null; } })();
 
@@ -162,7 +162,11 @@ function neustart() {
   platziere(startPose(S));
   cpNext = 0; lapDist = 0; lapStart = simT; prevP = a.s; curSplits = []; ghostRec = []; recAkk = 0; falsch = 0;
   setzeTore(); blitz();
-  if (zustand === "countdown") { cdZeit = 0; }
+  if (zustand === "run" || zustand === "countdown") startAmpel(true);
+}
+function startAmpel(kurz) {
+  zustand = "countdown"; cdKurz = kurz; cdZeit = 0; cdLetzte = -1;
+  $("ampel").className = "an"; for (const l of $("ampel").children) l.className = "";
 }
 function starte() {
   ton.start();
@@ -171,7 +175,7 @@ function starte() {
   platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
   $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
   setzeTore();
-  zustand = "countdown"; cdZeit = 0; cdLetzte = 4;
+  sessionLaeuft = false; startAmpel(false);
   simT = 0; lapStart = 0; prevP = a.s;
 }
 function beendeSession() {
@@ -405,14 +409,22 @@ function frame(now) {
   }
   if (zustand === "countdown") {
     cdZeit += dt;
-    const rest = 3 - cdZeit, zahl = Math.ceil(rest);
-    if (zahl !== cdLetzte) {
-      cdLetzte = zahl;
-      if (zahl > 0) { $("cd").textContent = zahl; $("cd").className = "an"; ton.beep(false); }
+    const schritt_ = cdKurz ? 0.55 : 0.8, vor = cdKurz ? 0.1 : 0.45;
+    const an = Math.max(0, Math.min(3, Math.floor((cdZeit - vor) / schritt_) + 1));
+    if (an !== cdLetzte) {
+      cdLetzte = an;
+      const ls = $("ampel").children;
+      for (let k = 0; k < 3; k++) ls[k].className = k < an ? "rot" : "";
+      $("ampel").className = "an";
+      if (an > 0) ton.beep(false);
     }
-    if (rest <= 0) {
-      zustand = "run"; sessionStart = simT; lapStart = simT; $("cd").textContent = "LOS!"; $("cd").className = "an los"; ton.beep(true);
-      setTimeout(() => { $("cd").className = ""; }, 700);
+    if (cdZeit >= vor + 3 * schritt_) {
+      zustand = "run";
+      if (!sessionLaeuft) { sessionLaeuft = true; sessionStart = simT; }
+      lapStart = simT;
+      const ls = $("ampel").children; for (let k = 0; k < 3; k++) ls[k].className = "gruen";
+      $("ampel").className = "an los"; ton.beep(true);
+      setTimeout(() => { if (zustand === "run") $("ampel").className = ""; }, 750);
     }
   }
   acc += dt;
@@ -449,7 +461,7 @@ function frame(now) {
   if (zustand === "run" || zustand === "ende") {
     $("rest").textContent = Math.floor(rest / 60) + ":" + String(Math.floor(rest % 60)).padStart(2, "0");
     $("lap").textContent = fmt(imZiel ? zielZeit : Math.max(0, simT - lapStart));
-  } else if (zustand === "countdown") { $("rest").textContent = Math.floor(SESSION_S / 60) + ":" + String(SESSION_S % 60).padStart(2, "0"); $("lap").textContent = fmt(0); }
+  } else if (zustand === "countdown") { const rs = sessionLaeuft ? rest : SESSION_S; $("rest").textContent = Math.floor(rs / 60) + ":" + String(Math.floor(rs % 60)).padStart(2, "0"); $("lap").textContent = fmt(0); }
   const kmh = Math.round(Math.hypot(a.vx, a.vz) * 3.6);
   $("kmh").textContent = kmh;
   $("boostbar").firstElementChild.style.transform = `scaleX(${Math.min(1, a.boost / P.BOOST_ZEIT)})`;
