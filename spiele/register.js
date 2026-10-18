@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "324";
+const SPIEL_VERSION = "325";
 
 export const SPIELE = [
   {
@@ -203,6 +203,17 @@ export const SPIELE = [
     minSpieler: 1,
     mitBots: true,
     laden: () => import(`./passgenau/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "run",
+    name: "Run",
+    emoji: "🏃",
+    farbe: "#f43f5e",
+    beschreibung: "Rennt gleichzeitig durch die Stadt - weicht aus, springt und rutscht. Wer am weitesten kommt, gewinnt",
+    // TEST: alleine spielbar. Später wieder: minSpieler: 2 und mitBots entfernen.
+    minSpieler: 1,
+    mitBots: true,
+    laden: () => import(`./run/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "finto",

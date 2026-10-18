@@ -3485,3 +3485,24 @@ body.tt-aktiv:has(#tt-spiel-screen:not([hidden])) #spiel-kopf-titel { display: n
 
 /* Doppelkopf: gemalte Karten */
 img.dk-karte-bild { -webkit-user-drag: none; user-select: none; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+
+/* ---- Run ---- */
+.run-spiel { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 12px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.run-hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.run-hud-wert { font-size: 1.15rem; }
+.run-hud-leben { font-size: 1.05rem; letter-spacing: 2px; min-width: 3.2em; text-align: right; }
+.run-canvas-wrap { position: relative; width: 100%; max-width: 520px; margin: 0 auto; }
+.run-canvas-wrap canvas { display: block; width: 100%; border-radius: 14px; background: #150f2e; touch-action: none; }
+.run-overlay {
+  position: absolute; left: 12px; right: 12px; bottom: 14px; padding: 12px 14px; border-radius: 14px; text-align: center;
+  font-weight: 800; font-size: 1.1rem; background: rgba(21, 128, 61, 0.93); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+.run-overlay.run-overlay-schlecht { background: rgba(185, 28, 28, 0.93); }
+.run-spuren { display: flex; flex-direction: column; gap: 5px; max-width: 520px; width: 100%; margin: 0 auto; }
+.run-spur { display: grid; grid-template-columns: 4.6em 1fr 3.4em; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 700; }
+.run-spur-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-spur-bahn { position: relative; height: 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.14); }
+.run-spur-punkt { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid #fff; transition: left 0.9s linear; }
+.run-spur-m { text-align: right; font-variant-numeric: tabular-nums; opacity: 0.85; }
+.run-spur-aus { opacity: 0.5; }
+.run-hinweis { text-align: center; margin-top: 4px; }
