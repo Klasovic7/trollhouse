@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e1a">
+<title>Trollhouse Turbo – Prototyp</title>
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+</script>
+<style>
+  :root { --akzent: #19e3ff; --warm: #ffb02e; --glas: rgba(8, 12, 24, 0.55); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0e1a; color: #fff;
+    font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; overscroll-behavior: none; }
+  #c, #fx { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #fx { pointer-events: none; }
+  .weg { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; font-style: italic; font-weight: 900; letter-spacing: 0.01em; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
+    padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  .im-spiel #hud { opacity: 1; }
+  .chip { background: var(--glas); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 12px; padding: 5px 11px; display: flex; flex-direction: column; min-width: 96px; }
+  .chip .lab { font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; opacity: .65; font-weight: 700; }
+  .chip .wert { font-size: 19px; line-height: 1.15; }
+  .links { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); display: grid; grid-template-columns: auto auto; gap: 6px; }
+  #rest.knapp { color: #ff5470; animation: puls .6s infinite alternate; }
+  @keyframes puls { to { opacity: .45; } }
+  #medal { font-size: 11px; font-weight: 900; letter-spacing: .1em; margin-left: 6px; }
+  .mitte { position: absolute; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); text-align: center; }
+  #lap { font-size: clamp(24px, 4.8vw, 50px); text-shadow: 0 2px 14px rgba(0,0,0,.6); line-height: 1; }
+  #delta { font-size: 22px; min-height: 26px; font-weight: 900; font-style: italic; text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+  .rechts { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: flex; gap: 8px; pointer-events: auto; }
+  @media (max-width: 760px) { .rechts button { font-size: 11px; padding: 7px 9px; } .chip { min-width: 78px; padding: 4px 9px; } .chip .wert { font-size: 16px; } .mitte { left: 56%; } }
+  @media (max-width: 520px) {
+    .links { grid-template-columns: 1fr; } .links .chip:nth-child(2), .links .chip:nth-child(4) { display: none; }
+    .rechts { flex-direction: column; align-items: flex-end; gap: 6px; } #b-ton { display: none; }
+    .mitte { left: 50%; } #lap { font-size: 28px; } #toast { top: 20%; font-size: 20px; }
+  }
+  .rechts button { font: inherit; font-weight: 800; font-size: 13px; color: #fff; background: var(--glas); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,.2); border-radius: 12px; padding: 9px 13px; cursor: pointer; }
+  .rechts button#b-restart { background: linear-gradient(180deg, #ff5a76, #e0264f); border-color: rgba(255,255,255,.35); }
+  .rechts button:active { transform: scale(.96); }
+  #tacho { position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); text-align: center; text-shadow: 0 2px 12px rgba(0,0,0,.7); }
+  #kmh { font-size: 46px; line-height: 1; } #tacho small { font-size: 12px; font-weight: 800; letter-spacing: .12em; margin-left: 4px; opacity: .8; }
+  #boostbar { width: 120px; height: 7px; margin: 5px auto 0; background: rgba(255,255,255,.15); border-radius: 4px; overflow: hidden; }
+  #boostbar i { display: block; height: 100%; background: linear-gradient(90deg, #ffb02e, #19e3ff); transform-origin: left; transform: scaleX(0); }
+  #toast { position: absolute; top: 24%; left: 50%; transform: translate(-50%, 0) scale(.9); font-size: clamp(18px, 3.8vw, 30px); opacity: 0; transition: opacity .2s, transform .2s;
+    font-weight: 900; font-style: italic; text-shadow: 0 2px 14px rgba(0,0,0,.8); white-space: nowrap; }
+  #toast.an { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #falsch { position: absolute; top: 40%; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: 900; color: #ff5470; display: none; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
+  #falsch.an { display: block; }
+  #cd { position: fixed; inset: 0; display: grid; place-items: center; font-size: 30vmin; font-weight: 900; font-style: italic; opacity: 0; pointer-events: none;
+    text-shadow: 0 6px 40px rgba(0,0,0,.6); color: #fff; }
+  #cd.an { animation: zahl .9s ease-out forwards; }
+  #cd.los { color: #6dff9a; font-size: 22vmin; }
+  @keyframes zahl { 0% { opacity: 0; transform: scale(1.8); } 20% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.85); } }
+  #blitz { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  #blitz.an { animation: blitz .28s ease-out; }
+  @keyframes blitz { 0% { opacity: .55; } 100% { opacity: 0; } }
+  #dbg { position: fixed; bottom: 4px; left: 6px; font: 11px/1 monospace; opacity: .7; pointer-events: none; }
+
+  /* ---------- Touch-Steuerung ---------- */
+  #steuer { position: fixed; inset: auto 0 0 0; display: none; justify-content: space-between; align-items: flex-end; pointer-events: none;
+    padding: 0 max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+  .touch.im-spiel #steuer { display: flex; }
+  #steuer .paar { display: flex; gap: 12px; }
+  #steuer button { pointer-events: auto; touch-action: none; font: inherit; color: #fff; font-weight: 900; border: 2px solid rgba(255,255,255,.35);
+    background: rgba(10,14,28,.38); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border-radius: 26px; }
+  #t-l, #t-r { width: clamp(86px, 17vw, 128px); height: clamp(86px, 17vw, 128px); font-size: 40px; }
+  #t-b { width: clamp(96px, 19vw, 140px); height: clamp(86px, 17vw, 120px); font-size: 14px; letter-spacing: .14em; background: rgba(255,64,96,.30); border-color: rgba(255,120,140,.6); }
+  #steuer button.an { background: rgba(25,227,255,.45); border-color: #fff; transform: scale(.96); }
+  #steuer #t-b.an { background: rgba(255,64,96,.7); }
+  .bot #steuer { display: none !important; }
+
+  /* ---------- Bildschirme ---------- */
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 18px; z-index: 5;
+    background: radial-gradient(120% 90% at 50% 0%, rgba(10,14,30,.15), rgba(6,8,18,.72)); }
+  .karte { width: min(520px, 100%); text-align: center; padding: 22px 22px 20px; border-radius: 26px;
+    background: linear-gradient(180deg, rgba(18,24,46,.78), rgba(8,12,26,.82)); border: 1px solid rgba(255,255,255,.16);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .logo { font-size: clamp(34px, 9vw, 54px); font-weight: 900; font-style: italic; line-height: .95; letter-spacing: -.01em;
+    background: linear-gradient(90deg, #ff4d6d, #ffb02e 55%, #ffe14d); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo small { display: block; font-size: .36em; letter-spacing: .5em; margin-top: 8px; font-style: normal; color: #7be9ff; -webkit-text-fill-color: #7be9ff; }
+  .karte p { margin: 14px 0 0; opacity: .85; line-height: 1.4; font-size: 14.5px; }
+  .regeln { text-align: left; margin: 14px auto 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 13.5px; }
+  .regeln li { background: rgba(255,255,255,.06); border-radius: 10px; padding: 8px 11px; line-height: 1.3; }
+  .regeln b { color: #7be9ff; }
+  .gross { margin-top: 18px; font: inherit; font-weight: 900; font-size: 20px; letter-spacing: .06em; color: #0a0e1a; border: 0; border-radius: 16px; padding: 15px 36px; cursor: pointer;
+    background: linear-gradient(180deg, #ffe14d, #ffa11a); box-shadow: 0 8px 0 #b3650a, 0 14px 30px rgba(0,0,0,.4); }
+  .gross:active { transform: translateY(4px); box-shadow: 0 4px 0 #b3650a; }
+  .zeile { display: flex; justify-content: space-between; padding: 9px 4px; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 15px; }
+  .zeile b { font-size: 18px; }
+  #e-medal { font-size: 26px; font-weight: 900; font-style: italic; margin: 6px 0 4px; letter-spacing: .08em; }
+  #lade { position: fixed; inset: 0; background: #0a0e1a; display: grid; place-items: center; z-index: 9; font-weight: 800; letter-spacing: .2em; }
+  .overlay { overflow: auto; }
+  @media (max-height: 560px) {
+    .overlay { align-items: start; padding: 8px; }
+    .karte { padding: 12px 16px 12px; border-radius: 20px; width: min(720px, 100%); }
+    #menue { justify-items: start; } #menue .karte { width: min(520px, 58vw); } .regeln { grid-template-columns: 1fr !important; }
+    .logo { font-size: 30px; } .logo small { margin-top: 4px; letter-spacing: .4em; }
+    .karte > p { display: none; }
+    .regeln { grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; font-size: 12px; }
+    .regeln li { padding: 6px 9px; }
+    .gross { margin-top: 10px; padding: 11px 30px; font-size: 17px; box-shadow: 0 5px 0 #b3650a, 0 10px 24px rgba(0,0,0,.4); }
+    .karte > div[style] { margin-top: 8px !important; }
+  }
+  .hinweis-quer { display: none; margin-top: 10px; font-size: 12.5px; color: #ffd27a; }
+  @media (orientation: portrait) and (pointer: coarse) { .hinweis-quer { display: block; } }
+</style>
+</head>
+<body class="">
+<div id="lade">LADE …</div>
+<canvas id="c"></canvas>
+<canvas id="fx"></canvas>
+<div id="hud">
+  <div class="links">
+    <div class="chip"><span class="lab">Restzeit</span><span class="wert num" id="rest">5:00</span></div>
+    <div class="chip"><span class="lab">Runden</span><span class="wert num" id="runden">0</span></div>
+    <div class="chip"><span class="lab">Beste <span id="medal"></span></span><span class="wert num" id="best">--:--.--</span></div>
+    <div class="chip"><span class="lab">Letzte</span><span class="wert num" id="letzte">--</span></div>
+  </div>
+  <div class="mitte"><div id="lap" class="num">0:00.00</div><div id="delta"></div></div>
+  <div class="rechts"><button id="b-cp" title="Zurück zum Checkpoint (Rücktaste)">↩ CP</button><button id="b-ton">Ton an</button><button id="b-restart" title="Neustart (R)">↻ Neustart</button></div>
+  <div id="tacho"><span id="kmh" class="num">0</span><small>KM/H</small><div id="boostbar"><i></i></div></div>
+  <div id="toast"></div><div id="falsch">FALSCHE RICHTUNG</div>
+</div>
+<div id="steuer"><div class="paar"><button id="t-l">◀</button><button id="t-r">▶</button></div><button id="t-b">BREMSE<br>DRIFT</button></div>
+<div id="cd"></div><div id="blitz"></div><div id="dbg"></div>
+
+<div id="menue" class="overlay"><div class="karte">
+  <div class="logo">TROLLHOUSE<small>TURBO · ZEITJAGD</small></div>
+  <p>Gleiche Strecke für alle. <b>5 Minuten</b> Zeit – fahre so viele Runden, bis deine schnellste sitzt.</p>
+  <ul class="regeln">
+    <li><b>Neustart</b> jederzeit mit <b>↻</b> (Taste R / Enter). Fehler? Sofort nochmal.</li>
+    <li><b>Gas</b> gibt das Auto automatisch. Mit <b>Bremse + Lenken</b> driftest du.</li>
+    <li>Die <b>Boost-Felder</b> auf der Strecke geben Extra-Tempo. Der <b>blaue Geist</b> ist deine beste Runde.</li>
+    <li>Tastatur: ← → lenken, ↓ / Leertaste bremsen, Rücktaste = zurück zum Checkpoint.</li>
+  </ul>
+  <div style="margin-top:12px;font-size:13px;opacity:.8">Persönlicher Rekord: <b id="rekord">--:--.--</b></div>
+  <button class="gross" id="b-start">START</button>
+  <div class="hinweis-quer">Tipp: Handy quer halten – dann lässt es sich am besten steuern.</div>
+</div></div>
+
+<div id="ende" class="overlay weg"><div class="karte">
+  <div class="logo" style="font-size:clamp(28px,7vw,40px)">ZEIT ABGELAUFEN</div>
+  <div id="e-medal">–</div>
+  <div class="zeile"><span>Beste Runde</span><b class="num" id="e-best">--</b></div>
+  <div class="zeile"><span>Gültige Runden</span><b class="num" id="e-runden">0</b></div>
+  <div class="zeile"><span>Persönlicher Rekord</span><b class="num" id="e-rekord">--</b></div>
+  <button class="gross" id="b-nochmal">NOCHMAL</button>
+</div></div>
+
+<script>
+if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
+(function () {
+  var msg = "Dein Browser ist zu alt für dieses Spiel (Safari ab iOS 16.4 / aktuelles Chrome nötig).";
+  if (window.HTMLScriptElement && HTMLScriptElement.supports && !HTMLScriptElement.supports("importmap")) document.getElementById("lade").textContent = msg;
+  setTimeout(function () { var l = document.getElementById("lade"); if (l && !l.classList.contains("weg")) l.textContent = "Lädt nicht? Seite neu laden. " ; }, 12000);
+})();
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
