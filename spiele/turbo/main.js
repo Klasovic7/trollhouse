@@ -18,7 +18,7 @@ const BOT = params.has("bot");
 const DEBUG = params.has("debug");
 const FAST = params.has("fast");
 const SESSION_S = Number(params.get("zeit")) || 300;
-const MEDAILLEN = { autor: 28.6, gold: 30.6, silber: 33.5, bronze: 38 };   // Sekunden (grob am Test-Bot geeicht)
+const MEDAILLEN = { autor: 31.0, gold: 33.2, silber: 36.5, bronze: 41 };   // Sekunden, Stehstart (grob am Test-Bot geeicht: ~31,8 s)
 const touch = matchMedia("(pointer: coarse)").matches;
 const fmt = (t) => { if (t == null || !isFinite(t)) return "--:--.--"; const m = Math.floor(t / 60); const s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(2); };
 const fmtD = (d) => (d >= 0 ? "+" : "-") + Math.abs(d).toFixed(2);
@@ -136,6 +136,7 @@ function schalteTon() { ton.stumm(!ton.aus); $("b-ton").textContent = ton.aus ? 
 let zustand = "menu";                 // menu | countdown | run | ende
 let a = neuesAuto(startPose(S));
 let lapDist = 0;
+let imZiel = false, imZielT = 0, zielZeit = 0;   // nach dem Ziel kurz ausrollen, dann Neustart aus dem Stand
 let simT = 0, sessionStart = 0, lapStart = 0, cpNext = 0, prevP = a.s / S.laenge;
 let best = null, bestSplits = [], curSplits = [], letzte = null, runden = 0;
 let ghostRec = [], ghostBest = null, recAkk = 0;
@@ -157,6 +158,7 @@ function platziere(pose) {
   a = neuesAuto(pose);
 }
 function neustart() {
+  imZiel = false;
   platziere(startPose(S));
   cpNext = 0; lapDist = 0; lapStart = simT; prevP = a.s / S.laenge; curSplits = []; ghostRec = []; recAkk = 0; falsch = 0;
   setzeTore(); blitz();
@@ -164,6 +166,7 @@ function neustart() {
 }
 function starte() {
   ton.start();
+  try { const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); } } catch (_) {}
   $("menue").classList.add("weg"); $("ende").classList.add("weg"); document.body.classList.add("im-spiel");
   platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
   $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
@@ -178,7 +181,7 @@ function beendeSession() {
   setTimeout(() => {
     const [m, c] = best != null ? medaille(best) : ["", "#fff"];
     $("e-best").textContent = fmt(best);
-    $("e-medal").textContent = m || (best != null ? "Keine Medaille" : "Keine gültige Runde");
+    $("e-medal").textContent = m || (best != null ? "Keine Medaille" : "Kein gültiger Lauf");
     $("e-medal").style.color = c;
     $("e-runden").textContent = runden;
     let neu = false;
@@ -191,6 +194,7 @@ function beendeSession() {
 // ---------------- Runden-Logik (laeuft im Physikschritt)
 function rundenLogik(dt) {
   const L = S.laenge, p = a.s / L;
+  if (imZiel) { prevP = p; return; }
   // Fortschritt entlang der Strecke (verhindert Abkuerzen / Rueckwaerts-Tricks)
   let dp = p - prevP; if (dp < -0.5) dp += 1; else if (dp > 0.5) dp -= 1; lapDist += dp * L;
   // Ziellinie vorwaerts
@@ -206,10 +210,10 @@ function rundenLogik(dt) {
         const alt = best; best = zeit; bestSplits = curSplits.slice(); ghostBest = ghostRec.slice();
         $("best").textContent = fmt(best); meldeBestzeit(best);
         const [m, c] = medaille(best); const mt = $("medal"); mt.textContent = m; mt.style.color = c;
-        toast((alt == null ? "ERSTE RUNDE  " : "NEUE BESTZEIT  ") + fmt(zeit) + (alt != null ? "   " + fmtD(zeit - alt) : "") + (m ? "  ·  " + m : ""), "#ffe14d", 2400);
-      } else toast("Runde  " + fmt(zeit) + "   " + fmtD(zeit - best), "#ffffff", 1800);
+        toast((alt == null ? "ZIEL  " : "NEUE BESTZEIT  ") + fmt(zeit) + (alt != null ? "   " + fmtD(zeit - alt) : "") + (m ? "  ·  " + m : ""), "#ffe14d", 2400);
+      } else toast("ZIEL  " + fmt(zeit) + "   " + fmtD(zeit - best), "#ffffff", 1800);
       ton.ziel();
-      lapStart = tc; lapDist = 0; ghostRec = []; recAkk = 0;
+      imZiel = true; imZielT = 0; zielZeit = zeit; lapDist = 0;
     }
   }
   // Falsche Richtung
@@ -420,7 +424,7 @@ function frame(now) {
     const lauf = zustand === "run" || zustand === "ende";
     if (zustand === "run") {
       simT += H;
-      eingabeJetzt = BOT ? botEingabe(a, S, { aQuer: 30 }) : eingabe();
+      eingabeJetzt = imZiel ? { lenk: 0, bremse: true, gas: false } : BOT ? botEingabe(a, S, { aQuer: 30 }) : eingabe();
     } else if (zustand === "ende") eingabeJetzt = { lenk: 0, bremse: true };
     else eingabeJetzt = { lenk: 0, bremse: true, gas: false };
     if (lauf) {
@@ -432,8 +436,9 @@ function frame(now) {
       }
       if (zustand === "run") {
         rundenLogik(H);
+        if (imZiel) { imZielT += H; if (imZielT > 1.9) { imZiel = false; neustart(); } }
         recAkk += H;
-        if (recAkk >= 1 / 30) { recAkk -= 1 / 30; ghostRec.push(0, a.x, a.y, a.z, a.theta); }
+        if (!imZiel && recAkk >= 1 / 30) { recAkk -= 1 / 30; ghostRec.push(0, a.x, a.y, a.z, a.theta); }
         if (simT - sessionStart >= SESSION_S) { beendeSession(); }
       }
     }
@@ -444,7 +449,7 @@ function frame(now) {
   const rest = Math.max(0, SESSION_S - (simT - sessionStart));
   if (zustand === "run" || zustand === "ende") {
     $("rest").textContent = Math.floor(rest / 60) + ":" + String(Math.floor(rest % 60)).padStart(2, "0");
-    $("lap").textContent = fmt(Math.max(0, simT - lapStart));
+    $("lap").textContent = fmt(imZiel ? zielZeit : Math.max(0, simT - lapStart));
   } else if (zustand === "countdown") { $("rest").textContent = Math.floor(SESSION_S / 60) + ":" + String(SESSION_S % 60).padStart(2, "0"); $("lap").textContent = fmt(0); }
   const kmh = Math.round(Math.hypot(a.vx, a.vz) * 3.6);
   $("kmh").textContent = kmh;
