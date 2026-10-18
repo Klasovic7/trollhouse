@@ -661,8 +661,7 @@ function ortsListe() {
 
 function stadt(idx) {
   const s = ortsListe()[idx];
-  // Nur bei weltweiten Städten steht das Land dabei. Bei Sehenswürdigkeiten und deutschen
-  // Städten (Bundesland) wäre es ein Hinweis, deshalb bleibt die Zeile leer.
+  // Das Land steht nirgends dabei - es wäre ein Hinweis (und viele Namen gibt es mehrfach).
   if (!s) return null;
   let name = s[0];
   // Die Art steht nur dabei, wenn sie nicht schon im Namen vorkommt (z. B. "Blaue Moschee")
@@ -670,7 +669,7 @@ function stadt(idx) {
     // Namen mit Klammerzusatz, z. B. "Chinesische Mauer (Badaling)" -> "Chinesische Mauer, Badaling (Mauer)"
     name = name.replace(/\s*\(([^)]*)\)/, ", $1") + ` (${SEHENS_ART[name]})`;
   }
-  return { name, land: s[4] === "welt" ? s[1] : "", lat: s[2], lon: s[3] };
+  return { name, land: "", lat: s[2], lon: s[3] };
 }
 
 function neueStadtIdx(bisher) {

@@ -5,9 +5,10 @@
 //  Handy simuliert seinen eigenen Lauf). Drei Spuren: links/rechts wischen =
 //  Spur wechseln, hoch = springen, runter = rutschen. Niedrige Hindernisse
 //  überspringt man, hohe Tore unterrutscht man, Blöcke umläuft man.
-//  Wertung je Runde: wer am weitesten kommt (bei Ziel-Ankunft zählt die Strecke
-//  voll, dann Münzen, dann Zeit) bekommt die meisten Punkte, der Nächste einen
-//  weniger usw. (gleiche Platzierung teilt sich den Wert).
+//  Die Strecke ist endlos und wird mit der Zeit schneller. Eine Runde endet, wenn
+//  alle gestürzt sind. Wertung je Runde: wer am weitesten kommt (dann Münzen)
+//  bekommt die meisten Punkte, der Nächste einen weniger usw. (gleiche
+//  Platzierung teilt sich den Wert).
 //  Raumfelder beginnen mit "run"; der Lauf-Stand jedes Spielers liegt in der
 //  Subcollection "runStand" (Dokument {spielerId}_{runde}), wird beim Laufen
 //  etwa einmal pro Sekunde aktualisiert und am Ende endgültig geschrieben.
@@ -22,17 +23,14 @@ import { speichereWertung } from "../../kern/wertung.js";
 const COUNTDOWN_MS = 3000;
 const MAX_RUNDEN = 10;
 const STANDARD_RUNDEN = 3;
-const STRECKEN = [{ m: 400, name: "Kurz" }, { m: 800, name: "Mittel" }, { m: 1200, name: "Lang" }];
-const STANDARD_STRECKE = 800;
 const LEBEN_OPTIONEN = [1, 3];
 const STANDARD_LEBEN = 3;
-const AUSWERTUNG_PUFFER_MS = 20000;
+const MAX_RUNDE_MS = 15 * 60 * 1000;   // Sicherheitsgrenze, falls jemand ewig durchhält oder verschwindet
 const SCHREIB_MS = 1000;
 
 // Spielphysik (Meter / Sekunden)
 const SPUR_BREITE = 1.6;
 const BASIS_TEMPO = 11;
-const MAX_TEMPO = 17;
 const SPRUNG_V = 6.6;
 const SCHWERKRAFT = 19;
 const RUTSCH_S = 0.65;
@@ -45,7 +43,7 @@ const VORLAGE = `
   <div id="run-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Alle laufen gleichzeitig auf derselben Strecke. Wischen: links/rechts = Spur wechseln,
       hoch = springen, runter = rutschen. Niedrige Hürden überspringt man, hohe Tore unterrutscht man,
-      Blöcke umläuft man. Wer am weitesten kommt, bekommt die meisten Punkte.</p>
+      Blöcke umläuft man. Die Strecke ist endlos und wird immer schneller - wer am weitesten kommt, bekommt die meisten Punkte.</p>
 
     <div id="run-einstellungen" hidden>
       <div class="setup-anzahl-zeile">
@@ -56,10 +54,6 @@ const VORLAGE = `
       </div>
       <p id="run-anzahl-max" class="hinweis-text"></p>
 
-      <div class="pg-opt-block">
-        <span class="pg-opt-titel">Länge der Strecke</span>
-        <div id="run-strecke-opt" class="pg-opt"></div>
-      </div>
       <div class="pg-opt-block">
         <span class="pg-opt-titel">Leben</span>
         <div id="run-leben-opt" class="pg-opt"></div>
@@ -74,7 +68,7 @@ const VORLAGE = `
 
   <div id="run-vorbereitung-screen" class="bildschirm-karte pg-mitte" hidden>
     <p class="kategorie">Run</p>
-    <p class="pg-vorb-text">Gleich geht's los: <strong id="run-vorb-strecke"></strong> m</p>
+    <p class="pg-vorb-text">Gleich geht's los - macht euch bereit!</p>
     <p class="zg-countdown-ziffer" id="run-countdown-ziffer"></p>
   </div>
 
@@ -117,9 +111,9 @@ let tickId = null;
 let status = null;
 let rundenIndex = -1;
 let anzahlRunden = 0;
-let entwurf = { runden: STANDARD_RUNDEN, strecke: STANDARD_STRECKE, leben: STANDARD_LEBEN };
+let entwurf = { runden: STANDARD_RUNDEN, leben: STANDARD_LEBEN };
 let anzahlEntwurfTimer = null;
-let einstellungen = { strecke: STANDARD_STRECKE, leben: STANDARD_LEBEN };
+let einstellungen = { leben: STANDARD_LEBEN };
 let seed = 0;
 let vorbereitungSeit = 0;
 let auswertungLaeuft = false;
@@ -145,40 +139,52 @@ function zufallsgenerator(s) {
 // Streckenzeilen: { d (Meter), t: [typ links, mitte, rechts] } mit typ 0 frei, 1 niedrig, 2 Tor, 3 Block.
 // Jede Zeile ist lösbar: es gibt immer eine freie Spur - oder alle drei Spuren sind
 // dasselbe überwindbare Hindernis (niedrig: springen, Tor: rutschen).
-function baueStrecke(startwert, laenge) {
+function tempoBei(dist) {
+  return BASIS_TEMPO + dist * 0.004;   // wird stetig schneller, ohne Obergrenze
+}
+
+function baueStrecke(startwert) {
   const rnd = zufallsgenerator(startwert);
   const zeilen = [];
   const muenzen = [];
   let d = 32;
-  while (d < laenge + 20) {
-    const abstand = Math.max(9, 15 - d / 160);
-    let t;
-    const r = rnd();
-    if (r < 0.14) t = [1, 1, 1];
-    else if (r < 0.24) t = [2, 2, 2];
-    else {
-      const gewichte = [0.2, 0.25, 0.2, 0.35];
-      t = [0, 0, 0].map(() => {
-        let x = rnd(), i = 0;
-        while (i < 3 && x > gewichte[i]) { x -= gewichte[i]; i++; }
-        return i;
-      });
-      if (t.every((v) => v !== 0)) {
-        const uneinheitlich = t.includes(3) || new Set(t).size > 1;
-        if (uneinheitlich) t[Math.floor(rnd() * 3)] = 0;
+  const strecke = {
+    zeilen, muenzen,
+    // erzeugt weitere Zeilen, bis die Strecke mindestens bis "bis" Meter reicht
+    erweitere(bis) {
+      while (d < bis) {
+        // Abstand in Metern wächst mit dem Tempo, damit die Reaktionszeit nicht unter ~0,62 s fällt
+        const abstand = Math.max(9, tempoBei(d) * Math.max(0.62, 1.35 - d / 1500));
+        let t;
+        const r = rnd();
+        if (r < 0.14) t = [1, 1, 1];
+        else if (r < 0.24) t = [2, 2, 2];
+        else {
+          const gewichte = [0.2, 0.25, 0.2, 0.35];
+          t = [0, 0, 0].map(() => {
+            let x = rnd(), k = 0;
+            while (k < 3 && x > gewichte[k]) { x -= gewichte[k]; k++; }
+            return k;
+          });
+          if (t.every((v) => v !== 0)) {
+            const uneinheitlich = t.includes(3) || new Set(t).size > 1;
+            if (uneinheitlich) t[Math.floor(rnd() * 3)] = 0;
+          }
+          if (t.every((v) => v === 0)) t[Math.floor(rnd() * 3)] = rnd() < 0.5 ? 3 : 1;
+        }
+        zeilen.push({ d, t, getroffen: [false, false, false] });
+        // Münzreihe in einer freien Spur direkt nach dem Hindernis
+        const frei = [0, 1, 2].filter((k) => t[k] === 0);
+        if (frei.length && rnd() < 0.75) {
+          const spur = frei[Math.floor(rnd() * frei.length)] - 1;
+          for (let k = 0; k < 5; k++) muenzen.push({ d: d + 2.5 + k * 1.2, spur, genommen: false });
+        }
+        d += abstand;
       }
-      if (t.every((v) => v === 0)) t[Math.floor(rnd() * 3)] = rnd() < 0.5 ? 3 : 1;
     }
-    zeilen.push({ d, t, getroffen: [false, false, false] });
-    // Münzreihe in einer freien Spur direkt nach dem Hindernis
-    const frei = [0, 1, 2].filter((i) => t[i] === 0);
-    if (frei.length && rnd() < 0.75) {
-      const spur = frei[Math.floor(rnd() * frei.length)] - 1;
-      for (let k = 0; k < 5; k++) muenzen.push({ d: d + 2.5 + k * 1.2, spur, genommen: false });
-    }
-    d += abstand;
-  }
-  return { zeilen, muenzen };
+  };
+  strecke.erweitere(SICHT_WEITE + 60);
+  return strecke;
 }
 
 // ---------------------------------------------------------------- Lebenszyklus
@@ -195,8 +201,7 @@ export async function starten(uebergebeneApi) {
   if (api.istLeiter && !api.raum?.runStatus) {
     await updateDoc(api.raumRef(), {
       runStatus: "setup", runRundenIndex: 0, runAnzahlRunden: 0, runAnzahlEntwurf: STANDARD_RUNDEN,
-      runStreckeEntwurf: STANDARD_STRECKE, runLebenEntwurf: STANDARD_LEBEN,
-      runStrecke: STANDARD_STRECKE, runLeben: STANDARD_LEBEN, runSeed: 0, runVorbereitungSeit: 0
+      runLebenEntwurf: STANDARD_LEBEN, runLeben: STANDARD_LEBEN, runSeed: 0, runVorbereitungSeit: 0
     });
   }
   tickId = setInterval(rundenTick, 150);
@@ -233,18 +238,17 @@ function verdrahteBedienelemente() {
         entwurf[feldName] = w.wert ?? w;
         zeichneOptionen();
         updateDoc(api.raumRef(), {
-          runStreckeEntwurf: entwurf.strecke, runLebenEntwurf: entwurf.leben
+          runLebenEntwurf: entwurf.leben
         }).catch(() => {});
       });
       box.appendChild(b);
     });
   };
-  baueOpt("run-strecke-opt", STRECKEN.map((s) => ({ wert: s.m, name: s.name })), (w) => `${w.name} (${w.wert} m)`, "strecke");
   baueOpt("run-leben-opt", LEBEN_OPTIONEN, (w) => (w === 1 ? "1 Leben" : `${w} Leben`), "leben");
 }
 
 function zeichneOptionen() {
-  [["run-strecke-opt", entwurf.strecke], ["run-leben-opt", entwurf.leben]].forEach(([id, wert]) => {
+  [["run-leben-opt", entwurf.leben]].forEach(([id, wert]) => {
     $(id).querySelectorAll("button").forEach((b) => {
       b.classList.toggle("aktiv", Number(b.dataset.wert) === wert);
       b.disabled = !api.istLeiter;
@@ -304,10 +308,9 @@ export function raumDaten(daten) {
   anzahlRunden = daten.runAnzahlRunden ?? 0;
   entwurf = {
     runden: daten.runAnzahlEntwurf ?? STANDARD_RUNDEN,
-    strecke: daten.runStreckeEntwurf ?? STANDARD_STRECKE,
     leben: daten.runLebenEntwurf ?? STANDARD_LEBEN
   };
-  einstellungen = { strecke: daten.runStrecke ?? STANDARD_STRECKE, leben: daten.runLeben ?? STANDARD_LEBEN };
+  einstellungen = { leben: daten.runLeben ?? STANDARD_LEBEN };
   seed = daten.runSeed ?? 0;
 
   const neuerIndex = daten.runRundenIndex ?? 0;
@@ -397,7 +400,6 @@ async function spielStarten() {
       runStatus: "runde_aktiv",
       runRundenIndex: 0,
       runAnzahlRunden: anzahl,
-      runStrecke: entwurf.strecke,
       runLeben: entwurf.leben,
       runSeed: Math.floor(Math.random() * 2147483647),
       runVorbereitungSeit: Date.now()
@@ -451,7 +453,6 @@ function rundenTick() {
   if (elapsedGesamt < COUNTDOWN_MS) {
     $("run-spiel-screen").hidden = true;
     $("run-vorbereitung-screen").hidden = false;
-    $("run-vorb-strecke").textContent = String(einstellungen.strecke);
     const schritt = Math.min(2, Math.floor(elapsedGesamt / (COUNTDOWN_MS / 3)));
     $("run-countdown-ziffer").textContent = ["3", "2", "1"][schritt];
   } else {
@@ -476,10 +477,8 @@ function aktualisiereStatus() {
   if (lauf && lauf.fertig()) {
     const s = lauf.stand();
     o.hidden = false;
-    o.classList.toggle("run-overlay-schlecht", !s.ziel);
-    o.textContent = s.ziel
-      ? `🏁 Ziel erreicht in ${formatZeit(s.ms)}`
-      : `💥 Gestürzt bei ${s.dist} m`;
+    o.classList.add("run-overlay-schlecht");
+    o.textContent = `💥 Gestürzt bei ${s.dist} m`;
     $("run-hinweis").textContent = "Warte auf die anderen …";
   } else {
     o.hidden = true;
@@ -490,8 +489,8 @@ function aktualisiereStatus() {
 
 function zeichneSpuren() {
   const box = $("run-spuren");
-  const laenge = einstellungen.strecke;
   const stand = staendeMitLokal(rundenIndex);
+  const laenge = Math.max(200, ...stand.map((x) => x.dist));   // Balken: 100 % = aktuell Führender (mind. 200 m)
   if (box.children.length !== spielerListe.length) {
     box.innerHTML = spielerListe.map((s) =>
       `<div class="run-spur" data-id="${escapeHtml(s.id)}"><span class="run-spur-name"></span>` +
@@ -502,13 +501,13 @@ function zeichneSpuren() {
     const zeile = box.children[i];
     if (!zeile) return;
     const a = stand.find((x) => x.spielerId === s.id);
-    const dist = a ? Math.min(a.dist, laenge) : 0;
+    const dist = a ? a.dist : 0;
     zeile.querySelector(".run-spur-name").textContent = s.id === api.spielerId ? "Du" : (s.name || "?").slice(0, 9);
     const punkt = zeile.querySelector(".run-spur-punkt");
     punkt.style.left = `${(dist / laenge) * 100}%`;
     punkt.style.background = s.farbe || "#94a3b8";
-    zeile.classList.toggle("run-spur-aus", Boolean(a && a.fertig && !a.ziel));
-    zeile.querySelector(".run-spur-m").textContent = a && a.ziel ? "🏁" : `${dist} m`;
+    zeile.classList.toggle("run-spur-aus", Boolean(a && a.fertig));
+    zeile.querySelector(".run-spur-m").textContent = `${dist} m`;
   });
 }
 
@@ -530,8 +529,6 @@ async function schreibeStand(endgueltig) {
 function vergleiche(a, b) {
   if (b.dist !== a.dist) return b.dist - a.dist;
   if (b.muenzen !== a.muenzen) return b.muenzen - a.muenzen;
-  const ma = a.ziel ? a.ms : Infinity, mb = b.ziel ? b.ms : Infinity;
-  if (ma !== mb) return ma - mb;
   return 0;
 }
 
@@ -539,7 +536,7 @@ function vergleiche(a, b) {
 // gleiche Ergebnisse teilen sich den Wert.
 function berechnePunkte(standListe, spielerIds) {
   const proSpieler = spielerIds.map((id) =>
-    standListe.find((a) => a.spielerId === id) ?? { spielerId: id, dist: 0, muenzen: 0, ziel: false, ms: 0 });
+    standListe.find((a) => a.spielerId === id) ?? { spielerId: id, dist: 0, muenzen: 0 });
   const sortiert = [...proSpieler].sort(vergleiche);
   const n = spielerIds.length;
   const ergebnis = {};
@@ -557,8 +554,7 @@ async function pruefeAuswertung(elapsedGesamt) {
   if (elapsedGesamt < COUNTDOWN_MS || spielerListe.length === 0) return;
   const stand = staendeMitLokal(rundenIndex);
   const alleDa = spielerListe.every((sp) => stand.some((f) => f.spielerId === sp.id && f.fertig));
-  const maxMs = (einstellungen.strecke / 8) * 1000 + AUSWERTUNG_PUFFER_MS;
-  const zeitUm = elapsedGesamt - COUNTDOWN_MS >= maxMs;
+  const zeitUm = elapsedGesamt - COUNTDOWN_MS >= MAX_RUNDE_MS;
   if (!alleDa && !zeitUm) return;
 
   auswertungLaeuft = true;
@@ -593,8 +589,7 @@ function zeigeErgebnisListe(pos) {
   zeilen.forEach(({ s, a, p }) => {
     const li = document.createElement("li");
     const extra = !a ? "Kein Ergebnis"
-      : a.ziel ? `🏁 Ziel in ${formatZeit(a.ms)} · ${a.muenzen} Münzen`
-        : `${a.dist} m · ${a.muenzen} Münzen`;
+      : `${a.dist} m · ${a.muenzen} Münzen`;
     li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, p > 0 ? `+${p}` : "0", {
       extra, punkteRechts: s.punkte ?? 0
     });
@@ -651,9 +646,8 @@ function zeigeEndstand() {
 function starteLauf() {
   const eigener = spielerListe.find((s) => s.id === api.spielerId);
   $("run-hinweis").textContent = "Wischen: ◀ ▶ Spur wechseln · ▲ springen · ▼ rutschen";
-  const strecke = baueStrecke(seed + rundenIndex * 10007, einstellungen.strecke);
+  const strecke = baueStrecke(seed + rundenIndex * 10007);
   lauf = baueLauf($("run-canvas"), $("run-canvas-wrap"), strecke, {
-    laenge: einstellungen.strecke,
     leben: einstellungen.leben,
     farbe: eigener?.farbe || "#ff5b36",
     bild: avatarBild(eigener?.icon),
@@ -793,19 +787,6 @@ function baueLauf(canvas, wrap, strecke, opt) {
       for (const sx of [-0.8, 0.8]) {
         const P = (x, z) => [px(x, z), py(0, z)];
         viereck([P(sx - 0.04, za), P(sx + 0.04, za), P(sx + 0.04, zb), P(sx - 0.04, zb)], "rgba(233,230,255,0.55)");
-      }
-    }
-    // Ziellinie
-    const zielTiefe = tiefeVon(opt.laenge);
-    if (zielTiefe > nah - 1 && zielTiefe < fern) {
-      for (let k = 0; k < 10; k++) {
-        const xa = -2.5 + k * 0.5;
-        for (let r = 0; r < 2; r++) {
-          const za = Math.max(nah, zielTiefe + r * 0.7), zb = zielTiefe + (r + 1) * 0.7;
-          if (zb < nah) continue;
-          const P = (x, z) => [px(x, z), py(0, z)];
-          viereck([P(xa, za), P(xa + 0.5, za), P(xa + 0.5, zb), P(xa, zb)], ((k + r) & 1) ? "#ffffff" : "#111827");
-        }
       }
     }
     // Dunst am Horizont
@@ -968,7 +949,7 @@ function baueLauf(canvas, wrap, strecke, opt) {
   }
 
   function tempo() {
-    return Math.min(MAX_TEMPO, BASIS_TEMPO + zustand.dist * 0.0075) * zustand.bremse;
+    return tempoBei(zustand.dist) * zustand.bremse;
   }
 
   function schritt(dt) {
@@ -977,6 +958,7 @@ function baueLauf(canvas, wrap, strecke, opt) {
       return;
     }
     zustand.ms += dt * 1000;
+    strecke.erweitere(zustand.dist + SICHT_WEITE + 60);
     zustand.bremse = Math.min(1, zustand.bremse + dt * 0.6);
     zustand.dist += tempo() * dt;
     // Spurwechsel
@@ -1025,9 +1007,6 @@ function baueLauf(canvas, wrap, strecke, opt) {
         if (zustand.leben <= 0) { zustand.tot = true; opt.beiEnde(); }
       }
     }
-    if (!zustand.tot && zustand.dist >= opt.laenge) {
-      zustand.dist = opt.laenge; zustand.imZiel = true; opt.beiEnde();
-    }
     // Live-Stand ab und zu schreiben
     const jetzt = performance.now();
     if (!zustand.tot && !zustand.imZiel && jetzt - zustand.letzteSchrift > SCHREIB_MS) {
@@ -1063,6 +1042,7 @@ function baueLauf(canvas, wrap, strecke, opt) {
       else zustand.rutsch = RUTSCH_S;
     }
   };
+  // Ein Wisch löst genau eine Aktion aus (auch bei langem Ziehen) - für die nächste Aktion neu ansetzen.
   let start = null;
   const SCHWELLE = 22;
   const runter = (e) => { start = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture?.(e.pointerId); e.preventDefault(); };
@@ -1072,7 +1052,7 @@ function baueLauf(canvas, wrap, strecke, opt) {
     if (Math.max(Math.abs(dx), Math.abs(dy)) < SCHWELLE) return;
     if (Math.abs(dx) > Math.abs(dy)) aktion(dx < 0 ? "links" : "rechts");
     else aktion(dy < 0 ? "hoch" : "runter");
-    start = { x: e.clientX, y: e.clientY };
+    start = null;
   };
   const hoch = () => { start = null; };
   const taste = (e) => {
