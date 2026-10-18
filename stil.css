@@ -3486,6 +3486,7 @@ body.tt-aktiv:has(#tt-spiel-screen:not([hidden])) #spiel-kopf-titel { display: n
 /* Doppelkopf: gemalte Karten */
 img.dk-karte-bild { -webkit-user-drag: none; user-select: none; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
 
+
 /* ---- Run ---- */
 .run-spiel { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 12px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .run-hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -3498,11 +3499,15 @@ img.dk-karte-bild { -webkit-user-drag: none; user-select: none; pointer-events: 
   font-weight: 800; font-size: 1.1rem; background: rgba(21, 128, 61, 0.93); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 .run-overlay.run-overlay-schlecht { background: rgba(185, 28, 28, 0.93); }
-.run-spuren { display: flex; flex-direction: column; gap: 5px; max-width: 520px; width: 100%; margin: 0 auto; }
-.run-spur { display: grid; grid-template-columns: 4.6em 1fr 3.4em; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 700; }
-.run-spur-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.run-spur-bahn { position: relative; height: 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.14); }
-.run-spur-punkt { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid #fff; transition: left 0.9s linear; }
-.run-spur-m { text-align: right; font-variant-numeric: tabular-nums; opacity: 0.85; }
-.run-spur-aus { opacity: 0.5; }
 .run-hinweis { text-align: center; margin-top: 4px; }
+.run-spuren { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 520px; width: 100%; margin: 0 auto; }
+.run-spuren[hidden] { display: none; }
+.run-gegner { position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--spieler-farbe, #94a3b8); flex: none; }
+.run-gegner-bild { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; font-size: 1.1rem; font-weight: 800; text-align: center; line-height: 40px; background: rgba(255,255,255,0.12); }
+.run-gegner-aus .run-gegner-bild { opacity: 0.32; filter: grayscale(1); }
+.run-gegner-aus::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 50%;
+  background:
+    linear-gradient(45deg, transparent 44%, #ef4444 44% 56%, transparent 56%),
+    linear-gradient(-45deg, transparent 44%, #ef4444 44% 56%, transparent 56%);
+}

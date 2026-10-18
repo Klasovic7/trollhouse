@@ -17,7 +17,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild, escapeHtml } from "../../kern/ui.js";
+import { spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild, avatarHtml, escapeHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 
 const COUNTDOWN_MS = 3000;
@@ -487,27 +487,23 @@ function aktualisiereStatus() {
     lauf && lauf.fertig() ? spielerListe.filter((sp) => !fertigIds.has(sp.id) && sp.id !== api.spielerId) : []);
 }
 
+// Nur die Köpfe (Profilbilder) der anderen; wer gestürzt ist, wird blass und rot durchgestrichen.
 function zeichneSpuren() {
   const box = $("run-spuren");
-  const stand = staendeMitLokal(rundenIndex);
-  const laenge = Math.max(200, ...stand.map((x) => x.dist));   // Balken: 100 % = aktuell Führender (mind. 200 m)
-  if (box.children.length !== spielerListe.length) {
-    box.innerHTML = spielerListe.map((s) =>
-      `<div class="run-spur" data-id="${escapeHtml(s.id)}"><span class="run-spur-name"></span>` +
-      `<span class="run-spur-bahn"><i class="run-spur-punkt"></i></span><span class="run-spur-m"></span></div>`
+  const andere = spielerListe.filter((sp) => sp.id !== api.spielerId);
+  const key = andere.map((sp) => sp.id + (sp.icon || "")).join("|");
+  if (box.dataset.key !== key) {
+    box.dataset.key = key;
+    box.innerHTML = andere.map((sp) =>
+      `<span class="run-gegner" data-id="${escapeHtml(sp.id)}" title="${escapeHtml(sp.name || "")}" ` +
+      `style="--spieler-farbe:${escapeHtml(sp.farbe || "#94a3b8")}">${avatarHtml(sp.icon, "run-gegner-bild")}</span>`
     ).join("");
   }
-  spielerListe.forEach((s, i) => {
-    const zeile = box.children[i];
-    if (!zeile) return;
-    const a = stand.find((x) => x.spielerId === s.id);
-    const dist = a ? a.dist : 0;
-    zeile.querySelector(".run-spur-name").textContent = s.id === api.spielerId ? "Du" : (s.name || "?").slice(0, 9);
-    const punkt = zeile.querySelector(".run-spur-punkt");
-    punkt.style.left = `${(dist / laenge) * 100}%`;
-    punkt.style.background = s.farbe || "#94a3b8";
-    zeile.classList.toggle("run-spur-aus", Boolean(a && a.fertig));
-    zeile.querySelector(".run-spur-m").textContent = `${dist} m`;
+  box.hidden = andere.length === 0;
+  const stand = staendeMitLokal(rundenIndex);
+  box.querySelectorAll(".run-gegner").forEach((n) => {
+    const a = stand.find((x) => x.spielerId === n.dataset.id);
+    n.classList.toggle("run-gegner-aus", Boolean(a && a.fertig));
   });
 }
 
@@ -868,7 +864,8 @@ function baueLauf(canvas, wrap, strecke, opt) {
     const boden = py(0, depth);
     // Schatten
     const sk = Math.max(0.35, 1 - zustand.y * 0.5);
-    ctx.beginPath(); ctx.ellipse(xs, boden, u * 0.38 * sk, u * 0.1 * sk, 0, 0, Math.PI * 2);
+    const rl = zustand.rutsch > 0 ? 1.25 : 1;
+    ctx.beginPath(); ctx.ellipse(xs, zustand.rutsch > 0 ? boden - u * 0.3 : boden, u * 0.38 * sk * rl, u * (zustand.rutsch > 0 ? 0.42 : 0.1) * sk, 0, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fill();
 
     if (zustand.unverwundbar > 0 && Math.floor(zustand.unverwundbar * 12) % 2 === 0) ctx.globalAlpha = 0.4;
@@ -876,9 +873,53 @@ function baueLauf(canvas, wrap, strecke, opt) {
     const rutscht = zustand.rutsch > 0;
     ctx.save();
     ctx.translate(xs, fuss);
-    if (rutscht) { ctx.translate(0, -u * 0.1); ctx.rotate(-1.15); ctx.translate(u * 0.15, 0); }
+    const zeichneKopf = (ky, kr) => {
+      ctx.beginPath(); ctx.arc(0, ky, kr, 0, Math.PI * 2);
+      ctx.fillStyle = "#f4c9a0"; ctx.fill();
+      const bild = holeBild(opt.bild);
+      if (bild) {
+        ctx.save(); ctx.beginPath(); ctx.arc(0, ky, kr, 0, Math.PI * 2); ctx.clip();
+        const q = Math.min(bild.naturalWidth, bild.naturalHeight);
+        ctx.drawImage(bild, (bild.naturalWidth - q) / 2, (bild.naturalHeight - q) * 0.25, q, q, -kr, ky - kr, kr * 2, kr * 2);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = "#1f2937"; ctx.font = `800 ${Math.round(kr * 1.2)}px -apple-system, Helvetica, Arial, sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(opt.initial, 0, ky + 1);
+      }
+      ctx.lineWidth = Math.max(1.5, u * 0.04); ctx.strokeStyle = "#fff"; ctx.beginPath(); ctx.arc(0, ky, kr, 0, Math.PI * 2); ctx.stroke();
+    };
+    if (rutscht) {
+      // Grätsche nach vorn: von hinten gesehen liegt die Figur flach, Kopf zur Kamera, Beine voraus (oben im Bild)
+      const gl = Math.min(1, (RUTSCH_S - zustand.rutsch) / 0.12);   // kurzes Hineingleiten
+      // Staub hinten
+      ctx.fillStyle = "rgba(220,210,255,0.22)";
+      ctx.beginPath(); ctx.ellipse(-u * 0.25, u * 0.02, u * 0.18, u * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(u * 0.28, u * 0.0, u * 0.14, u * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+      // Beine (am weitesten vorn, kleiner wegen Perspektive)
+      for (const sx of [-1, 1]) {
+        const x0 = sx * u * 0.1, spitze = -u * (0.62 + 0.38 * gl);
+        ctx.fillStyle = "#1f2937";
+        ctx.beginPath(); ctx.roundRect(x0 - u * 0.07, spitze, u * 0.14, u * 0.4, u * 0.06); ctx.fill();
+        ctx.fillStyle = "#e5e7eb";
+        ctx.beginPath(); ctx.roundRect(x0 - u * 0.08, spitze - u * 0.03, u * 0.16, u * 0.1, u * 0.05); ctx.fill();
+      }
+      // Rumpf
+      ctx.fillStyle = opt.farbe;
+      ctx.beginPath(); ctx.roundRect(-u * 0.24, -u * 0.62, u * 0.48, u * 0.46, u * 0.14); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      ctx.fillRect(-u * 0.2, -u * 0.46, u * 0.4, u * 0.05);
+      // Arme zur Seite abgestützt
+      ctx.lineCap = "round"; ctx.strokeStyle = schatten(opt.farbe, 0.8); ctx.lineWidth = u * 0.1;
+      for (const sx of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(sx * u * 0.22, -u * 0.5); ctx.lineTo(sx * u * 0.38, -u * 0.26); ctx.stroke();
+      }
+      zeichneKopf(-u * 0.1, u * 0.22);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      return;
+    }
     const luft = zustand.y > 0.05;
-    const schwung = luft || rutscht ? 0.5 : Math.sin(lauf);
+    const schwung = luft ? 0.5 : Math.sin(lauf);
     // Beine
     ctx.lineCap = "round"; ctx.strokeStyle = "#1f2937"; ctx.lineWidth = u * 0.14;
     for (const s of [-1, 1]) {
@@ -898,20 +939,8 @@ function baueLauf(canvas, wrap, strecke, opt) {
       ctx.beginPath(); ctx.moveTo(s * rb / 2, -u * 0.42 - rh * 0.85); ctx.lineTo(s * (rb / 2 + u * 0.05) + sw * 0.4, -u * 0.42 - rh * 0.35 + (luft ? -u * 0.3 : sw)); ctx.stroke();
     }
     // Kopf
-    const kr = u * 0.23, ky = -u * 0.42 - rh - kr * 0.85;
-    ctx.beginPath(); ctx.arc(0, ky, kr, 0, Math.PI * 2);
-    ctx.fillStyle = "#f4c9a0"; ctx.fill();
-    const bild = holeBild(opt.bild);
-    if (bild) {
-      ctx.save(); ctx.beginPath(); ctx.arc(0, ky, kr, 0, Math.PI * 2); ctx.clip();
-      const q = Math.min(bild.naturalWidth, bild.naturalHeight);
-      ctx.drawImage(bild, (bild.naturalWidth - q) / 2, (bild.naturalHeight - q) * 0.25, q, q, -kr, ky - kr, kr * 2, kr * 2);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = "#1f2937"; ctx.font = `800 ${Math.round(kr * 1.2)}px -apple-system, Helvetica, Arial, sans-serif`;
-      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(opt.initial, 0, ky + 1);
-    }
-    ctx.lineWidth = Math.max(1.5, u * 0.04); ctx.strokeStyle = "#fff"; ctx.beginPath(); ctx.arc(0, ky, kr, 0, Math.PI * 2); ctx.stroke();
+    const kr = u * 0.23;
+    zeichneKopf(-u * 0.42 - rh - kr * 0.85, kr);
     ctx.restore();
     ctx.globalAlpha = 1;
   }

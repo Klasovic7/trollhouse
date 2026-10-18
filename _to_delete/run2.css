@@ -1,0 +1,25 @@
+
+/* ---- Run ---- */
+.run-spiel { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 12px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.run-hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.run-hud-wert { font-size: 1.15rem; }
+.run-hud-leben { font-size: 1.05rem; letter-spacing: 2px; min-width: 3.2em; text-align: right; }
+.run-canvas-wrap { position: relative; width: 100%; max-width: 520px; margin: 0 auto; }
+.run-canvas-wrap canvas { display: block; width: 100%; border-radius: 14px; background: #150f2e; touch-action: none; }
+.run-overlay {
+  position: absolute; left: 12px; right: 12px; bottom: 14px; padding: 12px 14px; border-radius: 14px; text-align: center;
+  font-weight: 800; font-size: 1.1rem; background: rgba(21, 128, 61, 0.93); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+.run-overlay.run-overlay-schlecht { background: rgba(185, 28, 28, 0.93); }
+.run-hinweis { text-align: center; margin-top: 4px; }
+.run-spuren { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 520px; width: 100%; margin: 0 auto; }
+.run-spuren[hidden] { display: none; }
+.run-gegner { position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--spieler-farbe, #94a3b8); flex: none; }
+.run-gegner-bild { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; font-size: 1.1rem; font-weight: 800; text-align: center; line-height: 40px; background: rgba(255,255,255,0.12); }
+.run-gegner-aus .run-gegner-bild { opacity: 0.32; filter: grayscale(1); }
+.run-gegner-aus::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 50%;
+  background:
+    linear-gradient(45deg, transparent 44%, #ef4444 44% 56%, transparent 56%),
+    linear-gradient(-45deg, transparent 44%, #ef4444 44% 56%, transparent 56%);
+}
