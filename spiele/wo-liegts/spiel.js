@@ -669,7 +669,7 @@ function stadt(idx) {
     // Namen mit Klammerzusatz, z. B. "Chinesische Mauer (Badaling)" -> "Chinesische Mauer, Badaling (Mauer)"
     name = name.replace(/\s*\(([^)]*)\)/, ", $1") + ` (${SEHENS_ART[name]})`;
   }
-  return { name, land: "", lat: s[2], lon: s[3] };
+  return { name, land: "", ort: s[1] || "", katalog: s[4], lat: s[2], lon: s[3] };
 }
 
 function neueStadtIdx(bisher) {
@@ -1046,8 +1046,11 @@ async function pruefeAuswertung(rest) {
 // --- Ergebnis ---------------------------------------------------------------
 function zeigeErgebnis() {
   const s = stadt(stadtIdx);
-  $("wl-erg-stadt").textContent = s ? s.name : "?";
-  $("wl-erg-land").textContent = s ? s.land : "";
+  // Erst bei der Auswertung (vorher wäre es ein Hinweis): Weltstädte mit Land dahinter,
+  // Sehenswürdigkeiten mit "Stadt, Land" in der Zeile darunter.
+  const weltStadt = s && s.katalog === "welt" && s.ort;
+  $("wl-erg-stadt").textContent = s ? (weltStadt ? `${s.name}, ${s.ort}` : s.name) : "?";
+  $("wl-erg-land").textContent = s ? (s.katalog === "sehens" ? s.ort : s.land) : "";
   zerstoereGlobus();
   globusErgebnis = new Globus($("wl-globus-ergebnis"), { bundeslaender: modi.includes("de") });
   rendereErgebnisListe(true);
