@@ -201,9 +201,6 @@ let simT = 0, sessionStart = 0, lapStart = 0, cpNext = 0, prevP = a.s;
 let best = null, bestSplits = [], curSplits = [], letzte = null, runden = 0;
 let ghostRec = [], ghostBest = null, recAkk = 0;
 let cdKurz = false, sessionLaeuft = false, cdZeit = 0, cdLetzte = 0, ende = null, falsch = 0;
-const REKORD_KEY = "tt_rekord_v2_" + S.id;
-let rekord = (() => { try { return parseFloat(localStorage.getItem(REKORD_KEY)) || (S.id === "tal" ? parseFloat(localStorage.getItem("tt_rekord_v1")) : 0) || null; } catch (_) { return null; } })();
-if (rekord > 0) $("rekord").textContent = fmt(rekord);
 
 function medaille(t) {
   if (t <= MEDAILLEN.autor) return ["AUTOR", "#6ee7a0"];
@@ -253,9 +250,6 @@ function beendeSession() {
     $("e-medal").textContent = m || (best != null ? "Keine Medaille" : "Kein gültiger Lauf");
     $("e-medal").style.color = c;
     $("e-runden").textContent = runden;
-    let neu = false;
-    if (best != null && (rekord == null || best < rekord)) { rekord = best; neu = true; try { localStorage.setItem(REKORD_KEY, String(best)); } catch (_) {} }
-    $("e-rekord").textContent = rekord != null ? fmt(rekord) + (neu ? "  (neu!)" : "") : "--";
     $("ende").classList.remove("weg");
   }, 1600);
 }
