@@ -7,11 +7,11 @@
 //  Strecke. Einzig die beste Zeit geht in die Subcollection "turboZeiten"
 //  (Dokument = spielerId) und wird den anderen oben rechts angezeigt.
 // ============================================================================
-import { doc, setDoc, collection, onSnapshot, serverTimestamp } from "../../kern/firebase.js";
+import { doc, setDoc, updateDoc, collection, onSnapshot, serverTimestamp } from "../../kern/firebase.js";
 import { STRECKEN } from "./strecke.js";
 
 let api = null, rahmen = null, stil = null, unsub = null, hoerer = null;
-let spielerListe = [], zeiten = [];
+let spielerListe = [], zeiten = [], dauerMin = 5;
 
 function sende() {
   if (!rahmen || !rahmen.contentWindow) return;
@@ -23,6 +23,11 @@ function sende() {
     })
     .sort((a, b) => a.zeit - b.zeit);
   rahmen.contentWindow.postMessage({ typ: "gegner", liste }, "*");
+}
+
+function sendeDauer() {
+  if (!rahmen || !rahmen.contentWindow || !api) return;
+  rahmen.contentWindow.postMessage({ typ: "dauer", min: dauerMin, leiter: !!api.istLeiter }, "*");
 }
 
 function speichereBestzeit(zeit, strecke) {
@@ -53,7 +58,7 @@ export async function starten(uebergebeneApi) {
   rahmen.title = "Turbo";
   rahmen.setAttribute("allow", "autoplay; fullscreen");
   rahmen.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:0;background:#0a0e1a;z-index:2147483000;display:block";
-  rahmen.addEventListener("load", sende);
+  rahmen.addEventListener("load", () => { sende(); sendeDauer(); });
   // Alle im Raum starten auf derselben Strecke: sie wird aus dem Raumcode gewaehlt
   let h = 0; for (const ch of String(api.code || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   rahmen.src = "spiele/turbo/proto.html?embed=1&strecke=" + STRECKEN[h % STRECKEN.length].id + "&v=" + Date.now();
@@ -68,6 +73,10 @@ export async function starten(uebergebeneApi) {
       const b = document.getElementById("btn-verlassen");
       if (b) b.click();
     } else if (d.typ === "bestzeit") speichereBestzeit(d.zeit, d.strecke);
+    else if (d.typ === "dauer-wahl" && api.istLeiter && [3, 4, 5].includes(d.min)) {
+      dauerMin = d.min; sendeDauer();
+      updateDoc(api.raumRef(), { turboDauer: d.min }).catch((e) => console.warn("Turbo: Dauer nicht gespeichert", e));
+    }
   };
   window.addEventListener("message", hoerer);
 
@@ -88,4 +97,8 @@ export function beenden() {
 }
 
 export function spieler(liste) { spielerListe = liste || []; sende(); }
-export function raumDaten() {}
+export function raumDaten(daten) {
+  const m = daten && daten.turboDauer;
+  if ([3, 4, 5].includes(m) && m !== dauerMin) dauerMin = m;
+  sendeDauer();
+}

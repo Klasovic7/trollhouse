@@ -17,7 +17,11 @@ const params = new URLSearchParams(location.search);
 const BOT = params.has("bot");
 const DEBUG = params.has("debug");
 const FAST = params.has("fast");
-const SESSION_S = Number(params.get("zeit")) || 300;
+const EINGEBETTET = window.parent !== window;
+const ZEIT_PARAM = Number(params.get("zeit")) || 0;   // Test: Sekunden direkt vorgeben
+let dauerMin = 5, dauerDarfWaehlen = !EINGEBETTET;      // im Raum bestimmt der Spielleiter die Dauer
+if (!EINGEBETTET) { try { const g = Number(localStorage.getItem("tt_dauer")); if ([3, 4, 5].includes(g)) dauerMin = g; } catch (_) {} }
+let SESSION_S = ZEIT_PARAM || dauerMin * 60;
 const touch = matchMedia("(pointer: coarse)").matches;
 const fmt = (t) => { if (t == null || !isFinite(t)) return "--:--.--"; const m = Math.floor(t / 60); const s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(2); };
 const fmtD = (d) => (d >= 0 ? "+" : "-") + Math.abs(d).toFixed(2);
@@ -117,8 +121,15 @@ $("b-restart").addEventListener("click", () => neustart());
 $("b-ton").addEventListener("click", () => schalteTon());
 const verlassen = () => { if (window.parent !== window) window.parent.postMessage({ typ: "turbo-verlassen" }, "*"); else history.back(); };
 $("b-exit").addEventListener("click", verlassen); $("b-quer-zurueck").addEventListener("click", verlassen);
+function setzeDauer(min) {
+  dauerMin = min;
+  document.querySelectorAll("#dauerwahl .sw").forEach((b) => { b.classList.toggle("an", Number(b.dataset.min) === min); b.disabled = !dauerDarfWaehlen; b.style.opacity = dauerDarfWaehlen ? "" : (Number(b.dataset.min) === min ? "1" : ".45"); });
+  const t = document.getElementById("dauertext"); if (t) t.textContent = min + " Minuten";
+  const h = document.getElementById("dauerhinweis"); if (h) h.textContent = dauerDarfWaehlen ? "" : "Die Spielleitung legt die Dauer fest.";
+}
 window.addEventListener("message", (e) => {
   const d = e.data || {};
+  if (d.typ === "dauer" && [3, 4, 5].includes(d.min)) { dauerDarfWaehlen = !!d.leiter; setzeDauer(d.min); }
   if (d.typ === "gegner" && Array.isArray(d.liste)) {
     const box = $("gegner");
     box.innerHTML = (d.liste = d.liste.filter((g) => !g.strecke || g.strecke === S.id)).length ? d.liste.slice(0, 5).map((g, i) => `<div class="z"><span>${i + 1}. ${String(g.name || "?").replace(/[<>&]/g, "")}</span><i>${fmt(g.zeit)}</i></div>`).join("") : '<div class="leer">noch keine Zeiten</div>';
@@ -150,6 +161,19 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
     autos.appendChild(b);
   });
   wahl.appendChild(autos);
+  // Dauer wählen (im Raum nur die Spielleitung, damit für alle gleich viele Versuche bleiben)
+  const dauer = document.createElement("div"); dauer.className = "autowahl"; dauer.id = "dauerwahl";
+  [3, 4, 5].forEach((m) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "sw"; b.dataset.min = m; b.innerHTML = "<b>⏱ " + m + " min</b>";
+    b.addEventListener("click", () => {
+      if (!dauerDarfWaehlen) return;
+      if (EINGEBETTET) window.parent.postMessage({ typ: "dauer-wahl", min: m }, "*");
+      else { try { localStorage.setItem("tt_dauer", String(m)); } catch (_) {} setzeDauer(m); }
+    });
+    dauer.appendChild(b);
+  });
+  wahl.appendChild(dauer);
+  setzeDauer(dauerMin);
 }
 $("b-start").addEventListener("click", () => starte());
 $("b-nochmal").addEventListener("click", () => starte());
@@ -213,6 +237,7 @@ function starte() {
   platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
   $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
   setzeTore();
+  SESSION_S = ZEIT_PARAM || dauerMin * 60;
   sessionLaeuft = false; startAmpel(false);
   simT = 0; lapStart = 0; prevP = a.s;
 }
