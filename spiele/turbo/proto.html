@@ -5,8 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0a0e1a">
 <title>Trollhouse Turbo – Prototyp</title>
-<script type="importmap">
-{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+<script>
+// Die Spielmodule bekommen ?v=... (vom Rahmen oder aus der Adresse), damit nach einem Update nie alte
+// und neue Dateien gemischt aus dem Browser-Zwischenspeicher kommen.
+(function () {
+  var v = new URLSearchParams(location.search).get("v") || "0";
+  var im = { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" };
+  ["strecke", "physik", "bot", "welt", "auto", "effekte", "ton"].forEach(function (n) { im["./" + n + ".js"] = "./" + n + ".js?v=" + v; });
+  var s = document.createElement("script"); s.type = "importmap"; s.textContent = JSON.stringify({ imports: im });
+  document.head.appendChild(s);
+  window.__v = v;
+})();
 </script>
 <style>
   :root { --akzent: #19e3ff; --warm: #ffb02e; --glas: rgba(8, 12, 24, 0.55); }
@@ -224,6 +233,6 @@ if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch"
   setTimeout(function () { var l = document.getElementById("lade"); if (l && !l.classList.contains("weg")) l.textContent = "Lädt nicht? Seite neu laden. " ; }, 12000);
 })();
 </script>
-<script type="module" src="./main.js"></script>
+<script>var m = document.createElement("script"); m.type = "module"; m.src = "./main.js?v=" + window.__v; document.body.appendChild(m);</script>
 </body>
 </html>
