@@ -149,7 +149,7 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
     wahl.appendChild(b);
   });
   // Auto wählen (wirkt sofort, ohne Neuladen)
-  const autos = document.createElement("div"); autos.className = "autowahl";
+  const autos = $("autos");
   MODELLE.forEach((m) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "sw" + (m.id === MODELL_ID ? " an" : "");
     b.innerHTML = "<b>" + m.icon + " " + m.name + "</b>";
@@ -160,9 +160,8 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
     });
     autos.appendChild(b);
   });
-  wahl.appendChild(autos);
   // Dauer wählen (im Raum nur die Spielleitung, damit für alle gleich viele Versuche bleiben)
-  const dauer = document.createElement("div"); dauer.className = "autowahl"; dauer.id = "dauerwahl";
+  const dauer = $("dauerwahl");
   [3, 4, 5].forEach((m) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "sw"; b.dataset.min = m; b.innerHTML = "<b>⏱ " + m + " min</b>";
     b.addEventListener("click", () => {
@@ -172,9 +171,9 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
     });
     dauer.appendChild(b);
   });
-  wahl.appendChild(dauer);
   setzeDauer(dauerMin);
 }
+$("menue").addEventListener("pointerdown", () => vollbild(), { once: true });
 $("b-start").addEventListener("click", () => starte());
 $("b-nochmal").addEventListener("click", () => starte());
 document.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -230,9 +229,12 @@ function startAmpel(kurz) {
   zustand = "countdown"; cdKurz = kurz; cdZeit = 0; cdLetzte = -1;
   $("ampel").className = "an"; for (const l of $("ampel").children) l.className = "";
 }
+function vollbild() {
+  try { const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); } } catch (_) {}
+}
 function starte() {
   ton.start();
-  try { const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); } } catch (_) {}
+  vollbild();
   $("menue").classList.add("weg"); $("ende").classList.add("weg"); document.body.classList.add("im-spiel");
   platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
   $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";

@@ -115,7 +115,6 @@
   @media (max-height: 560px) {
     .overlay { align-items: start; padding: 8px; }
     .karte { padding: 12px 16px 12px; border-radius: 20px; width: min(720px, 100%); }
-    #menue { justify-items: start; } #menue .karte { width: min(520px, 58vw); } .regeln { grid-template-columns: 1fr !important; }
     .logo { font-size: 30px; } .logo small { margin-top: 4px; letter-spacing: .4em; }
     .karte > p { display: none; }
     .regeln { grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; font-size: 12px; }
@@ -155,25 +154,24 @@
   @keyframes dreh { 0%, 20% { transform: rotate(0); } 65%, 100% { transform: rotate(-90deg); } }
   @media (orientation: portrait) and (pointer: coarse) { #quer { display: grid; } }
 
-  #strecken { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; margin: 10px 0 4px; }
-  .sw { text-align: left; background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.14); color: #fff; border-radius: 10px; padding: 6px 9px; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
-  .sw b { font-size: 13px; } .sw small { font-size: 10px; opacity: .65; }
-  .autowahl { grid-column: 1 / -1; display: flex; gap: 6px; } .autowahl .sw { flex: 1; align-items: center; }
-  .sw.an { background: rgba(6,182,212,.22); border-color: #22d3ee; }
-  @media (max-height: 520px) {
-    #menue .karte { grid-template-areas: "logo wahl" "rek regeln" "btn regeln" !important; }
-    #strecken { grid-area: wahl; margin: 0; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-    .sw small { display: none; } .sw { padding: 5px 6px; } .sw b { font-size: 10.5px; line-height: 1.15; }
-    .sw { padding: 4px 7px; } .sw b { font-size: 11.5px; } .sw small { font-size: 9px; }
-    #menue .regeln li:nth-child(3) { display: none; }
-    #menue .karte { display: grid !important; grid-template-columns: minmax(0, .85fr) minmax(0, 1.35fr); grid-template-areas: "logo wahl" "rek regeln" "btn regeln"; gap: 8px 16px; width: min(780px, 94vw) !important; align-items: center; padding: 10px 14px; }
-    #menue .logo { grid-area: logo; font-size: 26px; }
-    #menue .regeln { grid-area: regeln; grid-template-columns: 1fr !important; font-size: 11.5px; gap: 4px; margin: 0; }
-    #menue .regeln li { padding: 5px 8px; } #menue .regeln li:nth-child(4) { display: none; }
-    #menue .karte > div[style] { grid-area: rek; margin: 0 !important; font-size: 12px !important; }
-    #menue .gross { grid-area: btn; margin: 0; justify-self: center; padding: 10px 28px; font-size: 16px; box-shadow: 0 4px 0 #b3650a, 0 8px 18px rgba(0,0,0,.4); }
-    #menue.overlay { align-items: center; padding: 6px; }
-  }
+  #menue .karte { width: min(880px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-areas: "kopf kopf" "links rechts"; gap: 12px 22px; padding: 14px 20px 16px; text-align: left; }
+  #menue .mkopf { grid-area: kopf; text-align: center; } #menue .mkopf p { margin: 6px 0 0; font-size: 12.5px; }
+  #menue .logo { font-size: clamp(26px, 5vw, 40px); } #menue .logo small { margin-top: 5px; letter-spacing: .4em; }
+  #menue .mlinks { grid-area: links; min-width: 0; } #menue .mrechts { grid-area: rechts; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  #menue h4 { margin: 0 0 5px; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #7be9ff; opacity: .9; font-weight: 800; }
+  #strecken { display: flex; flex-direction: column; gap: 3px; margin: 0; }
+  #menue .sw { text-align: left; background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.14); color: #fff; border-radius: 9px; padding: 0 10px; height: 27px; font: inherit; cursor: pointer; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+  #menue .sw b { font-size: 12.5px; white-space: nowrap; } #menue .sw small { font-size: 10px; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #menue .reihe { display: flex; gap: 5px; } #menue .reihe .sw { flex: 1; justify-content: center; height: 30px; }
+  #menue .sw.an { background: rgba(6,182,212,.24); border-color: #22d3ee; }
+  #menue .regeln { margin: 0; gap: 3px; font-size: 11px; grid-template-columns: 1fr; } #menue .regeln li { padding: 4px 9px; }
+  #menue .mfuss { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: auto; }
+  #menue .rek { font-size: 11px; opacity: .85; display: flex; flex-direction: column; } #menue .rek b { font-size: 16px; }
+  #menue .gross { margin: 0 0 6px; padding: 11px 34px; font-size: 18px; box-shadow: 0 5px 0 #b3650a, 0 10px 22px rgba(0,0,0,.4); }
+  #menue .gross:active { transform: translateY(3px); box-shadow: 0 2px 0 #b3650a; }
+  #menue.overlay { align-items: center; padding: 8px; }
+  @media (max-height: 420px) { #menue .logo { font-size: 26px; } #menue .logo small { margin-top: 3px; } #menue .sw { height: 25px; } #menue .reihe .sw { height: 27px; } #menue .gross { padding: 9px 30px; font-size: 16px; } #menue .regeln .taste { display: none; } #menue .mkopf p { display: none; } #menue .karte { gap: 6px 22px; padding: 8px 18px 8px; } #menue.overlay { padding: 4px; } }
+  @media (max-width: 640px) and (min-height: 421px) { #menue .karte { grid-template-columns: 1fr; grid-template-areas: "kopf" "links" "rechts"; } #menue.overlay { align-items: start; } }
 </style>
 </head>
 <body class="">
@@ -202,18 +200,20 @@
 <div id="ampel"><i></i><i></i><i></i></div><div id="cd"></div><div id="blitz"></div><div id="dbg"></div>
 
 <div id="menue" class="overlay"><div class="karte">
-  <div class="logo">TROLLHOUSE<small>TURBO · ZEITJAGD</small></div>
-  <p>Gleiche Strecke für alle, von <b>A nach B</b>. <b id="dauertext">5 Minuten</b> Zeit – jeder Versuch startet aus dem Stand und endet an der Ziellinie. Die schnellste Zeit zählt.</p>
-  <div id="strecken"></div>
-  <ul class="regeln">
-    <li><b>Lenken</b> links, <b>Gas</b> und <b>Bremse</b> rechts. Gas gibt es nicht von allein.</li>
-    <li><b>Neustart</b> jederzeit mit <b>↻</b> oben. Nach dem Ziel geht es automatisch aus dem Stand von vorn los. Mit <b>Bremse + Lenken</b> driftest du.</li>
-    <li>Die <b>Boost-Felder</b> auf der Strecke geben Extra-Tempo. Der <b>blaue Geist</b> ist dein bester Lauf.</li>
-    <li>Tastatur: ← → lenken, ↑ / W Gas, ↓ / Leertaste bremsen, R Neustart.</li>
-  </ul>
-  <div style="margin-top:12px;font-size:13px;opacity:.8">Persönlicher Rekord: <b id="rekord">--:--.--</b></div>
-  <button class="gross" id="b-start">START</button>
-  
+  <div class="mkopf"><div class="logo">TROLLHOUSE<small>TURBO · ZEITJAGD</small></div>
+    <p>Gleiche Strecke für alle, von <b>A nach B</b> · <b id="dauertext">5 Minuten</b> Zeit · schnellste Zeit zählt</p></div>
+  <div class="mlinks"><h4>Strecke</h4><div id="strecken"></div></div>
+  <div class="mrechts">
+    <div class="mgruppe"><h4>Zeit</h4><div id="dauerwahl" class="reihe"></div></div>
+    <div class="mgruppe"><h4>Auto</h4><div id="autos" class="reihe"></div></div>
+    <div class="mgruppe"><h4>Anleitung</h4><ul class="regeln">
+      <li><b>Lenken</b> links, <b>Gas</b> und <b>Bremse</b> rechts. <b>Bremse + Lenken</b> = Drift.</li>
+      <li><b>↻</b> oben = Neustart. Im Ziel geht es automatisch neu los.</li>
+      <li><b>Boost-Felder</b> = Extra-Tempo, <b>blauer Geist</b> = dein Bestlauf.</li>
+      <li class="taste">Tastatur: ← → lenken, ↑/W Gas, ↓/Leertaste bremsen, R Neustart.</li>
+    </ul></div>
+    <div class="mfuss"><div class="rek">Rekord<b id="rekord">--:--.--</b></div><button class="gross" id="b-start">START</button></div>
+  </div>
 </div></div>
 
 <div id="ende" class="overlay weg"><div class="karte">
