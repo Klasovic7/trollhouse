@@ -8,7 +8,7 @@ import { baueStrecke, startPose, WAND_ABSTAND, STRECKEN, streckeNachId } from ".
 import { neuesAuto, schritt, P } from "./physik.js";
 import { botEingabe } from "./bot.js";
 import { baueWelt, baueHimmel } from "./welt.js";
-import { baueAuto } from "./auto.js";
+import { baueAuto, ladeModell, MODELLE } from "./auto.js";
 import { Partikel } from "./effekte.js";
 import { Ton } from "./ton.js";
 
@@ -64,6 +64,11 @@ if (world.thema.flutlicht) {   // Scheinwerfer bei Nacht
   spot.position.set(0, 0.9, 1.6); spot.target.position.set(0, 0, 26); car.gruppe.add(spot, spot.target);
 }
 const geist = baueAuto(0x66e0ff, { geist: true }); geist.gruppe.visible = false; scene.add(geist.gruppe);
+let MODELL_ID = (() => { try { return localStorage.getItem("tt_auto"); } catch (_) { return null; } })() || "race-future";
+if (params.get("modell")) MODELL_ID = params.get("modell");
+if (!MODELLE.some((m) => m.id === MODELL_ID)) MODELL_ID = MODELLE[0].id;
+function setzeModell(id) { MODELL_ID = id; ladeModell(car, id); ladeModell(geist, id); }
+setzeModell(MODELL_ID);
 const rauch = new Partikel(420), funken = new Partikel(260, { additiv: true }), feuer = new Partikel(220, { additiv: true });
 scene.add(rauch.punkte, funken.punkte, feuer.punkte);
 rauch.punkte.renderOrder = 5; funken.punkte.renderOrder = 6; feuer.punkte.renderOrder = 6;
@@ -132,6 +137,19 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
     });
     wahl.appendChild(b);
   });
+  // Auto wählen (wirkt sofort, ohne Neuladen)
+  const autos = document.createElement("div"); autos.className = "autowahl";
+  MODELLE.forEach((m) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "sw" + (m.id === MODELL_ID ? " an" : "");
+    b.innerHTML = "<b>" + m.icon + " " + m.name + "</b>";
+    b.addEventListener("click", () => {
+      try { localStorage.setItem("tt_auto", m.id); } catch (_) {}
+      autos.querySelectorAll(".sw").forEach((x) => x.classList.remove("an")); b.classList.add("an");
+      setzeModell(m.id);
+    });
+    autos.appendChild(b);
+  });
+  wahl.appendChild(autos);
 }
 $("b-start").addEventListener("click", () => starte());
 $("b-nochmal").addEventListener("click", () => starte());
