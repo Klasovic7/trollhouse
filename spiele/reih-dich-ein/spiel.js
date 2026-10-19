@@ -30,6 +30,14 @@ const VORLAGE = `
       <p id="rd-anzahl-max" class="hinweis-text"></p>
     </div>
 
+    <div id="rd-fair-zeile" class="setup-anzahlblock" hidden>
+      <div class="setup-anzahl-zeile">
+        <span>Fairer Modus</span>
+        <button id="rd-fair-btn" type="button" class="btn-flach" aria-pressed="false">Aus</button>
+      </div>
+      <p id="rd-fair-info" class="hinweis-text"></p>
+    </div>
+
     <p id="rd-setup-fehler" class="fehler-text"></p>
     <p><button id="rd-starten" class="btn-primaer" hidden>Spiel starten</button></p>
     <p id="rd-setup-warten" hidden><em>Warte, bis der Spielleiter das Spiel startet …</em></p>
@@ -115,6 +123,13 @@ let gespielt = []; // Indizes der zuletzt gespielten Kategorien/Karten (fuer Wie
 let aktionLaeuft = false;
 let anzahlManuellGesetzt = false;
 let spielerwechselLaeuft = false;
+let fairModus = false;
+
+// Fairer Modus: Runden = Anzahl Kategorien, k = einzusortierende Begriffe je Kategorie
+// (zusaetzlich zum Startbegriff). Der Startspieler wechselt jede Runde.
+const FAIR_TABELLE = { 2: { k: 6, r: 4 }, 3: { k: 9, r: 3 }, 4: { k: 8, r: 4 } };
+function fairKonfig(n) { return n < 2 ? null : (FAIR_TABELLE[n] ?? { k: n, r: n }); }
+function fairKartenIndizes(k) { return karten.map((_, i) => i).filter((i) => karten[i].begriffe.length >= k + 1); }
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
@@ -142,7 +157,20 @@ function skalenBeschriftung(karte) {
     : ["ANFANG", "ENDE"];
 }
 
-function neueKategorieDaten(karte) {
+function neueKategorieDaten(karte, fairK = 0) {
+  if (fairK) {
+    const auswahl = mischeListe(karte.begriffe).slice(0, fairK + 1).sort((a, b) => a.wert - b.wert);
+    const start = auswahl[Math.floor(auswahl.length / 2)];
+    return {
+      rdBegriffeReihenfolge: mischeListe(auswahl.filter((b) => b.id !== start.id).map((b) => b.id)),
+      rdBegriffIndex: 0,
+      rdSortierteIds: [start.id],
+      rdErgebnisse: {},
+      rdLetzteRichtig: null,
+      rdLetzterBegriffId: null,
+      rdLetzterSpielerId: null
+    };
+  }
   const startId = begriffNachId(karte, karte.startId)
     ? karte.startId
     : [...karte.begriffe].sort((a, b) => a.wert - b.wert)[Math.floor(karte.begriffe.length / 2)].id;
@@ -184,7 +212,7 @@ export async function starten(uebergebeneApi) {
       rdSortierteIds: [], rdSpielerReihenfolge: [], rdZugIndex: 0,
       rdAktiveId: null, rdPunkte: {}, rdErgebnisse: {}, rdLetzteRichtig: null, rdLetzterBegriffId: null,
       rdLetzterSpielerId: null,
-      rdVerworfeneKategorien: []
+      rdVerworfeneKategorien: [], rdFair: false, rdFairK: 0
     });
   }
 
@@ -219,6 +247,10 @@ function verdrahteBedienelemente() {
   // v105: als type="number" ließ sich der vorhandene Wert beim Fokussieren nicht
   // markieren - jetzt ein Textfeld mit numerischer Tastatur, select() funktioniert.
   $("rd-anzahl").addEventListener("focus", () => { $("rd-anzahl").select(); });
+  $("rd-fair-btn").addEventListener("click", () => {
+    if (!api.istLeiter || api.olympiadeAnzahl) return;
+    updateDoc(api.raumRef(), { rdFair: !fairModus }).catch((e) => zeigeDebug("Modus konnte nicht gesetzt werden: " + e.message));
+  });
   $("rd-starten").addEventListener("click", spielStarten);
   $("rd-naechste-kategorie").addEventListener("click", naechsteKategorie);
   $("rd-andere-kategorie").addEventListener("click", andereKategorie);
@@ -264,6 +296,7 @@ export function beenden() {
   aktionLaeuft = false;
   anzahlManuellGesetzt = false;
   spielerwechselLaeuft = false;
+  fairModus = false;
 }
 
 export function spieler(liste) {
@@ -303,6 +336,7 @@ export function raumDaten(daten) {
   letzterSpielerId = daten.rdLetzterSpielerId ?? null;
   verworfeneKategorien = daten.rdVerworfeneKategorien ?? [];
   gespielt = daten.rdGespielt ?? [];
+  fairModus = Boolean(daten.rdFair);
   renderAktuellenStatus();
 }
 
@@ -358,6 +392,27 @@ function zeigeSetup() {
     $("rd-anzahl-max").textContent = `Insgesamt ${karten.length} Kategorien verfügbar.`;
     anzahlFeld.disabled = true;
   }
+  const fairZeile = $("rd-fair-zeile");
+  fairZeile.hidden = inOlympiade;
+  if (!inOlympiade) {
+    const cfg = fairKonfig(spielerListe.length);
+    $("rd-fair-btn").textContent = fairModus ? "An" : "Aus";
+    $("rd-fair-btn").setAttribute("aria-pressed", fairModus ? "true" : "false");
+    $("rd-fair-btn").disabled = !api.istLeiter;
+    if (fairModus && cfg) {
+      anzahlFeld.value = String(cfg.r);
+      anzahlFeld.disabled = true;
+      $("rd-anzahl-max").textContent = `Im fairen Modus: ${cfg.r} Runden (eine Kategorie pro Runde).`;
+      const genug = fairKartenIndizes(cfg.k).length >= cfg.r;
+      $("rd-fair-info").textContent = genug
+        ? `${cfg.r} Runden mit je ${cfg.k} Begriffen zum Einsortieren. Jeder fängt gleich oft an und kommt gleich oft dran.`
+        : `Für ${spielerListe.length} Spieler gibt es nicht genug passende Kategorien.`;
+    } else if (fairModus) {
+      $("rd-fair-info").textContent = "Für den fairen Modus braucht ihr mindestens zwei Spieler.";
+    } else {
+      $("rd-fair-info").textContent = "Aus: Jeder kommt reihum dran, die Kategorien sind unterschiedlich lang.";
+    }
+  }
   $("rd-anzahl-zeile").hidden = false;
   $("rd-starten").hidden = !api.istLeiter;
   $("rd-setup-warten").hidden = api.istLeiter;
@@ -383,14 +438,26 @@ async function spielStarten() {
   let anzahl = parseInt($("rd-anzahl").value, 10);
   if (!Number.isFinite(anzahl) || anzahl < 1) anzahl = 1;
   if (anzahl > karten.length) anzahl = karten.length;
+  const fair = fairModus && !api.olympiadeAnzahl;
+  const cfg = fair ? fairKonfig(spielerListe.length) : null;
+  let kartenPool = karten.map((_, index) => index);
+  if (cfg) {
+    anzahl = cfg.r;
+    kartenPool = fairKartenIndizes(cfg.k);
+    if (kartenPool.length < anzahl) {
+      $("rd-setup-fehler").textContent = "Für diese Spielerzahl gibt es im fairen Modus nicht genug passende Kategorien.";
+      return;
+    }
+  }
+  const fairK = cfg ? cfg.k : 0;
 
   // Wiederholungsschutz: bevorzugt Karten ziehen, die in diesem Raum noch
   // nicht drankamen (siehe kern/verlauf.js).
-  const { kandidaten, wurdeZurueckgesetzt } = pooleOhneWiederholung(karten.map((_, index) => index), gespielt, anzahl);
+  const { kandidaten, wurdeZurueckgesetzt } = pooleOhneWiederholung(kartenPool, gespielt, anzahl);
   const kategorien = mischeListe(kandidaten).slice(0, anzahl);
   const neuerGespielt = aktualisierterVerlauf(gespielt, kategorien, wurdeZurueckgesetzt);
   const reihenfolge = mischeListe(spielerListe.map((spieler) => spieler.id));
-  const ersteKategorie = neueKategorieDaten(karten[kategorien[0]]);
+  const ersteKategorie = neueKategorieDaten(karten[kategorien[0]], fairK);
   $("rd-starten").disabled = true;
   try {
     await updateDoc(api.raumRef(), {
@@ -404,6 +471,7 @@ async function spielStarten() {
       rdAktiveId: aktiveSpielerId(reihenfolge, 0, spielerListe.map((spieler) => spieler.id)),
       rdPunkte: Object.fromEntries(spielerListe.map((spieler) => [spieler.id, 0])),
       rdVerworfeneKategorien: [],
+      rdFairK: fairK,
       rdGespielt: neuerGespielt
     });
   } catch (e) {
@@ -515,7 +583,7 @@ function rendereKategorieErgebnis(container) {
       wertung.textContent = ergebnis.richtig ? "+1" : "−1";
     } else {
       spielerAnzeige.classList.add("neutral");
-      spielerAnzeige.textContent = begriffId === karte.startId ? "Startbegriff" : "Nicht erfasst";
+      spielerAnzeige.textContent = "Startbegriff";
       wertung.className = "neutral";
       wertung.textContent = "–";
     }
@@ -582,8 +650,10 @@ async function andereKategorie() {
       const verwendet = new Set(aktuelleReihenfolge);
       const bisherVerworfen = daten.rdVerworfeneKategorien ?? [];
       const verworfen = new Set(bisherVerworfen);
+      const fairK = daten.rdFairK ?? 0;
       const moegliche = mischeListe(karten.map((_, index) => index).filter((index) =>
-        !verwendet.has(index) && !verworfen.has(index)
+        !verwendet.has(index) && !verworfen.has(index) &&
+        (!fairK || karten[index].begriffe.length >= fairK + 1)
       ));
       if (!moegliche.length) {
         keinErsatz = true;
@@ -595,7 +665,7 @@ async function andereKategorie() {
       transaktion.update(ref, {
         rdKategorienReihenfolge: neueReihenfolge,
         rdVerworfeneKategorien: [...bisherVerworfen, erwarteteKategorie],
-        ...neueKategorieDaten(karten[moegliche[0]])
+        ...neueKategorieDaten(karten[moegliche[0]], fairK)
       });
     });
     if (keinErsatz) {
@@ -737,13 +807,17 @@ async function naechsteKategorie() {
       const naechsteKarte = karten[kategorien[naechsterKategorieIndex]];
       const spielReihenfolge = daten.rdSpielerReihenfolge ?? [];
       const geladeneSpielerIds = spielerListe.map((spieler) => spieler.id);
+      const fairK = daten.rdFairK ?? 0;
+      // Fair: der Startspieler rueckt jede Runde um eins weiter.
+      const naechsterZugIndex = fairK ? naechsterKategorieIndex : (daten.rdZugIndex ?? 0);
       const naechsteAktiveId = aktiveSpielerId(
         spielReihenfolge,
-        daten.rdZugIndex ?? 0,
+        naechsterZugIndex,
         geladeneSpielerIds.length ? geladeneSpielerIds : spielReihenfolge
       );
       transaktion.update(ref, {
-        ...neueKategorieDaten(naechsteKarte),
+        ...neueKategorieDaten(naechsteKarte, fairK),
+        rdZugIndex: naechsterZugIndex,
         rdStatus: "runde",
         rdKategorieIndex: naechsterKategorieIndex,
         rdAktiveId: naechsteAktiveId
@@ -783,7 +857,7 @@ export async function vorZurueck() {
       rdSortierteIds: [], rdSpielerReihenfolge: [], rdZugIndex: 0,
       rdAktiveId: null, rdPunkte: {}, rdErgebnisse: {}, rdLetzteRichtig: null, rdLetzterBegriffId: null,
       rdLetzterSpielerId: null,
-      rdVerworfeneKategorien: []
+      rdVerworfeneKategorien: [], rdFair: false, rdFairK: 0
     });
     await api.zurueckZurAuswahl();
   } catch (e) {
