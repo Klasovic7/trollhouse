@@ -220,7 +220,7 @@ export const SPIELE = [
     name: "Turbo",
     emoji: "🏎️",
     farbe: "#06b6d4",
-    beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke, 10 Strecken von A nach B (Nacht, Schnee, Sand, sogar mit Looping), die schnellste Zeit zählt",
+    beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke",
     // TEST: Prototyp, nur alleine spielbar (noch ohne Raum-Wertung).
     minSpieler: 1,
     mitBots: true,

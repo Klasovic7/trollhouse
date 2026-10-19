@@ -678,6 +678,7 @@ function schatten(hex, f) {
 
 function baueLauf(canvas, wrap, strecke, opt) {
   const ctx = canvas.getContext("2d");
+  document.body.classList.add("run-laeuft");
   const zustand = {
     dist: 0, spur: 0, ziel: 0,           // spur: Anzeige (float), ziel: gewünschte Spur (-1,0,1)
     y: 0, vy: 0, rutsch: 0, rutschWartet: false,
@@ -694,7 +695,7 @@ function baueLauf(canvas, wrap, strecke, opt) {
   function layout() {
     dpr = Math.min(2, window.devicePixelRatio || 1);
     w = Math.min(wrap.clientWidth || 320, 520);
-    h = Math.round(Math.min(w * 1.3, Math.max(340, (window.innerHeight || 700) * 0.58)));
+    h = Math.round(Math.min(w * 1.75, Math.max(340, (window.innerHeight || 700) * 0.72)));
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.height = h + "px";
     cx = w / 2; hy = h * 0.3;
@@ -1114,6 +1115,7 @@ function baueLauf(canvas, wrap, strecke, opt) {
     _s: strecke,
     abbauen() {
       abgebaut = true;
+      document.body.classList.remove("run-laeuft");
       cancelAnimationFrame(rafId);
       canvas.removeEventListener("pointerdown", runter);
       canvas.removeEventListener("pointermove", bewegt);

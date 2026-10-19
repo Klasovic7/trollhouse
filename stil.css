@@ -3494,6 +3494,7 @@ img.dk-karte-bild { -webkit-user-drag: none; user-select: none; pointer-events: 
 .run-hud-leben { font-size: 1.05rem; letter-spacing: 2px; min-width: 3.2em; text-align: right; }
 .run-canvas-wrap { position: relative; width: 100%; max-width: 520px; margin: 0 auto; }
 .run-canvas-wrap canvas { display: block; width: 100%; border-radius: 14px; background: #150f2e; touch-action: none; }
+body.run-laeuft #btn-chat-oeffnen { display: none !important; }
 .run-overlay {
   position: absolute; left: 12px; right: 12px; bottom: 14px; padding: 12px 14px; border-radius: 14px; text-align: center;
   font-weight: 800; font-size: 1.1rem; background: rgba(21, 128, 61, 0.93); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
