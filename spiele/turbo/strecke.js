@@ -25,7 +25,7 @@ export const STRECKEN = [
     sprung: [{ s0: 215, auf: 15, ab: 6, hoehe: 1.7 }],
     boosts: (L) => [120, L * 0.5, L * 0.74],
     bruecken: [90], tribuenen: [{ s: 58, seite: 1 }, { s: -8, seite: -1 }],
-    medaillen: { autor: 26.8, gold: 28.9, silber: 31.9, bronze: 36.8 },
+    medaillen: { autor: 26.1, gold: 28.1, silber: 31.0, bronze: 35.8 },
   },
   {
     id: "gp", name: "Grand Prix", kurz: "Tag · Haarnadeln", thema: "tag", grip: 1, traktion: 1, breite: 15,
@@ -39,7 +39,7 @@ export const STRECKEN = [
     sprung: [],
     boosts: (L) => [150, L * 0.46, L * 0.8],
     bruecken: [240], tribuenen: [{ s: 60, seite: 1 }, { s: 520, seite: -1 }],
-    medaillen: { autor: 53.5, gold: 57.5, silber: 63.5, bronze: 73.3 },
+    medaillen: { autor: 53.0, gold: 57.0, silber: 62.9, bronze: 72.6 },
   },
   {
     id: "wueste", name: "Wüstenhitze", kurz: "Tag · Sandpiste", thema: "wueste", grip: 0.84, traktion: 0.94, breite: 17,
@@ -53,7 +53,7 @@ export const STRECKEN = [
     sprung: [{ s0: 330, auf: 16, ab: 7, hoehe: 2.0 }, { s0: 1220, auf: 16, ab: 7, hoehe: 1.8 }],
     boosts: (L) => [110, L * 0.38, L * 0.7],
     bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
-    medaillen: { autor: 48.2, gold: 51.8, silber: 57.2, bronze: 66.0 },
+    medaillen: { autor: 47.9, gold: 51.5, silber: 56.9, bronze: 65.6 },
   },
   {
     id: "eis", name: "Eispass", kurz: "Tag · Schnee, glatt", thema: "schnee", grip: 0.7, traktion: 0.86, breite: 15,
@@ -66,7 +66,7 @@ export const STRECKEN = [
     sprung: [],
     boosts: (L) => [130, L * 0.55, L * 0.78],
     bruecken: [], tribuenen: [{ s: 58, seite: 1 }],
-    medaillen: { autor: 50.0, gold: 53.8, silber: 59.4, bronze: 68.5 },
+    medaillen: { autor: 49.2, gold: 52.9, silber: 58.4, bronze: 67.4 },
   },
   {
     id: "nacht", name: "Neon-Nacht", kurz: "Nacht · Flutlicht", thema: "nacht", grip: 0.98, traktion: 1, breite: 15,
@@ -79,7 +79,7 @@ export const STRECKEN = [
     sprung: [],
     boosts: (L) => [140, L * 0.42, L * 0.76],
     bruecken: [200], tribuenen: [{ s: 60, seite: 1 }, { s: 560, seite: -1 }],
-    medaillen: { autor: 48.1, gold: 51.8, silber: 57.2, bronze: 66.0 },
+    medaillen: { autor: 48.4, gold: 52.1, silber: 57.5, bronze: 66.3 },
   },
 ];
 export const streckeNachId = (id) => STRECKEN.find((t) => t.id === id) || STRECKEN[0];

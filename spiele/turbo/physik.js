@@ -107,7 +107,12 @@ export function schritt(a, e, dt, S) {
 
   // --- Wand
   S.nahe(a.x, a.z, a.i, tmp);
-  const grenze = tmp.w / 2 + WAND_ABSTAND;
+  // Karosserie hat Ausmasse: je nach Winkel zur Strecke ragt sie seitlich bzw. in Fahrtrichtung weiter
+  const cF = Math.sin(a.theta) * tmp.tx + Math.cos(a.theta) * tmp.tz;      // cos(Winkel zur Strecke)
+  const sF = Math.sin(a.theta) * tmp.rx + Math.cos(a.theta) * tmp.rz;      // sin(Winkel zur Strecke)
+  const halbQuer = 0.98 * Math.abs(cF) + 2.3 * Math.abs(sF) + 0.05;
+  const halbLang = 2.3 * Math.abs(cF) + 0.98 * Math.abs(sF) + 0.05;
+  const grenze = tmp.w / 2 + WAND_ABSTAND - halbQuer;
   if (Math.abs(tmp.lat) > grenze) {
     const sg = Math.sign(tmp.lat);
     const ueber = Math.abs(tmp.lat) - grenze;
@@ -127,17 +132,21 @@ export function schritt(a, e, dt, S) {
     }
   }
 
-  // --- Endmauern (Start hinten, Ende hinter dem Auslauf)
+  // --- Endmauern (Start hinten, Ende hinter dem Auslauf): Auto-Nase bzw. -Heck stoesst an
   S.nahe(a.x, a.z, a.i, tmp);
-  if (tmp.over !== 0) {
-    const vorw = tmp.over > 0;
-    const vt = a.vx * tmp.tx + a.vz * tmp.tz;       // Tempo entlang der Strecke
-    const ue = Math.abs(tmp.over);
-    a.x -= tmp.tx * Math.sign(tmp.over) * ue; a.z -= tmp.tz * Math.sign(tmp.over) * ue;
-    if ((vorw && vt > 0) || (!vorw && vt < 0)) {
-      a.vx -= 1.3 * vt * tmp.tx; a.vz -= 1.3 * vt * tmp.tz;
-      a.vx *= 0.6; a.vz *= 0.6;
-      if (Math.abs(vt) > 3) ev.push({ t: "wand", staerke: Math.abs(vt), seite: 0, x: a.x, z: a.z, y: a.y });
+  {
+    const sEff = tmp.s + tmp.over;
+    const penEnde = sEff - (S.laenge - halbLang), penStart = halbLang - sEff;
+    if (penEnde > 0 || penStart > 0) {
+      const vorw = penEnde > 0, pen = vorw ? penEnde : penStart;
+      const vt = a.vx * tmp.tx + a.vz * tmp.tz;       // Tempo entlang der Strecke
+      const sg = vorw ? -1 : 1;
+      a.x += tmp.tx * sg * pen; a.z += tmp.tz * sg * pen;
+      if ((vorw && vt > 0) || (!vorw && vt < 0)) {
+        a.vx -= 1.3 * vt * tmp.tx; a.vz -= 1.3 * vt * tmp.tz;
+        a.vx *= 0.6; a.vz *= 0.6;
+        if (Math.abs(vt) > 3) ev.push({ t: "wand", staerke: Math.abs(vt), seite: 0, x: a.x, z: a.z, y: a.y });
+      }
     }
   }
 
