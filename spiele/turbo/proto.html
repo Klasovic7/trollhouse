@@ -131,6 +131,7 @@
   .pnl .lab { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; opacity: .65; font-weight: 700; }
   .pnl .wert { font-size: 20px; line-height: 1.15; } .pnl .wert.gr { font-size: 30px; }
   .tl { position: absolute; top: max(8px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); display: grid; gap: 6px; }
+  #karte { width: 150px; height: 96px; background: var(--glas); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; }
   .tm { position: absolute; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; pointer-events: auto; }
   .tm .rest { align-items: center; min-width: 88px; }
   .rund { font: inherit; font-size: 18px; font-weight: 900; color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: var(--glas); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 0; }
@@ -182,6 +183,7 @@
   <div class="tl">
     <div class="pnl"><span class="lab">Aktuelle Zeit</span><span id="lap" class="wert gr num">0:00.00</span></div>
     <div class="pnl"><span class="lab">Beste Zeit <span id="medal"></span></span><span id="best" class="wert num">--:--.--</span></div>
+    <canvas id="karte" width="300" height="192"></canvas>
     <span class="weg" id="letzte"></span><span class="weg" id="runden"></span>
   </div>
   <div class="tm">

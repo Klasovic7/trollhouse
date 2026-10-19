@@ -347,6 +347,64 @@ function kamera(dt, t) {
   if (Math.abs(camera.fov - fov) > 0.02) { camera.fov += (fov - camera.fov) * (1 - Math.exp(-5 * dt)); camera.updateProjectionMatrix(); }
 }
 
+
+// ---------------- Minikarte (Nordrichtung egal: Start zeigt immer nach rechts)
+const KARTE = (() => {
+  const cv = $("karte"), cx = cv.getContext("2d"), W = cv.width, H = cv.height, R = 18;
+  const d0x = S.tx[2], d0z = S.tz[2], r0x = -d0z, r0z = d0x;
+  const proj = (x, z) => [x * d0x + z * d0z, x * r0x + z * r0z];
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (let i = 0; i < S.n; i += 2) { const [u, v] = proj(S.x[i], S.z[i]); x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v); }
+  const sc = Math.min((W - 2 * R) / Math.max(1, x1 - x0), (H - 2 * R) / Math.max(1, y1 - y0));
+  const ox = (W - (x1 - x0) * sc) / 2 - x0 * sc, oy = (H - (y1 - y0) * sc) / 2 - y0 * sc;
+  const pt = (x, z) => { const [u, v] = proj(x, z); return [u * sc + ox, v * sc + oy]; };
+  const bg = document.createElement("canvas"); bg.width = W; bg.height = H; const b = bg.getContext("2d");
+  b.lineJoin = b.lineCap = "round";
+  const bahn = () => { b.beginPath(); for (let i = 0; i < S.n; i += 2) { const [u, v] = pt(S.x[i], S.z[i]); i ? b.lineTo(u, v) : b.moveTo(u, v); } };
+  bahn(); b.strokeStyle = "rgba(0,0,0,.55)"; b.lineWidth = 11; b.stroke();
+  bahn(); b.strokeStyle = "rgba(235,242,255,.92)"; b.lineWidth = 6; b.stroke();
+  const mk = (s, f) => { const i = Math.max(0, Math.min(S.n - 1, Math.round(s / S.ds))); const [u, v] = pt(S.x[i], S.z[i]); b.fillStyle = f; b.beginPath(); b.arc(u, v, 8, 0, 6.3); b.fill(); b.strokeStyle = "#fff"; b.lineWidth = 3; b.stroke(); };
+  mk(S.startS, "#22c55e"); mk(S.zielS, "#ef4444");
+  let z = 0;
+  return (a) => {
+    if ((z++ & 1) || !cv.offsetParent) return;
+    cx.clearRect(0, 0, W, H); cx.drawImage(bg, 0, 0);
+    const [u, v] = pt(a.x, a.z), hx = Math.sin(a.theta), hz = Math.cos(a.theta);
+    const [dx, dy] = [hx * d0x + hz * d0z, hx * r0x + hz * r0z];
+    const ang = Math.atan2(dy, dx);
+    cx.save(); cx.translate(u, v); cx.rotate(ang);
+    cx.fillStyle = "#ffd24a"; cx.strokeStyle = "#0a0e1a"; cx.lineWidth = 3;
+    cx.beginPath(); cx.moveTo(13, 0); cx.lineTo(-9, 9); cx.lineTo(-5, 0); cx.lineTo(-9, -9); cx.closePath(); cx.stroke(); cx.fill();
+    cx.restore();
+  };
+})();
+
+// ---------------- Kontaktschatten unter dem Auto (damit es nicht schwebt)
+const BLOB = (() => {
+  const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d");
+  const gr = g.createRadialGradient(64, 64, 4, 64, 64, 62); gr.addColorStop(0, "rgba(0,0,0,.95)"); gr.addColorStop(.45, "rgba(0,0,0,.6)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, toneMapped: false });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); mesh.rotation.order = "YXZ"; mesh.renderOrder = 2; mesh.frustumCulled = false;
+  scene.add(mesh); return { mesh, mat, tmp: {} };
+})();
+function zeigeBlob() {
+  const m = BLOB.mesh;
+  if (a.loop) { m.visible = false; return; }
+  S.nahe(a.x, a.z, a.i, BLOB.tmp);
+  const gy = BLOB.tmp.y, h = Math.max(0, a.y - gy);
+  m.visible = true;
+  const i = a.i, i1 = Math.min(S.n - 1, i + 3), i0 = Math.max(0, i - 3);
+  const sl = (S.y[i1] - S.y[i0]) / Math.max(1e-3, (i1 - i0) * S.ds);
+  const tsin = Math.cos(Math.atan2(S.tx[i], S.tz[i]) - a.theta);
+  m.position.set(a.x, gy + 0.06, a.z);
+  m.rotation.set(-Math.PI / 2 + Math.atan(sl * (tsin >= 0 ? 1 : -1)), a.theta, 0);
+  const k = 1 + h * 0.35;
+  m.scale.set(3.3 * k, 6.2 * k, 1);
+  BLOB.mat.opacity = Math.max(0, 0.7 / (1 + h * 0.9));
+}
+
 // ---------------- Visuelle Aktualisierung des Autos
 let radLauf = 0;
 const _T = new THREE.Vector3(), _N = new THREE.Vector3(), _X = new THREE.Vector3(), _M = new THREE.Matrix4();
@@ -414,6 +472,16 @@ function effekte(dt, t) {
       rauch.emit(px, a.y + 0.25, pz, a.vx * 0.25 + (Math.random() - 0.5) * 1.2, 0.7 + Math.random() * 0.8, a.vz * 0.25 + (Math.random() - 0.5) * 1.2,
         staub ? 1.4 : 1.1, staub ? 3.6 : 3.2, staub ? 0.9 : 1.1,
         staub ? 0.50 : 0.78, staub ? 0.44 : 0.78, staub ? 0.30 : 0.80, staub ? 0.55 : 0.42);
+    }
+  }
+  if (!a.luft && zustand === "run" && a.fl < 2 && S.untergrund !== "asphalt" && sp > 10) {
+    const U = S.untergrund, f = U === "eis" ? [0.93, 0.96, 1.0, 0.34] : U === "sand" ? [0.84, 0.70, 0.46, 0.38] : [0.55, 0.45, 0.32, 0.34];
+    let m = (6 + sp * 0.32) * dt;
+    while (m > 0 && Math.random() < m) {
+      m -= 1;
+      const sg = Math.random() < 0.5 ? -1 : 1;
+      rauch.emit(a.x - ft * 1.5 + rx * 0.95 * sg, a.y + 0.2, a.z - fz * 1.5 + rz * 0.95 * sg, a.vx * 0.12 + (Math.random() - 0.5) * 1.6, 0.5 + Math.random() * 0.7, a.vz * 0.12 + (Math.random() - 0.5) * 1.6,
+        0.8, 2.6, 0.7 + Math.random() * 0.3, f[0], f[1], f[2], f[3]);
     }
   }
   if (a.boost > 0 && zustand === "run") {
@@ -546,7 +614,7 @@ function frame(now) {
   $("boostbar").firstElementChild.style.transform = `scaleX(${Math.min(1, a.boost / P.BOOST_ZEIT)})`;
   $("rest").classList.toggle("knapp", rest < 30 && zustand === "run");
 
-  zeigeAuto(dt, now / 1000);
+  zeigeAuto(dt, now / 1000); zeigeBlob(); KARTE(a);
   world.folge(a.x, a.y, a.z);
   world.boostAnim(now / 1000);
   world.tick(now / 1000, camera.position);
