@@ -25,7 +25,7 @@ export function neuesAuto(pose) {
     vx: 0, vz: 0, lenk: 0, boost: 0, luft: false, luftZeit: 0,
     i: pose.i, s: 0, lat: 0, fl: 0,   // fl = Flaeche: 0 Asphalt, 1 Kerb, 2 Gras
     vF: 0, vR: 0, schlupf: 0, wandZeit: 0, rueck: false, bremsend: false, driftend: false,
-    nickV: 0, gier: 0,
+    nickV: 0, gier: 0, loop: null, sVor: 0, loopT: null, loopN: null,
   };
 }
 
@@ -41,6 +41,7 @@ export function schritt(a, e, dt, S) {
   const rate = wechsel ? 12 : Math.abs(ziel) > Math.abs(a.lenk) ? 5.2 : 9;
   a.lenk += klemme(ziel - a.lenk, -rate * dt, rate * dt);
 
+  if (a.loop) return loopSchritt(a, e, dt, S);
   const ft = Math.sin(a.theta), fz = Math.cos(a.theta);
   const rx = -fz, rz = ft;
   let vF = a.vx * ft + a.vz * fz;
@@ -150,6 +151,26 @@ export function schritt(a, e, dt, S) {
     }
   }
 
+  // --- Looping: Einstieg nur mit genug Tempo, sonst prallt das Auto am Anstieg ab
+  if (S.loops.length && !a.luft) {
+    for (const L of S.loops) {
+      if (a.sVor < L.s0 && tmp.s >= L.s0 - 2.4 && tmp.s < L.s0 + 6) {
+        const sp = Math.hypot(a.vx, a.vz), vt = a.vx * tmp.tx + a.vz * tmp.tz;
+        if (sp >= Math.sqrt(5 * P.G * L.R) * 1.03 && vt > 0) {
+          a.loop = { L, sig: 0, k: 0, v0: sp, y0: S.y[L.i0], h: 0, lat: klemme(tmp.lat, -(tmp.w / 2 - 1.4), tmp.w / 2 - 1.4) };
+          ev.push({ t: "looping" });
+        } else if (vt > 0) {
+          const zuweit = tmp.s - (L.s0 - 2.4);
+          if (zuweit > 0) { a.x -= tmp.tx * zuweit; a.z -= tmp.tz * zuweit; }
+          a.vx -= 1.3 * vt * tmp.tx; a.vz -= 1.3 * vt * tmp.tz; a.vx *= 0.5; a.vz *= 0.5;
+          ev.push({ t: "loopzulangsam", staerke: vt, vmin: Math.sqrt(5 * P.G * L.R) * 1.03 });
+        }
+      }
+    }
+    if (a.loop) { a.sVor = tmp.s; return ev; }
+  }
+  a.sVor = tmp.s;
+
   // --- Boost-Felder
   if (!a.luft) {
     for (const b of S.boosts) {
@@ -186,5 +207,47 @@ export function schritt(a, e, dt, S) {
     }
   }
   void gy;
+  return ev;
+}
+
+// Looping: das Auto folgt der Schleife entlang des Bogens, Tempo ergibt sich aus der Hoehe (Energie)
+function loopSchritt(a, e, dt, S) {
+  const ev = [];
+  const Lp = a.loop, L = Lp.L;
+  const halb = S.w[L.i0] / 2 - 1.4;
+  Lp.lat = klemme(Lp.lat + (a.lenk || 0) * 6 * dt, -halb, halb);
+  Lp.v0 *= 1 - 0.015 * dt;
+  const v = Math.sqrt(Math.max(9, Lp.v0 * Lp.v0 - 2 * P.G * Lp.h));
+  Lp.sig += v * dt;
+  const cum = L.cum;
+  if (Lp.sig >= L.arc - 1e-3) {
+    const i = L.i1;
+    a.loop = null; a.loopT = null; a.loopN = null;
+    a.theta = Math.atan2(L.fx, L.fz);
+    a.x = S.x[i] + S.RXA[i] * Lp.lat; a.z = S.z[i] + S.RZA[i] * Lp.lat; a.y = S.y[i]; a.vy = 0;
+    a.vx = L.fx * v; a.vz = L.fz * v; a.vF = v; a.vR = 0; a.luft = false; a.i = i; a.s = L.s1; a.sVor = L.s1; a.lat = Lp.lat;
+    a.nickV = 0; a.lenk = 0;
+    ev.push({ t: "loopfertig" });
+    return ev;
+  }
+  let k = Lp.k;
+  while (k < cum.length - 2 && cum[k + 1] < Lp.sig) k++;
+  Lp.k = k;
+  const i = L.i0 + k, j = i + 1;
+  const u = (Lp.sig - cum[k]) / Math.max(1e-6, cum[k + 1] - cum[k]);
+  const px = S.x[i] + (S.x[j] - S.x[i]) * u, py = S.y[i] + (S.y[j] - S.y[i]) * u, pz = S.z[i] + (S.z[j] - S.z[i]) * u;
+  let Tx = S.x[j] - S.x[i], Ty = S.y[j] - S.y[i], Tz = S.z[j] - S.z[i];
+  const tl = Math.hypot(Tx, Ty, Tz) || 1; Tx /= tl; Ty /= tl; Tz /= tl;
+  let Nx = S.NX[i] + (S.NX[j] - S.NX[i]) * u, Ny = S.NY[i] + (S.NY[j] - S.NY[i]) * u, Nz = S.NZ[i] + (S.NZ[j] - S.NZ[i]) * u;
+  const nl = Math.hypot(Nx, Ny, Nz) || 1; Nx /= nl; Ny /= nl; Nz /= nl;
+  const Rx = S.RXA[i], Rz = S.RZA[i];
+  a.x = px + Rx * Lp.lat; a.y = py; a.z = pz + Rz * Lp.lat;
+  Lp.h = py - Lp.y0;
+  a.vx = Tx * v; a.vz = Tz * v; a.vy = Ty * v; a.vF = v; a.vR = 0;
+  a.theta = Math.atan2(L.fx, L.fz);
+  a.i = i; a.s = (i + u) * S.ds; a.sVor = a.s; a.lat = Lp.lat; a.luft = false; a.fl = 0;
+  a.bremsend = false; a.driftend = false; a.gier = 0;
+  a.loopT = [Tx, Ty, Tz]; a.loopN = [Nx, Ny, Nz];
+  if (a.boost > 0) a.boost = Math.max(0, a.boost - dt);
   return ev;
 }

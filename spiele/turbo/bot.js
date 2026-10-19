@@ -1,6 +1,7 @@
 // Einfacher Fahrer (Pure Pursuit + Tempoplanung). Dient als Test, als Referenzzeit fuer Medaillen
 // und als Demo (?bot=1).
 export function botEingabe(a, S, opt = {}) {
+  if (a.loop) return { lenk: 0, bremse: false, gas: true };
   const v = Math.max(a.vF, 5);
   const n = S.n, ds = S.ds;
   const vorschau = 9 + v * 0.34;

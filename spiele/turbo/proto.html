@@ -152,7 +152,8 @@
   .sw.an { background: rgba(6,182,212,.22); border-color: #22d3ee; }
   @media (max-height: 520px) {
     #menue .karte { grid-template-areas: "logo wahl" "rek regeln" "btn regeln" !important; }
-    #strecken { grid-area: wahl; margin: 0; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    #strecken { grid-area: wahl; margin: 0; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    .sw small { display: none; } .sw { padding: 5px 6px; } .sw b { font-size: 10.5px; line-height: 1.15; }
     .sw { padding: 4px 7px; } .sw b { font-size: 11.5px; } .sw small { font-size: 9px; }
     #menue .regeln li:nth-child(3) { display: none; }
     #menue .karte { display: grid !important; grid-template-columns: minmax(0, .85fr) minmax(0, 1.35fr); grid-template-areas: "logo wahl" "rek regeln" "btn regeln"; gap: 8px 16px; width: min(780px, 94vw) !important; align-items: center; padding: 10px 14px; }

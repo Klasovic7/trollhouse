@@ -81,6 +81,72 @@ export const STRECKEN = [
     bruecken: [200], tribuenen: [{ s: 60, seite: 1 }, { s: 560, seite: -1 }],
     medaillen: { autor: 48.4, gold: 52.1, silber: 57.5, bronze: 66.3 },
   },
+  {
+    id: "kart", name: "Kartbahn", kurz: "Tag · eng, viele Kurven", thema: "tag", grip: 1, traktion: 1, breite: 12,
+    ops: [
+      ["g", 110], ["r", 14, 90], ["g", 20], ["l", 14, 90], ["g", 20], ["r", 14, 90], ["l", 14, 90], ["g", 25],
+      ["r", 22, 180], ["g", 30], ["l", 18, 110], ["r", 18, 110], ["g", 25], ["l", 12, 180], ["g", 30],
+      ["r", 25, 120], ["l", 25, 60], ["g", 20], ["r", 16, 90], ["l", 16, 90], ["r", 16, 90], ["g", 20],
+      ["l", 30, 120], ["g", 120],
+    ],
+    hoehen: [[0, 0], [450, 2], [900, 0]],
+    sprung: [],
+    boosts: (L) => [150, L * 0.55],
+    bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
+    medaillen: { autor: 27.6, gold: 29.7, silber: 32.7, bronze: 37.8 },
+  },
+  {
+    id: "herbst", name: "Herbstpfad", kurz: "Herbst · Waldweg", thema: "herbst", grip: 0.88, traktion: 0.95, breite: 12,
+    ops: [
+      ["g", 110], ["r", 24, 100], ["l", 16, 160], ["g", 15], ["r", 16, 160], ["g", 25], ["l", 30, 90],
+      ["r", 30, 60], ["g", 30], ["l", 20, 120], ["r", 20, 100], ["g", 20], ["l", 14, 180], ["g", 20],
+      ["r", 20, 90], ["l", 20, 90], ["r", 16, 100], ["g", 120],
+    ],
+    hoehen: [[0, 0], [250, 4], [450, 9], [650, 5], [800, 3]],
+    sprung: [],
+    boosts: (L) => [140, L * 0.6],
+    bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
+    medaillen: { autor: 25.1, gold: 27.1, silber: 29.9, bronze: 34.5 },
+  },
+  {
+    id: "duene", name: "Dünen-Slalom", kurz: "Tag · Sand, Sprung", thema: "wueste", grip: 0.84, traktion: 0.94, breite: 13,
+    ops: [
+      ["g", 110], ["l", 40, 70], ["r", 40, 110], ["l", 35, 100], ["r", 30, 90], ["g", 30], ["l", 22, 150],
+      ["g", 20], ["r", 38, 100], ["l", 38, 80], ["r", 30, 70], ["g", 20], ["l", 26, 120], ["r", 26, 90],
+      ["l", 26, 60], ["g", 120],
+    ],
+    hoehen: [[0, 0], [200, 3], [380, 7], [560, 3], [700, 6], [900, 2]],
+    sprung: [{ s0: 62, auf: 14, ab: 6, hoehe: 1.6 }],
+    boosts: (L) => [135, L * 0.5],
+    bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
+    medaillen: { autor: 26.1, gold: 28.1, silber: 31.0, bronze: 35.7 },
+  },
+  {
+    id: "glet", name: "Gletscher-Schlange", kurz: "Schnee · Haarnadeln", thema: "schnee", grip: 0.7, traktion: 0.86, breite: 12,
+    ops: [
+      ["g", 110], ["l", 17, 180], ["g", 15], ["r", 17, 180], ["g", 15], ["l", 17, 180], ["g", 30], ["r", 30, 90],
+      ["l", 30, 90], ["g", 20], ["r", 17, 180], ["g", 15], ["l", 17, 180], ["g", 15], ["r", 17, 180], ["g", 15],
+      ["l", 17, 150], ["g", 120],
+    ],
+    hoehen: [[0, 24], [200, 20], [400, 12], [600, 5], [850, 0]],
+    sprung: [],
+    boosts: (L) => [140, L * 0.55],
+    bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
+    medaillen: { autor: 35.0, gold: 37.7, silber: 41.6, bronze: 47.9 },
+  },
+  {
+    id: "loop", name: "Looping-Arena", kurz: "Nacht · Looping", thema: "nacht", grip: 0.98, traktion: 1, breite: 13,
+    ops: [
+      ["g", 120], ["r", 20, 90], ["g", 30], ["l", 20, 90], ["g", 80], ["loop", 16, 30], ["g", 40],
+      ["r", 16, 180], ["g", 20], ["l", 16, 90], ["r", 16, 90], ["g", 30], ["l", 14, 180], ["g", 20],
+      ["r", 22, 100], ["l", 22, 100], ["g", 120],
+    ],
+    hoehen: [[0, 0], [900, 0]],
+    sprung: [],
+    boosts: (L, info) => [info.loops[0].s0 - 40, L * 0.78],
+    bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
+    medaillen: { autor: 24.4, gold: 26.2, silber: 29.0, bronze: 33.4 },
+  },
 ];
 export const streckeNachId = (id) => STRECKEN.find((t) => t.id === id) || STRECKEN[0];
 
@@ -102,12 +168,19 @@ function verlauf(keys, s) {
   return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * h * m(k) + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * h * m(k + 1);
 }
 
-// "ops" -> Stuetzpunkte im Abstand DS (x, z, y, w)
+// "ops" -> Stuetzpunkte im Abstand DS (x, z, y, w) + Looping-Daten
 function ausOps(def) {
   const kap = [];
+  const loops = [];
   for (const [typ, a, b] of def.ops) {
     if (typ === "g") for (let m = 0; m < a; m++) kap.push(0);
-    else {
+    else if (typ === "loop") {
+      if (kap.length % 2) kap.push(0);
+      const R = a, D = b || 30;
+      const arc = 2 * Math.round(Math.hypot(2 * Math.PI * R, D) / 2);
+      loops.push({ m0: kap.length, m1: kap.length + arc, R, D, arc });
+      for (let m = 0; m < arc; m++) kap.push(0);
+    } else {
       const rad = (b * Math.PI) / 180, len = Math.max(1, Math.round(a * rad)), k = (rad / len) * (typ === "l" ? 1 : -1);
       for (let m = 0; m < len; m++) kap.push(k);
     }
@@ -125,26 +198,54 @@ function ausOps(def) {
     cur = nxt;
   }
   let th = Math.PI / 2, x = 0, z = 0;
-  const px = [0], pz = [0];
-  for (let m = 0; m < cur.length; m++) {
+  const px = [0], pz = [0], py = [0];
+  const N = cur.length;
+  const lo = new Int8Array(N + 1).fill(-1);
+  const nrm = new Float32Array((N + 1) * 3);
+  for (let m = 0; m <= N; m++) { nrm[m * 3 + 1] = 1; }
+  let L = 0, ex = 0, ez = 0, fx = 0, fz = 0, rx = 0, rz = 0;
+  for (let m = 0; m < N; m++) {
+    const lp = loops.findIndex((l) => m >= l.m0 && m < l.m1);
+    if (lp >= 0) {
+      const l = loops[lp];
+      if (m === l.m0) { ex = x; ez = z; fx = Math.sin(th); fz = Math.cos(th); rx = -fz; rz = fx; lo[m] = lp; }
+      const u = (m + 1 - l.m0) / l.arc, ph = 2 * Math.PI * u;
+      x = ex + fx * l.R * Math.sin(ph) + rx * l.D * u; z = ez + fz * l.R * Math.sin(ph) + rz * l.D * u;
+      px.push(x); pz.push(z); py.push(l.R * (1 - Math.cos(ph)));
+      lo[m + 1] = lp;
+      nrm[(m + 1) * 3] = -fx * Math.sin(ph); nrm[(m + 1) * 3 + 1] = Math.cos(ph); nrm[(m + 1) * 3 + 2] = -fz * Math.sin(ph);
+      if (m === l.m0) { lo[m] = lp; }
+      continue;
+    }
     const th2 = th + cur[m] * 0.5;
     x += Math.sin(th2); z += Math.cos(th2); th += cur[m];
-    px.push(x); pz.push(z);
+    px.push(x); pz.push(z); py.push(0);
   }
-  const n = Math.floor(cur.length / DS) + 1;
-  const out = [];
+  const n = Math.floor(N / DS) + 1;
+  const out = [], extra = { nx: new Float32Array(n), ny: new Float32Array(n).fill(1), nz: new Float32Array(n), loop: new Int8Array(n).fill(-1), fx: new Float32Array(n), fz: new Float32Array(n) };
   for (let i = 0; i < n; i++) {
-    const s = i * DS;
+    const s = i * DS, m = i * DS;
     const w = def.breiten ? verlauf(def.breiten, s) : def.breite || 14;
-    out.push([px[i * DS], pz[i * DS], def.hoehen ? verlauf(def.hoehen, s) : 0, w]);
+    const lp = lo[m];
+    const yBasis = def.hoehen ? verlauf(def.hoehen, lp >= 0 ? loops[lp].m0 : s) : 0;
+    out.push([px[m], pz[m], yBasis + py[m], w]);
+    if (lp >= 0) { extra.loop[i] = lp; extra.nx[i] = nrm[m * 3]; extra.ny[i] = nrm[m * 3 + 1]; extra.nz[i] = nrm[m * 3 + 2]; }
   }
-  return out;
+  // Schleifen: Index-Bereiche und Vorwaertsrichtung
+  const info = loops.map((l, k) => {
+    const i0 = l.m0 / DS, i1 = l.m1 / DS;
+    const dxe = px[l.m0 + 1] - px[l.m0];       // nur zur Richtung vor der Schleife
+    void dxe;
+    return { i0, i1, R: l.R, D: l.D, arc: l.arc, k };
+  });
+  return { pts: out, extra, info, th0: Math.PI / 2, px, pz };
 }
 
 export function baueStrecke(def = STRECKEN[0]) {
-  let n, ds, x, z, y, w;
+  let n, ds, x, z, y, w, ops = null;
   if (def.ops) {
-    const pts = ausOps(def);
+    ops = ausOps(def);
+    const pts = ops.pts;
     n = pts.length; ds = DS;
     x = new Float32Array(n); z = new Float32Array(n); y = new Float32Array(n); w = new Float32Array(n);
     pts.forEach((p, i) => { x[i] = p[0]; z[i] = p[1]; y[i] = p[2]; w[i] = p[3]; });
@@ -200,17 +301,34 @@ export function baueStrecke(def = STRECKEN[0]) {
     const dx = x[b] - x[a], dz = z[b] - z[a], l = Math.hypot(dx, dz);
     tx[i] = dx / l; tz[i] = dz / l;
   }
+  // Normalen / Rechtsvektoren (ausserhalb von Schleifen: senkrecht nach oben bzw. waagerecht rechts)
+  const NX = new Float32Array(n), NY = new Float32Array(n).fill(1), NZ = new Float32Array(n), RXA = new Float32Array(n), RZA = new Float32Array(n);
+  const loopIdx = new Int8Array(n).fill(-1);
+  const loopsS = [];
+  if (ops) {
+    ops.info.forEach((l) => {
+      // Vorwaertsrichtung der Schleife = Richtung unmittelbar vor dem Einstieg
+      const ia = Math.max(0, l.i0 - 1);
+      const fx = tx[ia], fz = tz[ia];
+      for (let i = l.i0; i <= l.i1; i++) { tx[i] = fx; tz[i] = fz; loopIdx[i] = l.k; NX[i] = ops.extra.nx[i]; NY[i] = ops.extra.ny[i]; NZ[i] = ops.extra.nz[i]; }
+      const cum = new Float32Array(l.i1 - l.i0 + 1);
+      for (let i = l.i0 + 1; i <= l.i1; i++) cum[i - l.i0] = cum[i - l.i0 - 1] + Math.hypot(x[i] - x[i - 1], y[i] - y[i - 1], z[i] - z[i - 1]);
+      loopsS.push({ i0: l.i0, i1: l.i1, s0: l.i0 * ds, s1: l.i1 * ds, R: l.R, D: l.D, arc: cum[cum.length - 1], cum, fx, fz });
+    });
+  }
+  for (let i = 0; i < n; i++) { RXA[i] = -tz[i]; RZA[i] = tx[i]; }
   for (let i = 1; i < n - 1; i++) {
+    if (loopIdx[i] >= 0) continue;
     const c = tx[i - 1] * tz[i + 1] - tz[i - 1] * tx[i + 1];
     kr[i] = Math.asin(Math.max(-1, Math.min(1, c))) / (2 * ds);   // >0: Linkskurve in (x,z)
   }
 
   const laenge = (n - 1) * ds;
   const S = {
-    def, id: def.id, n, ds, laenge, x, z, y, w, tx, tz, kr, sprung: SPRUENGE[0] || null, startS: START_S, zielS: laenge - AUSLAUF,
+    def, id: def.id, n, ds, laenge, x, z, y, w, tx, tz, kr, NX, NY, NZ, RXA, RZA, loopIdx, loops: loopsS, sprung: SPRUENGE[0] || null, startS: START_S, zielS: laenge - AUSLAUF,
     grip: def.grip || 1, traktion: def.traktion || 1,
   };
-  S.boosts = def.boosts(laenge).map((s) => ({ s, lat: 0 }));
+  S.boosts = def.boosts(laenge, { loops: loopsS }).map((s) => ({ s, lat: 0 }));
   S.checkpoints = [];
 
   // Raster fuer Abstandsabfragen (Gelaende, Baeume)
@@ -220,7 +338,7 @@ export function baueStrecke(def = STRECKEN[0]) {
     const key = Math.floor(x[i] / ZELLE) + "," + Math.floor(z[i] / ZELLE);
     if (!raster.has(key)) raster.set(key, []);
     raster.get(key).push(i);
-    if (i % 3 === 0) { if (!raster3.has(key)) raster3.set(key, []); raster3.get(key).push(i); }
+    if (i % 3 === 0 && loopIdx[i] < 0) { if (!raster3.has(key)) raster3.set(key, []); raster3.get(key).push(i); }
   }
   S.abstand = (px, pz, maxR = 160) => {
     let best = maxR * maxR;

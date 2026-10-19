@@ -66,6 +66,18 @@ const THEMEN = {
     berge: { form: "mesa", unten: [0.58, 0.31, 0.20], mitte: [0.74, 0.46, 0.28], oben: [0.86, 0.62, 0.40], hoeheMin: 90, hoeheVar: 120 },
     deko: "wueste", flutlicht: false, schnee: false,
   },
+  herbst: {
+    himmel: { hor: [0.86, 0.80, 0.70], zen: [0.40, 0.55, 0.78], sonne: [1.0, 0.70, 0.40], boden: [0.45, 0.33, 0.20], nacht: false, wolken: 0.8 },
+    nebel: { c: [0.80, 0.74, 0.66], von: 200, bis: 1000 },
+    hemi: [0xffe3c2, 0x7a5a3a, 1.0], sonne: { farbe: 0xffd9a8, st: 2.8, dir: [-0.7, 0.38, 0.4] },
+    env: 0.5, bloom: 0.55, belichtung: 1.0,
+    boden: { basis: "#8a6a35", hue: [25, 45], sat: 50, tint: 0xd9b070 },
+    gelaende: { r: 0.62, g: 0.50, b: 0.30, fels: [0.5, 0.42, 0.35], hill: 85, schnee: false },
+    strasse: { basis: "#6b5a47", tint: 0xffe8d0, linie: "rgba(240,225,200,0.5)", spur: 0.22, rau: 0.95 },
+    kerb: ["#c2461e", "#f0e3cf"], bande: ["#8a5a2c", "#e9dcc3"], banner: ["#d9531e", "#f2a03d", "#ffd166"],
+    berge: { form: "kegel", unten: [0.35, 0.28, 0.20], mitte: [0.55, 0.40, 0.28], oben: [0.75, 0.62, 0.50], hoeheMin: 120, hoeheVar: 180 },
+    deko: "herbst", flutlicht: false, schnee: false,
+  },
   schnee: {
     himmel: { hor: [0.86, 0.91, 0.97], zen: [0.42, 0.60, 0.90], sonne: [1.0, 0.94, 0.86], boden: [0.90, 0.94, 1.0], nacht: false, wolken: 1.0 },
     nebel: { c: [0.86, 0.91, 0.97], von: 150, bis: 900 },
@@ -158,7 +170,7 @@ function texFenster() {
     ctx.fillStyle = "#0a0d16"; ctx.fillRect(0, 0, w, h);
     for (let y = 6; y < h - 6; y += 14) for (let x = 6; x < w - 6; x += 12) {
       const r = Math.random();
-      if (r < 0.5) { ctx.fillStyle = r < 0.32 ? "#ffd98a" : r < 0.44 ? "#9fd8ff" : "#ff8ad8"; ctx.fillRect(x, y, 7, 8); }
+      if (r < 0.38) { ctx.fillStyle = r < 0.26 ? "#ffd98a" : r < 0.33 ? "#9fd8ff" : "#ff8ad8"; ctx.fillRect(x, y, 7, 8); }
     }
   }, { aniso: 4 });
 }
@@ -276,11 +288,11 @@ function sweep(S, cols, { uk = 1, vk = 1 / 8, uMode = "lat", seitenwechsel = fal
   const pos = new Float32Array(n * m * 3), uv = new Float32Array(n * m * 2);
   for (let k = 0; k < n; k++) {
     const i = k;
-    const rx = -S.tz[i], rz = S.tx[i];
+    const rx = S.RXA[i], rz = S.RZA[i], nx = S.NX[i], ny = S.NY[i], nz = S.NZ[i];
     for (let j = 0; j < m; j++) {
       const [lat, y] = cols[j](i);
       const o = (k * m + j);
-      pos[o * 3] = S.x[i] + rx * lat; pos[o * 3 + 1] = S.y[i] + y; pos[o * 3 + 2] = S.z[i] + rz * lat;
+      pos[o * 3] = S.x[i] + rx * lat + nx * y; pos[o * 3 + 1] = S.y[i] + ny * y; pos[o * 3 + 2] = S.z[i] + rz * lat + nz * y;
       uv[o * 2] = uMode === "lat" ? lat * uk : j * uk; uv[o * 2 + 1] = k * S.ds * vk;
     }
   }
@@ -366,12 +378,12 @@ export function baueWelt(S, opt = {}) {
 
   // --- Fahrbahn
   const asph = texAsphalt(T.strasse);
-  const matStrasse = new THREE.MeshStandardMaterial({ map: asph, color: T.strasse.tint, roughness: T.strasse.rau, metalness: 0.0, envMapIntensity: T.schnee ? 0.6 : 0.35 });
+  const matStrasse = new THREE.MeshStandardMaterial({ map: asph, color: T.strasse.tint, roughness: T.strasse.rau, metalness: 0.0, envMapIntensity: T.schnee ? 0.6 : 0.35, side: THREE.DoubleSide });
   const strasse = new THREE.Mesh(sweep(S, [(i) => [-S.w[i] / 2, 0], (i) => [S.w[i] / 2, 0]], { uMode: "col", vk: 1 / 24 }), matStrasse);
   strasse.receiveShadow = true; scene.add(strasse);
 
   // --- Kerbs
-  const matKerb = new THREE.MeshStandardMaterial({ map: texKerb(T.kerb), roughness: 0.7 });
+  const matKerb = new THREE.MeshStandardMaterial({ map: texKerb(T.kerb), roughness: 0.7, side: THREE.DoubleSide });
   for (const sg of [-1, 1]) {
     const cols = sg > 0
       ? [(i) => [S.w[i] / 2, 0.02], (i) => [S.w[i] / 2 + KERB, 0.02]]
@@ -387,9 +399,11 @@ export function baueWelt(S, opt = {}) {
     const dw = (i) => S.w[i] / 2 + WAND_ABSTAND;
     const dh = (i) => dw(i) + 1.6;
     const ds_ = (i) => dh(i) + 2.6;
+    const ls = (i) => S.loopIdx[i] >= 0;     // in der Schleife gibt es keinen Grasstreifen
+    const fl = (fn) => (i) => (ls(i) ? [sg * dk(i), 0.0] : fn(i));
     const cols = [
-      (i) => [sg * dk(i), 0.0], (i) => [sg * dw(i), 0.0], (i) => [sg * dh(i), 0.0],
-      (i) => [sg * (dh(i) + (ds_(i) - dh(i)) * 0.5), -FALL * 0.7], (i) => [sg * ds_(i), -FALL],
+      (i) => [sg * dk(i), 0.0], fl((i) => [sg * dw(i), 0.0]), fl((i) => [sg * dh(i), 0.0]),
+      fl((i) => [sg * (dh(i) + (ds_(i) - dh(i)) * 0.5), -FALL * 0.7]), fl((i) => [sg * ds_(i), -FALL]),
     ];
     const m = new THREE.Mesh(sweep(S, sg > 0 ? cols : cols.slice().reverse(), { uk: 1 / 6, vk: 1 / 6 }), matGras);
     m.receiveShadow = true; scene.add(m);
@@ -401,12 +415,24 @@ export function baueWelt(S, opt = {}) {
   const matBande = new THREE.MeshStandardMaterial({ map: bandeT, roughness: 0.75, side: THREE.DoubleSide, emissive: T.flutlicht ? 0xffffff : 0x000000, emissiveMap: T.flutlicht ? bandeT : null, emissiveIntensity: T.flutlicht ? 0.55 : 0 });
   const matBandeOben = new THREE.MeshStandardMaterial({ color: T.flutlicht ? 0x39425a : 0xcfd2d8, roughness: 0.8, side: THREE.DoubleSide });
   for (const sg of [-1, 1]) {
-    const dw = (i) => sg * (S.w[i] / 2 + WAND_ABSTAND);
-    const dw2 = (i) => sg * (S.w[i] / 2 + WAND_ABSTAND + 0.7);
+    const dw = (i) => sg * (S.w[i] / 2 + (S.loopIdx[i] >= 0 ? KERB + 0.25 : WAND_ABSTAND));
+    const dw2 = (i) => sg * (S.w[i] / 2 + (S.loopIdx[i] >= 0 ? KERB + 0.55 : WAND_ABSTAND + 0.7));
     const innen = new THREE.Mesh(sweep(S, [(i) => [dw(i), 0], (i) => [dw(i), 1.05]], { uMode: "col", vk: 1 / 12 }), matBande);
     const oben = new THREE.Mesh(sweep(S, [(i) => [dw(i), 1.05], (i) => [dw2(i), 1.05]], { uMode: "col", vk: 1 / 12 }), matBandeOben);
     const aussen = new THREE.Mesh(sweep(S, [(i) => [dw2(i), 1.05], (i) => [dw2(i), 0]], { uMode: "col", vk: 1 / 12 }), matBandeOben);
     for (const m of [innen, oben, aussen]) { m.castShadow = true; m.receiveShadow = true; scene.add(m); }
+  }
+
+  // --- Looping: Stuetzwaende hinter dem aufsteigenden und absteigenden Teil
+  for (const L of S.loops) {
+    const matS = new THREE.MeshStandardMaterial({ color: T.flutlicht ? 0x39425a : 0xc8ccd6, roughness: 0.7, metalness: 0.2 });
+    for (const [q, sg] of [[0.25, 1], [0.75, -1]]) {
+      const i = Math.round(L.i0 + (L.i1 - L.i0) * q);
+      const y0 = S.y[L.i0] - 0.6, h = S.y[i] - y0 - 0.7;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(S.w[i] + 3.2, h, 1.3), matS);
+      m.position.set(S.x[i] + L.fx * sg * 1.1, y0 + h / 2, S.z[i] + L.fz * sg * 1.1);
+      m.rotation.y = Math.atan2(L.fx, L.fz); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+    }
   }
 
   // --- Start-/Zielstreifen und Boost-Felder
@@ -543,6 +569,10 @@ export function baueWelt(S, opt = {}) {
   if (T.deko === "wald") {
     nadelInst(900, () => col(0.36 + rnd() * 0.06, 0.55, 0.2 + rnd() * 0.08));
     laubInst(450, () => col(0.24 + rnd() * 0.1, 0.5, 0.33 + rnd() * 0.12));
+  } else if (T.deko === "herbst") {
+    nadelInst(260, () => col(0.36 + rnd() * 0.05, 0.45, 0.16 + rnd() * 0.06));
+    laubInst(1000, () => col(0.015 + rnd() * 0.12, 0.7 + rnd() * 0.2, 0.36 + rnd() * 0.16));
+    felsenInst(80, [0x7a6a58, 0x8b7a66], 22, 1.1);
   } else if (T.deko === "schnee") {
     nadelInst(1100, () => col(0.42 + rnd() * 0.08, 0.18, 0.74 + rnd() * 0.14), 24);
     felsenInst(160, [0x7d838f, 0x969ba6, 0x6a707c], 22, 1.3);
@@ -683,6 +713,7 @@ export function baueWelt(S, opt = {}) {
       const i = Math.min(S.n - 1, Math.round(s / S.ds));
       const sg = (k % 2) ? 1 : -1;
       const lat = sg * (S.w[i] / 2 + WAND_ABSTAND + 0.8);
+      if (S.loops.some((l) => i >= l.i0 - 14 && i <= l.i1 + 14)) { k++; continue; }
       // nicht dort, wo schon Reifenstapel stehen
       if (ecken.some((e) => e.peak > 1 / 60 && i >= e.a - 6 && i <= e.b + 6 && e.sg === sg)) { k++; continue; }
       const geo = plane.clone();
@@ -779,6 +810,7 @@ export function baueWelt(S, opt = {}) {
     for (let s = 70; s < S.laenge - 40; s += 56, k++) {
       const i = Math.round(s / S.ds);
       const sg = k % 2 ? 1 : -1;
+      if (S.loops.some((l) => i >= l.i0 - 14 && i <= l.i1 + 14)) continue;
       // Mast nicht in eine Nachbarstrecke stellen
       const lat = sg * (S.w[i] / 2 + WAND_ABSTAND + 4.5);
       const mx = S.x[i] - S.tz[i] * lat, mz = S.z[i] + S.tx[i] * lat;

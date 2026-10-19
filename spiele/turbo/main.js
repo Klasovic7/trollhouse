@@ -124,7 +124,7 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
   const wahl = $("strecken");
   STRECKEN.forEach((t) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "sw" + (t.id === S.id ? " an" : "");
-    b.innerHTML = "<b>" + t.name + "</b><small>" + t.kurz + "</small>";
+    b.innerHTML = "<b>" + ({ tag: "☀️", wueste: "🏜️", schnee: "❄️", nacht: "🌙", herbst: "🍂" }[t.thema] || "") + " " + t.name + "</b><small>" + t.kurz + "</small>";
     b.addEventListener("click", () => {
       if (t.id === S.id) return;
       try { localStorage.setItem("tt_strecke", t.id); } catch (_) {}
@@ -272,6 +272,17 @@ function kamera(dt, t) {
     return;
   }
   if (camera.view && camera.view.enabled) { camera.clearViewOffset(); camera.updateProjectionMatrix(); }
+  if (a.loop && a.loopT) {   // im Looping: Kamera hinter dem Auto, mit der Fahrbahn gedreht
+    const T = a.loopT, N = a.loopN;
+    const wunsch = new THREE.Vector3(a.x - T[0] * 8.6 + N[0] * 3.4, a.y - T[1] * 8.6 + N[1] * 3.4, a.z - T[2] * 8.6 + N[2] * 3.4);
+    const nv = new THREE.Vector3(N[0], N[1], N[2]);
+    if (!cam.loopInit) { cam.loopInit = true; cam.up = camera.up.clone(); }
+    const kf = 1 - Math.exp(-13 * dt);
+    camera.position.lerp(wunsch, kf); cam.up.lerp(nv, kf).normalize(); camera.up.copy(cam.up);
+    camera.lookAt(a.x + T[0] * 5 + N[0], a.y + T[1] * 5 + N[1], a.z + T[2] * 5 + N[2]);
+    cam.init = false; cam.yaw = a.theta;
+    return;
+  } else if (cam.loopInit) { cam.loopInit = false; camera.up.set(0, 1, 0); cam.init = false; }
   let ziel = a.theta;
   if (sp > 8) { const va = Math.atan2(a.vx, a.vz); let d = va - a.theta; d = Math.atan2(Math.sin(d), Math.cos(d)); ziel = a.theta + d * 0.40; }
   let d = ziel - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -298,10 +309,15 @@ function kamera(dt, t) {
 
 // ---------------- Visuelle Aktualisierung des Autos
 let radLauf = 0;
+const _T = new THREE.Vector3(), _N = new THREE.Vector3(), _X = new THREE.Vector3(), _M = new THREE.Matrix4();
 function zeigeAuto(dt, t) {
   const sp = Math.hypot(a.vx, a.vz), sf = Math.min(1, sp / 62);
   car.gruppe.position.set(a.x, a.y, a.z);
-  car.gruppe.rotation.y = a.theta;
+  if (a.loop && a.loopT) {   // kopfueber in der Schleife: Auto richtet sich nach Bahn und Fahrbahnnormale
+    const T = a.loopT, N = a.loopN;
+    _T.set(T[0], T[1], T[2]); _N.set(N[0], N[1], N[2]); _X.crossVectors(_N, _T).normalize();
+    _M.makeBasis(_X, _N, _T); car.gruppe.quaternion.setFromRotationMatrix(_M);
+  } else car.gruppe.rotation.y = a.theta;
   // Nicken aus Steigung bzw. Flugbahn
   const i = a.i, n = S.n, k = 3;
   const i1 = Math.min(n - 1, i + k), i0 = Math.max(0, i - k);
@@ -309,6 +325,7 @@ function zeigeAuto(dt, t) {
   const tsin = Math.cos(Math.atan2(S.tx[i], S.tz[i]) - a.theta);
   let nick = -Math.atan(sl * (tsin >= 0 ? 1 : -1));
   if (a.luft) nick = -Math.atan2(a.vy, Math.max(8, a.vF)) * 0.9;
+  if (a.loop) nick = 0;
   a.nickV += (nick - a.nickV) * (1 - Math.exp(-9 * dt));
   const beschl = a.bremsend ? 0.035 : 0;
   car.karosse.rotation.x = a.nickV + beschl - (a.boost > 0 ? 0.03 : 0);
@@ -463,6 +480,8 @@ function frame(now) {
       for (const e of ev) {
         if (e.t === "wand") { ton.wand(e.staerke); funkenAn(e); cam.schub += Math.min(0.4, e.staerke * 0.02); if (navigator.vibrate && e.staerke > 8) navigator.vibrate(30); }
         else if (e.t === "boost") { ton.boost(); cam.schub += 0.1; }
+        else if (e.t === "looping") { toast("LOOPING!", "#7df9ff", 900); }
+        else if (e.t === "loopzulangsam") { ton.wand(Math.min(14, e.staerke)); toast("Zu langsam für den Looping – über " + Math.ceil(e.vmin * 3.6) + " km/h nötig", "#ff8a8a", 1800); }
         else if (e.t === "landung") { ton.landung(e.staerke); cam.schub += Math.min(0.5, e.staerke * 0.025); for (let q = 0; q < 14; q++) rauch.emit(a.x + (Math.random() - 0.5) * 3, a.y + 0.2, a.z + (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 5, 1 + Math.random() * 2, (Math.random() - 0.5) * 5, 1.4, 3, 0.8, 0.7, 0.68, 0.62, 0.4); }
       }
       if (zustand === "run") {
