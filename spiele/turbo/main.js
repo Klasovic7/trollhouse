@@ -174,8 +174,35 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
   });
   setzeDauer(dauerMin);
 }
-$("menue").addEventListener("pointerdown", () => vollbild(), { once: true });
-$("b-start").addEventListener("click", () => starte());
+$("menue").addEventListener("pointerdown", () => { vollbild(); ton.start(); }, { once: true });
+let LOBBY = null;
+function zeigeLobby() {
+  const box = $("lobby"), btn = $("b-start"); if (!LOBBY) return;
+  const L = LOBBY, andere = L.spieler.length;
+  $("b-menue-exit").textContent = L.leiter ? "← Spielauswahl" : "Raum verlassen";
+  box.hidden = andere === 0;
+  box.innerHTML = L.spieler.map((s) => `<div class="la${s.bereit ? " ok" : ""}" title="${String(s.name).replace(/[<>&"]/g, "")}">` +
+    (s.bild ? `<img src="${s.bild}" alt="">` : `<span class="t">${String(s.name).slice(0, 1).replace(/[<>&"]/g, "")}</span>`) + (s.bereit ? "<i>✓</i>" : "") + "</div>").join("") +
+    (andere ? `<div class="lt">${L.spieler.filter((s) => s.bereit).length} von ${andere} bereit</div>` : "");
+  if (L.leiter) { btn.textContent = "START"; btn.disabled = !L.alleBereit; }
+  else if (L.laufend) { btn.textContent = "STARTEN"; btn.disabled = false; }
+  else if (L.ichBereit) { btn.textContent = "✓ BEREIT"; btn.disabled = true; }
+  else { btn.textContent = "BEREIT"; btn.disabled = false; }
+}
+window.addEventListener("message", (e) => {
+  const d = e.data || {};
+  if (d.typ === "lobby" && Array.isArray(d.spieler)) { LOBBY = d; zeigeLobby(); }
+  if (d.typ === "los" && zustand === "menu") starte();
+});
+$("b-menue-exit").addEventListener("click", () => verlassen());
+$("b-start").addEventListener("click", () => {
+  if (EINGEBETTET && LOBBY && !(LOBBY.laufend && !LOBBY.leiter)) {
+    if (LOBBY.leiter) { if (LOBBY.alleBereit) window.parent.postMessage({ typ: "start" }, "*"); }
+    else if (!LOBBY.ichBereit) window.parent.postMessage({ typ: "bereit" }, "*");
+    return;
+  }
+  starte();
+});
 $("b-nochmal").addEventListener("click", () => starte());
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 

@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v348";
+export const APP_VERSION = "v349";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
