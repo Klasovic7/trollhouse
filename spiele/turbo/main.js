@@ -150,7 +150,7 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
     wahl.appendChild(b);
   });
   // Auto wählen (wirkt sofort, ohne Neuladen)
-  const autos = $("autos");
+  const autos = $("autos") || document.createElement("div");
   MODELLE.forEach((m) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "sw" + (m.id === MODELL_ID ? " an" : "");
     b.innerHTML = "<b>" + m.icon + " " + m.name + "</b>";
@@ -232,7 +232,7 @@ function vollbild() {
 }
 function starte() {
   ton.start();
-  vollbild();
+  vollbild(); SPUR.leeren();
   $("menue").classList.add("weg"); $("ende").classList.add("weg"); document.body.classList.add("im-spiel");
   platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
   $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
@@ -328,8 +328,8 @@ function kamera(dt, t) {
   let d = ziel - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
   cam.yaw += d * (1 - Math.exp(-(cam.init ? 7 : 40) * dt));
   const boost = a.boost > 0 ? 1 : 0;
-  const dist = 7.8 + sf * 1.6 + boost * 0.9;
-  const hoch = 3.0 + sf * 0.6;
+  const dist = 8.1 + sf * 1.6 + boost * 0.9;
+  const hoch = 2.25 + sf * 0.5;
   const sx = Math.sin(cam.yaw), sz = Math.cos(cam.yaw);
   const wunschY = a.y + hoch;
   if (!cam.init) { cam.y = wunschY; cam.init = true; }
@@ -341,7 +341,7 @@ function kamera(dt, t) {
   cam.schub *= Math.exp(-5 * dt);
   const sh = (sf * sf * 0.035 + boost * 0.04 + cam.schub) * (zustand === "run" ? 1 : 0);
   if (sh > 0) camera.position.add(new THREE.Vector3((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh));
-  camera.lookAt(a.x + sx * 4.6, a.y + 1.1 + (a.luft ? a.vy * 0.04 : 0), a.z + sz * 4.6);
+  camera.lookAt(a.x + sx * 4.8, a.y + 1.35 + (a.luft ? a.vy * 0.04 : 0), a.z + sz * 4.8);
   const asp = camera.aspect, fb = asp < 1.2 ? Math.min(1.75, 1 + (1.2 / asp - 1) * 0.4) : 1;
   const fov = Math.min(112, (62 + 20 * sf * sf + boost * 7) * fb);
   if (Math.abs(camera.fov - fov) > 0.02) { camera.fov += (fov - camera.fov) * (1 - Math.exp(-5 * dt)); camera.updateProjectionMatrix(); }
@@ -405,6 +405,52 @@ function zeigeBlob() {
   BLOB.mat.opacity = Math.max(0, 0.7 / (1 + h * 0.9));
 }
 
+
+// ---------------- Reifenspuren (Ringpuffer aus Streifen auf dem Boden)
+const SPUR = (() => {
+  const MAX = 2600, pos = new Float32Array(MAX * 12), col = new Float32Array(MAX * 16), idx = new Uint32Array(MAX * 6);
+  for (let k = 0; k < MAX; k++) { const v = k * 4; idx.set([v, v + 1, v + 2, v + 1, v + 3, v + 2], k * 6); }
+  const geo = new THREE.BufferGeometry();
+  const pa = new THREE.BufferAttribute(pos, 3), ca = new THREE.BufferAttribute(col, 4);
+  geo.setAttribute("position", pa); geo.setAttribute("color", ca); geo.setIndex(new THREE.BufferAttribute(idx, 1));
+  pa.setUsage(THREE.DynamicDrawUsage); ca.setUsage(THREE.DynamicDrawUsage);
+  const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, toneMapped: false });
+  const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false; mesh.renderOrder = 1; scene.add(mesh);
+  let k = 0; const vor = [null, null];
+  return {
+    leeren() { col.fill(0); ca.needsUpdate = true; vor[0] = vor[1] = null; },
+    ende() { vor[0] = vor[1] = null; },
+    punkt(w, x, y, z, r, g, b, al, breite) {
+      const p0 = vor[w]; vor[w] = [x, y, z];
+      if (!p0) return;
+      const dx = x - p0[0], dz = z - p0[2], L = Math.hypot(dx, dz);
+      if (L < 0.05 || L > 6) return;
+      const nx = -dz / L * breite / 2, nz = dx / L * breite / 2;
+      const o = k * 12, c = k * 16;
+      const q = [p0[0] + nx, p0[1], p0[2] + nz, p0[0] - nx, p0[1], p0[2] - nz, x + nx, y, z + nz, x - nx, y, z - nz];
+      for (let i = 0; i < 12; i++) pos[o + i] = q[i];
+      for (let i = 0; i < 4; i++) { col[c + i * 4] = r; col[c + i * 4 + 1] = g; col[c + i * 4 + 2] = b; col[c + i * 4 + 3] = al; }
+      pa.addUpdateRange(o, 12); ca.addUpdateRange(c, 16); pa.needsUpdate = true; ca.needsUpdate = true;
+      k = (k + 1) % MAX;
+    },
+  };
+})();
+function spuren() {
+  const sp = Math.hypot(a.vx, a.vz);
+  if (a.luft || a.loop || zustand !== "run" || a.fl === 2 || sp < 8) { SPUR.ende(); return; }
+  const slip = Math.abs(a.vR), U = S.untergrund;
+  const rutsch = slip > 3 || a.driftend || (a.bremsend && sp > 25);
+  const staerke = Math.min(1, Math.max((slip - 2) / 8, a.driftend ? 0.6 : 0, a.bremsend && sp > 25 ? 0.5 : 0));
+  let al, f;
+  if (U === "asphalt") { if (!rutsch) { SPUR.ende(); return; } al = 0.12 + 0.5 * staerke; f = [0.04, 0.04, 0.05]; }
+  else { al = 0.3 + 0.35 * staerke; f = U === "eis" ? [0.35, 0.48, 0.65] : U === "sand" ? [0.42, 0.28, 0.14] : [0.14, 0.1, 0.06]; }
+  const ft = Math.sin(a.theta), fz = Math.cos(a.theta), rx = -fz, rz = ft, gy = BLOB.tmp.y + 0.05;
+  for (let w = 0; w < 2; w++) {
+    const sg = w ? 1 : -1;
+    SPUR.punkt(w, a.x - ft * 1.35 + rx * 0.95 * sg, gy, a.z - fz * 1.35 + rz * 0.95 * sg, f[0], f[1], f[2], al, 0.32);
+  }
+}
+
 // ---------------- Visuelle Aktualisierung des Autos
 let radLauf = 0;
 const _T = new THREE.Vector3(), _N = new THREE.Vector3(), _X = new THREE.Vector3(), _M = new THREE.Matrix4();
@@ -425,9 +471,13 @@ function zeigeAuto(dt, t) {
   if (a.luft) nick = -Math.atan2(a.vy, Math.max(8, a.vF)) * 0.9;
   if (a.loop) nick = 0;
   a.nickV += (nick - a.nickV) * (1 - Math.exp(-9 * dt));
-  const beschl = a.bremsend ? 0.035 : 0;
-  car.karosse.rotation.x = a.nickV + beschl - (a.boost > 0 ? 0.03 : 0);
-  car.karosse.rotation.z += (a.lenk * sf * 0.075 - car.karosse.rotation.z) * (1 - Math.exp(-10 * dt));
+  // Karosserie: bremsen = Nase nach unten, anfahren = Nase nach oben, Kurven = nach aussen neigen
+  const gasZiel = zustand === "run" && !a.luft && !a.bremsend && a.vF < 30 ? -0.045 * (1 - a.vF / 30) : 0;
+  const nickZiel = (a.bremsend ? 0.075 : 0) + gasZiel;
+  car.dive = (car.dive || 0) + (nickZiel - (car.dive || 0)) * (1 - Math.exp(-7 * dt));
+  car.karosse.rotation.x = a.nickV + car.dive - (a.boost > 0 ? 0.03 : 0);
+  const rollZiel = a.luft ? 0 : -(a.lenk * sf * 0.15 + Math.max(-0.1, Math.min(0.1, a.vR * 0.011)));
+  car.karosse.rotation.z += (rollZiel - car.karosse.rotation.z) * (1 - Math.exp(-9 * dt));
   car.karosse.position.y = 0.0;
   radLauf += a.vF * dt / 0.37;
   for (const r of car.raeder) { r.dreh.rotation.x = radLauf; if (r.vorn) r.lenk.rotation.y = -a.lenk * 0.5; }
@@ -614,7 +664,7 @@ function frame(now) {
   $("boostbar").firstElementChild.style.transform = `scaleX(${Math.min(1, a.boost / P.BOOST_ZEIT)})`;
   $("rest").classList.toggle("knapp", rest < 30 && zustand === "run");
 
-  zeigeAuto(dt, now / 1000); zeigeBlob(); KARTE(a);
+  zeigeAuto(dt, now / 1000); zeigeBlob(); spuren(); KARTE(a);
   world.folge(a.x, a.y, a.z);
   world.boostAnim(now / 1000);
   world.tick(now / 1000, camera.position);

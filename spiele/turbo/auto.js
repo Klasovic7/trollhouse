@@ -111,12 +111,11 @@ export function baueAuto(farbe = 0xff3b30, { geist = false } = {}) {
 
 
 // ---------------------------------------------------------------------------
-//  Modelle (Kenney Car Kit, CC0): race-future und sedan-sports.
+//  Modell (Kenney Car Kit, CC0): race-future.
 //  Das Auto aus Code bleibt als Rueckfall sichtbar, bis (oder falls nicht) das Modell geladen ist.
 // ---------------------------------------------------------------------------
 export const MODELLE = [
   { id: "race-future", name: "Rennwagen", icon: "\u{1F3CE}\uFE0F", skala: 1.6, brems: { x: 0.42, y: 0.5, w: 0.3 } },
-  { id: "sedan-sports", name: "Sportlimousine", icon: "\u{1F697}", skala: 1.6, brems: { x: 0.4, y: 0.52, w: 0.3 } },
 ];
 const quellen = {};
 function ladeQuelle(id) {
