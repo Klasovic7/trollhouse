@@ -18,7 +18,7 @@ export function botEingabe(a, S, opt = {}) {
   let lenk = Math.max(-1, Math.min(1, winkel * 2.4 * (opt.lenkFaktor || 1)));
 
   // Tempo: maximale Kruemmung in den naechsten ~ (v^2/(2*b)) Metern
-  const gr = S.grip || 1;
+  const gr = (S.grip || 1) * (0.55 + 0.45 * (S.gripK || 1));
   const aQuer = (opt.aQuer || 30) * gr;
   const bremsWeg = (v * v) / (2 * 34 * (0.55 + 0.45 * gr)) + 12;
   const m = Math.round(bremsWeg / ds);

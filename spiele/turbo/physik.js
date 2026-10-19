@@ -59,12 +59,12 @@ export function schritt(a, e, dt, S) {
 
   if (!a.luft) {
     // --- Laengsbeschleunigung
-    const vmax = P.VMAX * vmaxFl + (a.boost > 0 ? P.BOOST_PLUS : 0);
+    const vmax = P.VMAX * vmaxFl * S.vmaxFak + (a.boost > 0 ? P.BOOST_PLUS : 0);
     let acc = 0;
     const gas = e.gas !== false;
     a.bremsend = false; a.rueck = false;
     if (e.bremse) {
-      if (vF > 1.5) { acc = -P.BREMSE * (0.55 + 0.45 * S.grip) * (Math.abs(a.lenk) > 0.3 && vF > 22 ? 0.35 : 1); a.bremsend = true; }
+      if (vF > 1.5) { acc = -P.BREMSE * (0.55 + 0.45 * S.grip) * S.bremse * (Math.abs(a.lenk) > 0.3 && vF > 22 ? 0.35 : 1); a.bremsend = true; }
       else if (vF > -P.RUECKWAERTS) { acc = -P.BESCHL * 0.8; a.rueck = true; }
     } else if (gas) {
       const q = klemme(vF / vmax, 0, 1.3);
@@ -86,7 +86,7 @@ export function schritt(a, e, dt, S) {
 
     // --- Seitenhaftung
     const grip = (drift ? P.GRIP * 0.32 : P.GRIP) * gripFak;
-    const abbau = klemme(vR * P.GRIP_K * (drift ? 0.45 : 1), -grip, grip) * dt;
+    const abbau = klemme(vR * P.GRIP_K * S.gripK * (drift ? 0.45 : 1), -grip, grip) * dt;
     vR -= Math.abs(abbau) > Math.abs(vR) ? vR : abbau;
     // Reibungsverlust beim Rutschen
     vF -= Math.sign(vF) * Math.min(Math.abs(vF), Math.abs(abbau) * 0.12);

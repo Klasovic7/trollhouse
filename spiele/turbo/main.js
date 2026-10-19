@@ -4,7 +4,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { baueStrecke, startPose, WAND_ABSTAND, STRECKEN, streckeNachId } from "./strecke.js";
+import { baueStrecke, startPose, WAND_ABSTAND, STRECKEN, UNTERGRUND, streckeNachId } from "./strecke.js";
 import { neuesAuto, schritt, P } from "./physik.js";
 import { botEingabe } from "./bot.js";
 import { baueWelt, baueHimmel } from "./welt.js";
@@ -140,7 +140,8 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
   const wahl = $("strecken");
   STRECKEN.forEach((t) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "sw" + (t.id === S.id ? " an" : "");
-    b.innerHTML = "<b>" + ({ tag: "☀️", wueste: "🏜️", schnee: "❄️", nacht: "🌙", herbst: "🍂" }[t.thema] || "") + " " + t.name + "</b><small>" + t.kurz + "</small>";
+    const ug = UNTERGRUND[t.untergrund || "asphalt"]; b.title = ug.name;
+    b.innerHTML = "<b>" + ug.icon + " " + t.name + "</b><small>" + (t.km != null ? t.km.toFixed(1).replace(".", ",") + " km" : "") + "</small>";
     b.addEventListener("click", () => {
       if (t.id === S.id) return;
       try { localStorage.setItem("tt_strecke", t.id); } catch (_) {}

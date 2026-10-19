@@ -11,12 +11,21 @@ export const WAND_ABSTAND = KERB + GRAS; // Bande liegt so weit ausserhalb des F
 export const START_S = 36;           // Startlinie (Auto steht kurz dahinter)
 export const AUSLAUF = 85;           // Auslauf hinter der Ziellinie bis zur Endmauer
 
+
+// Untergruende: wirken auf Haftung, Beschleunigung, Bremsen, Hoechsttempo und wie lange ein Rutscher anhaelt.
+export const UNTERGRUND = {
+  asphalt: { name: "Asphalt", icon: "🛣️", grip: 1,    traktion: 1,    gripK: 1,    bremse: 1,    vmax: 1 },
+  eis:     { name: "Eis",     icon: "❄️", grip: 0.6,  traktion: 0.8,  gripK: 0.5,  bremse: 0.7,  vmax: 1 },
+  sand:    { name: "Sand",    icon: "🏜️", grip: 0.8,  traktion: 0.9,  gripK: 0.75, bremse: 0.9,  vmax: 0.94 },
+  offroad: { name: "Offroad", icon: "🌲", grip: 0.86, traktion: 0.93, gripK: 0.9,  bremse: 0.9,  vmax: 0.96 },
+};
+
 // ---------------------------------------------------------------------------------------------
 //  Die Strecken
 // ---------------------------------------------------------------------------------------------
 export const STRECKEN = [
   {
-    id: "tal", name: "Grünes Tal", kurz: "Tag · Wiese", thema: "tag", grip: 1, traktion: 1,
+    id: "tal", name: "Grünes Tal", km: 1.2, untergrund: "asphalt", thema: "tag", grip: 1, traktion: 1,
     punkte: [
       [-36, 0, 0, 15], [40, 0, 0, 15], [140, 0, 1, 15], [230, 8, 2.5, 14], [300, 50, 4.5, 14], [335, 120, 5.5, 14],
       [328, 195, 5, 14], [285, 250, 3.5, 15], [215, 268, 1.8, 14], [160, 292, 1, 13], [95, 318, 2, 13], [30, 300, 3.5, 13],
@@ -28,7 +37,7 @@ export const STRECKEN = [
     medaillen: { autor: 26.1, gold: 28.1, silber: 31.0, bronze: 35.8 },
   },
   {
-    id: "gp", name: "Grand Prix", kurz: "Tag · Haarnadeln", thema: "tag", grip: 1, traktion: 1, breite: 15,
+    id: "gp", name: "Grand Prix", km: 2.1, untergrund: "asphalt", thema: "tag", breite: 15,
     ops: [
       ["g", 340], ["r", 28, 90], ["g", 40], ["r", 20, 90], ["g", 60], ["l", 40, 40], ["r", 40, 40], ["g", 90],
       ["l", 18, 180], ["g", 30], ["r", 55, 90], ["g", 60], ["l", 55, 90], ["g", 250],
@@ -42,7 +51,7 @@ export const STRECKEN = [
     medaillen: { autor: 53.0, gold: 57.0, silber: 62.9, bronze: 72.6 },
   },
   {
-    id: "wueste", name: "Wüstenhitze", kurz: "Tag · Sandpiste", thema: "wueste", grip: 0.84, traktion: 0.94, breite: 17,
+    id: "wueste", name: "Wüstenhitze", km: 2, untergrund: "sand", thema: "wueste", breite: 17,
     ops: [
       ["g", 260], ["l", 90, 65], ["g", 60], ["r", 75, 95], ["g", 90],
       ["l", 48, 125], ["g", 50], ["r", 130, 45], ["g", 200],
@@ -53,10 +62,10 @@ export const STRECKEN = [
     sprung: [{ s0: 330, auf: 16, ab: 7, hoehe: 2.0 }, { s0: 1220, auf: 16, ab: 7, hoehe: 1.8 }],
     boosts: (L) => [110, L * 0.38, L * 0.7],
     bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
-    medaillen: { autor: 47.9, gold: 51.5, silber: 56.9, bronze: 65.6 },
+    medaillen: { autor: 48.2, gold: 51.8, silber: 57.2, bronze: 66 },
   },
   {
-    id: "eis", name: "Eispass", kurz: "Tag · Schnee, glatt", thema: "schnee", grip: 0.7, traktion: 0.86, breite: 15,
+    id: "eis", name: "Eispass", km: 1.4, untergrund: "eis", thema: "schnee", breite: 15,
     ops: [
       ["g", 220], ["r", 40, 100], ["g", 70],
       ["l", 21, 180], ["g", 90], ["r", 21, 180], ["g", 90], ["l", 21, 180], ["g", 100],
@@ -66,10 +75,10 @@ export const STRECKEN = [
     sprung: [],
     boosts: (L) => [130, L * 0.55, L * 0.78],
     bruecken: [], tribuenen: [{ s: 58, seite: 1 }],
-    medaillen: { autor: 49.2, gold: 52.9, silber: 58.4, bronze: 67.4 },
+    medaillen: { autor: 54.6, gold: 58.7, silber: 64.8, bronze: 74.8 },
   },
   {
-    id: "nacht", name: "Neon-Nacht", kurz: "Nacht · Flutlicht", thema: "nacht", grip: 0.98, traktion: 1, breite: 15,
+    id: "nacht", name: "Neon-Nacht", km: 1.8, untergrund: "asphalt", thema: "nacht", grip: 0.98, traktion: 1, breite: 15,
     ops: [
       ["g", 360], ["l", 30, 90], ["g", 40], ["r", 30, 90], ["g", 120], ["l", 18, 180], ["g", 40], ["r", 60, 90], ["g", 120],
       ["l", 60, 90], ["g", 40], ["l", 38, 40], ["r", 38, 80], ["l", 38, 40], ["g", 50],
@@ -82,7 +91,7 @@ export const STRECKEN = [
     medaillen: { autor: 48.4, gold: 52.1, silber: 57.5, bronze: 66.3 },
   },
   {
-    id: "kart", name: "Kartbahn", kurz: "Tag · eng, viele Kurven", thema: "tag", grip: 1, traktion: 1, breite: 12,
+    id: "kart", name: "Kartbahn", km: 0.8, untergrund: "asphalt", thema: "tag", breite: 12,
     ops: [
       ["g", 110], ["r", 14, 90], ["g", 20], ["l", 14, 90], ["g", 20], ["r", 14, 90], ["l", 14, 90], ["g", 25],
       ["r", 22, 180], ["g", 30], ["l", 18, 110], ["r", 18, 110], ["g", 25], ["l", 12, 180], ["g", 30],
@@ -96,7 +105,7 @@ export const STRECKEN = [
     medaillen: { autor: 27.6, gold: 29.7, silber: 32.7, bronze: 37.8 },
   },
   {
-    id: "herbst", name: "Herbstpfad", kurz: "Herbst · Waldweg", thema: "herbst", grip: 0.88, traktion: 0.95, breite: 12,
+    id: "herbst", name: "Herbstpfad", km: 0.6, untergrund: "offroad", thema: "herbst", breite: 12,
     ops: [
       ["g", 110], ["r", 24, 100], ["l", 16, 160], ["g", 15], ["r", 16, 160], ["g", 25], ["l", 30, 90],
       ["r", 30, 60], ["g", 30], ["l", 20, 120], ["r", 20, 100], ["g", 20], ["l", 14, 180], ["g", 20],
@@ -106,10 +115,10 @@ export const STRECKEN = [
     sprung: [],
     boosts: (L) => [140, L * 0.6],
     bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
-    medaillen: { autor: 25.1, gold: 27.1, silber: 29.9, bronze: 34.5 },
+    medaillen: { autor: 25.8, gold: 27.7, silber: 30.6, bronze: 35.3 },
   },
   {
-    id: "duene", name: "Dünen-Slalom", kurz: "Tag · Sand, Sprung", thema: "wueste", grip: 0.84, traktion: 0.94, breite: 13,
+    id: "duene", name: "Dünen-Slalom", km: 0.7, untergrund: "sand", thema: "wueste", breite: 13,
     ops: [
       ["g", 110], ["l", 40, 70], ["r", 40, 110], ["l", 35, 100], ["r", 30, 90], ["g", 30], ["l", 22, 150],
       ["g", 20], ["r", 38, 100], ["l", 38, 80], ["r", 30, 70], ["g", 20], ["l", 26, 120], ["r", 26, 90],
@@ -119,10 +128,10 @@ export const STRECKEN = [
     sprung: [{ s0: 62, auf: 14, ab: 6, hoehe: 1.6 }],
     boosts: (L) => [135, L * 0.5],
     bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
-    medaillen: { autor: 26.1, gold: 28.1, silber: 31.0, bronze: 35.7 },
+    medaillen: { autor: 27.1, gold: 29.1, silber: 32.2, bronze: 37.1 },
   },
   {
-    id: "glet", name: "Gletscher-Schlange", kurz: "Schnee · Haarnadeln", thema: "schnee", grip: 0.7, traktion: 0.86, breite: 12,
+    id: "glet", name: "Gletscher-Schlange", km: 0.7, untergrund: "eis", thema: "schnee", breite: 12,
     ops: [
       ["g", 110], ["l", 17, 180], ["g", 15], ["r", 17, 180], ["g", 15], ["l", 17, 180], ["g", 30], ["r", 30, 90],
       ["l", 30, 90], ["g", 20], ["r", 17, 180], ["g", 15], ["l", 17, 180], ["g", 15], ["r", 17, 180], ["g", 15],
@@ -132,10 +141,10 @@ export const STRECKEN = [
     sprung: [],
     boosts: (L) => [140, L * 0.55],
     bruecken: [], tribuenen: [{ s: 60, seite: 1 }],
-    medaillen: { autor: 35.0, gold: 37.7, silber: 41.6, bronze: 47.9 },
+    medaillen: { autor: 36.9, gold: 39.7, silber: 43.8, bronze: 50.6 },
   },
   {
-    id: "loop", name: "Looping-Arena", kurz: "Nacht · Looping", thema: "nacht", grip: 0.98, traktion: 1, breite: 13,
+    id: "loop", name: "Looping-Arena", km: 0.7, untergrund: "asphalt", thema: "nacht", grip: 0.98, traktion: 1, breite: 13,
     ops: [
       ["g", 120], ["r", 20, 90], ["g", 30], ["l", 20, 90], ["g", 80], ["loop", 16, 30], ["g", 40],
       ["r", 16, 180], ["g", 20], ["l", 16, 90], ["r", 16, 90], ["g", 30], ["l", 14, 180], ["g", 20],
@@ -324,9 +333,10 @@ export function baueStrecke(def = STRECKEN[0]) {
   }
 
   const laenge = (n - 1) * ds;
+  const UG = UNTERGRUND[def.untergrund || "asphalt"];
   const S = {
     def, id: def.id, n, ds, laenge, x, z, y, w, tx, tz, kr, NX, NY, NZ, RXA, RZA, loopIdx, loops: loopsS, sprung: SPRUENGE[0] || null, startS: START_S, zielS: laenge - AUSLAUF,
-    grip: def.grip || 1, traktion: def.traktion || 1,
+    untergrund: def.untergrund || "asphalt", grip: def.grip || UG.grip, traktion: def.traktion || UG.traktion, gripK: UG.gripK, bremse: UG.bremse, vmaxFak: UG.vmax,
   };
   S.boosts = def.boosts(laenge, { loops: loopsS }).map((s) => ({ s, lat: 0 }));
   S.checkpoints = [];
