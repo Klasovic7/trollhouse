@@ -6,7 +6,7 @@
 //  Spur wechseln, hoch = springen, runter = rutschen. Niedrige Hindernisse
 //  überspringt man, hohe Tore unterrutscht man, Blöcke umläuft man.
 //  Die Strecke ist endlos und wird mit der Zeit schneller. Eine Runde endet, wenn
-//  alle gestürzt sind. Wertung je Runde: wer am weitesten kommt (dann Münzen)
+//  alle gestürzt sind. Wertung je Runde: wer am weitesten kommt 
 //  bekommt die meisten Punkte, der Nächste einen weniger usw. (gleiche
 //  Platzierung teilt sich den Wert).
 //  Raumfelder beginnen mit "run"; der Lauf-Stand jedes Spielers liegt in der
@@ -30,7 +30,7 @@ const SCHREIB_MS = 1000;
 
 // Spielphysik (Meter / Sekunden)
 const SPUR_BREITE = 1.6;
-const BASIS_TEMPO = 11;
+const BASIS_TEMPO = 12;
 const SPRUNG_V = 6.6;
 const SCHWERKRAFT = 19;
 const RUTSCH_S = 0.65;
@@ -75,7 +75,6 @@ const VORLAGE = `
   <div id="run-spiel-screen" class="run-spiel" hidden>
     <div class="run-hud">
       <span id="run-hud-dist" class="run-hud-wert">0 m</span>
-      <span id="run-hud-muenzen" class="run-hud-wert">🪙 0</span>
       <span id="run-hud-leben" class="run-hud-leben"></span>
     </div>
     <div id="run-canvas-wrap" class="run-canvas-wrap">
@@ -140,7 +139,7 @@ function zufallsgenerator(s) {
 // Jede Zeile ist lösbar: es gibt immer eine freie Spur - oder alle drei Spuren sind
 // dasselbe überwindbare Hindernis (niedrig: springen, Tor: rutschen).
 function tempoBei(dist) {
-  return BASIS_TEMPO + dist * 0.004;   // wird stetig schneller, ohne Obergrenze
+  return BASIS_TEMPO + dist * 0.0048;   // wird stetig schneller, ohne Obergrenze
 }
 
 function baueStrecke(startwert) {
@@ -173,12 +172,6 @@ function baueStrecke(startwert) {
           if (t.every((v) => v === 0)) t[Math.floor(rnd() * 3)] = rnd() < 0.5 ? 3 : 1;
         }
         zeilen.push({ d, t, getroffen: [false, false, false] });
-        // Münzreihe in einer freien Spur direkt nach dem Hindernis
-        const frei = [0, 1, 2].filter((k) => t[k] === 0);
-        if (frei.length && rnd() < 0.75) {
-          const spur = frei[Math.floor(rnd() * frei.length)] - 1;
-          for (let k = 0; k < 5; k++) muenzen.push({ d: d + 2.5 + k * 1.2, spur, genommen: false });
-        }
         d += abstand;
       }
     }
@@ -524,7 +517,6 @@ async function schreibeStand(endgueltig) {
 
 function vergleiche(a, b) {
   if (b.dist !== a.dist) return b.dist - a.dist;
-  if (b.muenzen !== a.muenzen) return b.muenzen - a.muenzen;
   return 0;
 }
 
@@ -585,7 +577,7 @@ function zeigeErgebnisListe(pos) {
   zeilen.forEach(({ s, a, p }) => {
     const li = document.createElement("li");
     const extra = !a ? "Kein Ergebnis"
-      : `${a.dist} m · ${a.muenzen} Münzen`;
+      : `${a.dist} m`;
     li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, p > 0 ? `+${p}` : "0", {
       extra, punkteRechts: s.punkte ?? 0
     });
@@ -652,7 +644,7 @@ function starteLauf() {
     beiLive: () => schreibeStand(false),
     spielId: () => api.spielerId,
     runde: () => rundenIndex,
-    hudDist: $("run-hud-dist"), hudMuenzen: $("run-hud-muenzen"), hudLeben: $("run-hud-leben")
+    hudDist: $("run-hud-dist"), hudLeben: $("run-hud-leben")
   });
 }
 
@@ -1046,7 +1038,6 @@ function baueLauf(canvas, wrap, strecke, opt) {
 
   function hud() {
     opt.hudDist.textContent = `${Math.floor(zustand.dist)} m`;
-    opt.hudMuenzen.textContent = `🪙 ${zustand.muenzen}`;
     opt.hudLeben.textContent = "\u2764\uFE0F".repeat(Math.max(0, zustand.leben)) + "\uD83D\uDDA4".repeat(Math.max(0, opt.leben - zustand.leben));
   }
 
