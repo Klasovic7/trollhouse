@@ -121,7 +121,14 @@ $("b-restart").addEventListener("click", () => neustart());
 $("b-ton").addEventListener("click", () => schalteTon());
 const verlassen = () => { if (window.parent !== window) window.parent.postMessage({ typ: "turbo-verlassen" }, "*"); else history.back(); };
 $("b-exit").addEventListener("click", verlassen); $("b-quer-zurueck").addEventListener("click", verlassen);
+function wechsleStrecke(id) { const u = new URL(location.href); u.searchParams.set("strecke", id); location.replace(u.toString()); }
+function sperreStrecke() {
+  const fix = EINGEBETTET && !dauerDarfWaehlen;
+  const w = document.getElementById("strecken"); if (w) w.classList.toggle("fix", fix);
+  const h = document.getElementById("h-strecke"); if (h) h.textContent = fix ? "Strecke · wählt die Spielleitung" : "Strecke";
+}
 function setzeDauer(min) {
+  sperreStrecke();
   dauerMin = min;
   document.querySelectorAll("#dauerwahl .sw").forEach((b) => { b.classList.toggle("an", Number(b.dataset.min) === min); b.disabled = !dauerDarfWaehlen; b.style.opacity = dauerDarfWaehlen ? "" : (Number(b.dataset.min) === min ? "1" : ".45"); });
   const t = document.getElementById("dauertext"); if (t) t.textContent = min + " Minuten";
@@ -144,8 +151,9 @@ const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postM
     b.innerHTML = "<b>" + ug.icon + " " + t.name + "</b><small>" + (t.km != null ? t.km.toFixed(1).replace(".", ",") + " km" : "") + "</small>";
     b.addEventListener("click", () => {
       if (t.id === S.id) return;
+      if (EINGEBETTET) { if (dauerDarfWaehlen) window.parent.postMessage({ typ: "strecke-wahl", id: t.id }, "*"); return; }   // im Raum waehlt nur die Spielleitung
       try { localStorage.setItem("tt_strecke", t.id); } catch (_) {}
-      const u = new URL(location.href); u.searchParams.set("strecke", t.id); location.replace(u.toString());
+      wechsleStrecke(t.id);
     });
     wahl.appendChild(b);
   });
@@ -193,6 +201,7 @@ window.addEventListener("message", (e) => {
   const d = e.data || {};
   if (d.typ === "lobby" && Array.isArray(d.spieler)) { LOBBY = d; zeigeLobby(); }
   if (d.typ === "los" && zustand === "menu") starte();
+  if (d.typ === "strecke" && d.id !== S.id && zustand === "menu" && STRECKEN.some((t) => t.id === d.id)) wechsleStrecke(d.id);
 });
 $("b-menue-exit").addEventListener("click", () => verlassen());
 $("b-start").addEventListener("click", () => {
@@ -244,6 +253,7 @@ function platziere(pose) {
   a = neuesAuto(pose);
 }
 function neustart() {
+  qSperreBis = performance.now() + 3000;
   imZiel = false;
   platziere(startPose(S));
   cpNext = 0; lapDist = 0; lapStart = simT; prevP = a.s; curSplits = []; ghostRec = []; recAkk = 0; falsch = 0;
@@ -255,9 +265,11 @@ function startAmpel(kurz) {
   $("ampel").className = "an"; for (const l of $("ampel").children) l.className = "";
 }
 function vollbild() {
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return;
   try { const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); } } catch (_) {}
 }
 function starte() {
+  qSperreBis = performance.now() + 6000;
   ton.start();
   vollbild(); SPUR.leeren();
   $("menue").classList.add("weg"); $("ende").classList.add("weg"); document.body.classList.add("im-spiel");
@@ -320,6 +332,16 @@ function toast(text, farbe = "#fff", dauer = 1400) {
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("an"), dauer);
 }
 function blitz() { const b = $("blitz"); b.classList.remove("an"); void b.offsetWidth; b.classList.add("an"); }
+
+
+// ---------------- Absturz-Schutz: Kontextverlust (Speicher knapp) und Fehlerhinweis auf dem Bildschirm
+{
+  const hinweis = (t) => { const e = $("dbg"); if (!e) return; e.style.cssText = "position:fixed;left:8px;bottom:8px;max-width:70vw;z-index:60;font:600 11px system-ui;color:#fff;background:rgba(190,30,50,.85);padding:6px 9px;border-radius:8px;pointer-events:none;display:block"; e.textContent = t; clearTimeout(hinweis.t); hinweis.t = setTimeout(() => { if (!DEBUG) e.style.display = "none"; }, 9000); };
+  renderer.domElement.addEventListener("webglcontextlost", (ev) => { ev.preventDefault(); hinweis("Grafik angehalten - wird neu geladen …"); }, false);
+  renderer.domElement.addEventListener("webglcontextrestored", () => { hinweis("Grafik wieder da"); setTimeout(() => location.reload(), 400); }, false);
+  window.addEventListener("error", (ev) => hinweis("Fehler: " + String(ev.message || ev.error || "?").slice(0, 120)));
+  window.addEventListener("unhandledrejection", (ev) => hinweis("Fehler: " + String((ev.reason && ev.reason.message) || ev.reason || "?").slice(0, 120)));
+}
 
 // ---------------- Kamera
 const camTmp = {};
@@ -608,6 +630,7 @@ function tempoLinien(t) {
 
 // ---------------- Hauptschleife
 const H = 1 / 120;
+let qSperreBis = 0;
 let acc = 0, last = performance.now(), frames = 0, msSumme = 0, langsam = 0, qStufe = 0, fpsText = 0;
 let eingabeJetzt = { lenk: 0, bremse: false };
 function frame(now) {
@@ -620,12 +643,13 @@ function frame(now) {
   if (frames >= 45) {
     const ms = msSumme / frames; frames = 0; msSumme = 0;
     if (DEBUG) { $("dbg").textContent = (1000 / ms).toFixed(0) + " fps  pr " + Q.pr.toFixed(2) + (Q.bloom ? " bloom" : "") + "  q" + qStufe; }
-    if (!params.has("pr") && ms > 25 && zustand !== "menu" || (ms > 40 && zustand === "menu")) langsam++; else langsam = Math.max(0, langsam - 1);
+    if (now < qSperreBis) langsam = 0;   // Schonfrist: direkt nach dem Start wird noch Grafik geladen/kompiliert
+    else if (!params.has("pr") && ms > 25 && zustand !== "menu" || (ms > 40 && zustand === "menu")) langsam++; else langsam = Math.max(0, langsam - 1);
     if (langsam >= 2 && qStufe < 4) {
       langsam = 0; qStufe++;
       if (qStufe === 1) { Q.pr = Math.max(0.75, Q.pr * 0.8); }
       else if (qStufe === 2) { Q.bloom = false; }
-      else if (qStufe === 3) { Q.pr = Math.max(0.6, Q.pr * 0.8); renderer.shadowMap.enabled = false; world.sonne.castShadow = false; scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; }); }
+      else if (qStufe === 3) { Q.pr = Math.max(0.6, Q.pr * 0.8); }   // Schatten bleiben an: Abschalten erzwingt ein Neukompilieren aller Shader (Gefahr fuer schwarzen Bildschirm)
       groesse();
     }
   }

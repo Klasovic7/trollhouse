@@ -168,6 +168,7 @@
   #menue .regeln { margin: 0; gap: 3px; font-size: 11px; grid-template-columns: 1fr; } #menue .regeln li { padding: 4px 9px; }
   #menue .mfuss { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: auto; }
   #menue .rek { font-size: 11px; opacity: .85; display: flex; flex-direction: column; } #menue .rek b { font-size: 16px; }
+  #strecken.fix .sw:not(.an) { opacity: .5; cursor: default; }
   #lobby { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; font-size: 11px; opacity: .95; }
   #lobby .la { position: relative; width: 30px; height: 30px; flex: none; }
   #lobby .la img, #lobby .la span.t { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #334; opacity: .4; filter: grayscale(45%) brightness(.75); border: 2px solid rgba(255,255,255,.5); box-sizing: border-box; }
@@ -215,7 +216,7 @@
   <button type="button" id="b-menue-exit">Zurück</button>
   <div class="mkopf"><div class="logo">TROLLHOUSE<small>TURBO · ZEITJAGD</small></div>
     <p>Gleiche Strecke für alle, von <b>A nach B</b> · <b id="dauertext">5 Minuten</b> Zeit · schnellste Zeit zählt</p></div>
-  <div class="mlinks"><h4>Strecke</h4><div id="strecken"></div></div>
+  <div class="mlinks"><h4 id="h-strecke">Strecke</h4><div id="strecken"></div></div>
   <div class="mrechts">
     <div class="mgruppe"><h4>Zeit</h4><div id="dauerwahl" class="reihe"></div></div>
     <div class="mgruppe"><h4>Anleitung</h4><ul class="regeln">

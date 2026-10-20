@@ -12,7 +12,7 @@ import { STRECKEN } from "./strecke.js";
 import { avatarBild } from "../../kern/ui.js";
 
 let api = null, rahmen = null, stil = null, unsub = null, hoerer = null;
-let spielerListe = [], zeiten = [], dauerMin = 5, raum = null, startGesehen = null;
+let spielerListe = [], zeiten = [], dauerMin = 5, raum = null, startGesehen = null, streckeId = "tal";
 
 function sende() {
   if (!rahmen || !rahmen.contentWindow) return;
@@ -24,6 +24,11 @@ function sende() {
     })
     .sort((a, b) => a.zeit - b.zeit);
   rahmen.contentWindow.postMessage({ typ: "gegner", liste }, "*");
+}
+
+function sendeStrecke() {
+  if (!rahmen || !rahmen.contentWindow) return;
+  rahmen.contentWindow.postMessage({ typ: "strecke", id: streckeId }, "*");
 }
 
 function sendeDauer() {
@@ -81,10 +86,12 @@ export async function starten(uebergebeneApi) {
   rahmen.title = "Turbo";
   rahmen.setAttribute("allow", "autoplay; fullscreen");
   rahmen.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:0;background:#0a0e1a;z-index:2147483000;display:block";
-  rahmen.addEventListener("load", () => { sende(); sendeDauer(); sendeLobby(); });
+  rahmen.addEventListener("load", () => { sende(); sendeDauer(); sendeLobby(); sendeStrecke(); });
   // Alle im Raum starten auf derselben Strecke: sie wird aus dem Raumcode gewaehlt
   let h = 0; for (const ch of String(api.code || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  rahmen.src = "spiele/turbo/proto.html?embed=1&strecke=" + STRECKEN[h % STRECKEN.length].id + "&v=" + Date.now();
+  const gespeichert = api.raum && api.raum.turboStrecke;
+  streckeId = STRECKEN.some((t) => t.id === gespeichert) ? gespeichert : STRECKEN[h % STRECKEN.length].id;
+  rahmen.src = "spiele/turbo/proto.html?embed=1&strecke=" + streckeId + "&v=" + Date.now();
   document.body.appendChild(rahmen);
   document.body.classList.add("turbo-voll");
 
@@ -100,6 +107,9 @@ export async function starten(uebergebeneApi) {
       updateDoc(api.raumRef(), { ["bereitSpieler." + api.spielerId]: true }).catch((e) => console.warn("Turbo: Bereit nicht gespeichert", e));
     } else if (d.typ === "start" && api.istLeiter && alleBereit()) {
       updateDoc(api.raumRef(), { turboStartSeit: Date.now() }).catch((e) => console.warn("Turbo: Start nicht gespeichert", e));
+    }
+    else if (d.typ === "strecke-wahl" && api.istLeiter && STRECKEN.some((t) => t.id === d.id)) {
+      updateDoc(api.raumRef(), { turboStrecke: d.id }).catch((e) => console.warn("Turbo: Strecke nicht gespeichert", e));
     }
     else if (d.typ === "dauer-wahl" && api.istLeiter && [3, 4, 5].includes(d.min)) {
       dauerMin = d.min; sendeDauer();
@@ -129,6 +139,8 @@ export function beenden() {
 export function spieler(liste) { spielerListe = liste || []; sende(); sendeLobby(); }
 export function raumDaten(daten) {
   raum = daten || null;
+  const neu = daten && daten.turboStrecke;
+  if (neu && neu !== streckeId && STRECKEN.some((t) => t.id === neu)) { streckeId = neu; sendeStrecke(); }
   const st = (daten && daten.turboStartSeit) || 0;
   if (startGesehen === null) startGesehen = st;
   else if (st > 0 && st !== startGesehen) { startGesehen = st; if (rahmen && rahmen.contentWindow) rahmen.contentWindow.postMessage({ typ: "los" }, "*"); }
