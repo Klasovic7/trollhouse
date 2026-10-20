@@ -109,14 +109,51 @@ window.addEventListener("keydown", (e) => {
   if (e.code === "KeyM") schalteTon();
 });
 window.addEventListener("keyup", (e) => { if (keyMap[e.code]) taste[keyMap[e.code]] = false; });
+// Touch-Steuerung: der Zustand wird bei JEDEM Touch-Ereignis aus der Liste der gerade aufliegenden Finger neu berechnet
+// (statt pro Knopf "gedrueckt/losgelassen" zu merken). So kann kein Knopf haengen bleiben, wenn ein pointerup verloren geht
+// (iOS-Systemgesten, Benachrichtigung, Knopf wird ausgeblendet, Finger rutscht ab ...).
+const TASTEN = { l: "t-l", r: "t-r", b: "t-b", g: "t-g" };
+function setzeTasten(neu) {
+  for (const k in TASTEN) {
+    const an = !!neu[k];
+    if (tstate[k] !== an) { tstate[k] = an; $(TASTEN[k]).classList.toggle("an", an); }
+  }
+}
+function loseAlleTasten() { setzeTasten({}); mausKey = null; }
+let mausKey = null;
+function ausTouches(list) {
+  const neu = {};
+  for (const k in TASTEN) {
+    const r = $(TASTEN[k]).getBoundingClientRect();
+    if (r.width === 0) continue;
+    for (let i = 0; i < list.length; i++) {
+      const t = list[i];
+      if (t.clientX >= r.left - 6 && t.clientX <= r.right + 6 && t.clientY >= r.top - 6 && t.clientY <= r.bottom + 6) { neu[k] = true; break; }
+    }
+  }
+  if (mausKey) neu[mausKey] = true;
+  setzeTasten(neu);
+}
+for (const ev of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
+  window.addEventListener(ev, (e) => {
+    ausTouches(e.touches);
+    if (ev !== "touchend" && ev !== "touchcancel" && e.target && e.target.closest && e.target.closest("#steuer")) e.preventDefault();
+  }, { passive: false, capture: true });
+}
+// Maus/Stift (Touch laeuft ueber die Touch-Ereignisse oben)
 function binde(id, key) {
   const el = $(id);
-  const an = (e) => { tstate[key] = true; el.classList.add("an"); e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
-  const aus = (e) => { tstate[key] = false; el.classList.remove("an"); e.preventDefault(); };
+  const an = (e) => { if (e.pointerType === "touch") return; mausKey = key; setzeTasten({ [key]: true }); e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
+  const aus = (e) => { if (e.pointerType === "touch") return; mausKey = null; setzeTasten({}); e.preventDefault(); };
   el.addEventListener("pointerdown", an); el.addEventListener("pointerup", aus); el.addEventListener("pointercancel", aus); el.addEventListener("lostpointercapture", aus);
   el.addEventListener("contextmenu", (e) => e.preventDefault());
 }
 binde("t-l", "l"); binde("t-r", "r"); binde("t-b", "b"); binde("t-g", "g");
+// Sicherheitsnetz: alles loslassen, wenn die Seite den Fokus verliert oder sich Ausrichtung/Groesse aendert
+window.addEventListener("blur", loseAlleTasten);
+window.addEventListener("pagehide", loseAlleTasten);
+window.addEventListener("orientationchange", loseAlleTasten);
+document.addEventListener("visibilitychange", () => { if (document.hidden) loseAlleTasten(); });
 $("b-restart").addEventListener("click", () => neustart());
 $("b-ton").addEventListener("click", () => schalteTon());
 const verlassen = () => { if (window.parent !== window) window.parent.postMessage({ typ: "turbo-verlassen" }, "*"); else history.back(); };
@@ -274,6 +311,7 @@ function vollbild() {
   try { const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); } } catch (_) {}
 }
 function starte() {
+  loseAlleTasten();
   qSperreBis = performance.now() + 6000;
   ton.start();
   vollbild(); SPUR.leeren();
@@ -287,6 +325,7 @@ function starte() {
 }
 function beendeSession(schnell) {
   if (zustand === "ende") return;
+  loseAlleTasten();
   zustand = "ende"; ende = performance.now(); imZiel = false; $("b-beenden").hidden = true;
   ton.ziel(); SPUR.ende();
   meldeFertig(true);
@@ -305,6 +344,7 @@ function beendeSession(schnell) {
 }
 // Zurueck ins Menue (im Raum: dort gibt es wieder Bereit/Start)
 function zumMenue() {
+  loseAlleTasten();
   imZiel = false; platziere(startPose(S)); SPUR.ende();
   $("ende").classList.add("weg"); $("menue").classList.remove("weg"); document.body.classList.remove("im-spiel");
   zustand = "menu";
