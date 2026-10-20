@@ -32,6 +32,7 @@ const STANDARD_ANZAHL = 8;
 const MAX_ANZAHL = 25;
 const RUNDENZEIT_MS = 60000;
 const VOLLTREFFER_KM = 100;
+const VOLLTREFFER_KM_DE = 50;    // bei deutschen Städten ist ein Volltreffer enger gefasst
 const ERDRADIUS_KM = 6371;
 
 // ---------------------------------------------------------------------------
@@ -557,8 +558,8 @@ const VORLAGE = `
   <div id="wl-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Ein Ort wird genannt - alle setzen gleichzeitig eine Stecknadel auf den Globus.
       Drehen: mit einem Finger ziehen. Zoomen: zwei Finger auseinander oder mit + / −. Nadel setzen: kurz tippen.
-      Wer (Luftlinie) am nächsten dran ist, bekommt die meisten Punkte, wer weniger als 100 km danebenliegt,
-      zusätzlich einen Volltreffer-Punkt. Pro Runde habt ihr 60 Sekunden.</p>
+      Wer (Luftlinie) am nächsten dran ist, bekommt die meisten Punkte, wer weniger als 100 km danebenliegt
+      (bei deutschen Städten weniger als 50 km), zusätzlich einen Volltreffer-Punkt. Pro Runde habt ihr 60 Sekunden.</p>
 
     <div id="wl-modus-block" class="wl-modus-block">
       <span class="wl-modus-titel">Was wird gesucht? <small>(mehrere möglich)</small></span>
@@ -988,7 +989,7 @@ async function nadelAbschicken() {
 
 // --- Auswertung -------------------------------------------------------------
 // Rang nach Entfernung; Punkte = Spielerzahl - Rang + 1 (Gleichstand = gleicher
-// Rang), plus 1 Volltreffer-Punkt unter 100 km. Wer nichts gesetzt hat: 0.
+// Rang), plus 1 Volltreffer-Punkt unter 100 km (deutsche Städte: unter 50 km). Wer nichts gesetzt hat: 0.
 function bewerte(tipps) {
   const s = stadt(stadtIdx);
   const n = spielerListe.length;
@@ -1004,7 +1005,7 @@ function bewerte(tipps) {
   mit.forEach((e, i) => {
     if (i > 0 && Math.round(e.km) > Math.round(mit[i - 1].km)) rang = i + 1;
     e.rang = rang;
-    e.volltreffer = e.km <= VOLLTREFFER_KM;
+    e.volltreffer = e.km <= (s && s.katalog === "de" ? VOLLTREFFER_KM_DE : VOLLTREFFER_KM);
     e.punkte = Math.max(1, n - rang + 1) + (e.volltreffer ? 1 : 0);
   });
   return [...mit, ...ohne];

@@ -411,8 +411,12 @@ function starteDocsListener() {
 }
 
 // ---- Lebenszyklus ------------------------------------------------------------
+let chatStil = null;
 export async function starten(uebergebeneApi) {
   document.body.classList.add("tt-aktiv");
+  chatStil = document.createElement("style");
+  chatStil.textContent = "body.tt-aktiv #btn-chat-oeffnen{display:none!important}";
+  document.head.appendChild(chatStil);
   api = uebergebeneApi;
   el.wurzel = api.wurzel;
   el.wurzel.innerHTML = VORLAGE;
@@ -434,6 +438,7 @@ function stoppeBots() {
 
 export function beenden() {
   document.body.classList.remove("tt-aktiv");
+  if (chatStil) { chatStil.remove(); chatStil = null; }
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
   if (docsUnsub) { docsUnsub(); docsUnsub = null; }
   if (leiterTimer) { clearInterval(leiterTimer); leiterTimer = null; }

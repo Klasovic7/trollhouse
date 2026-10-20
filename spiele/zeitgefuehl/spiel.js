@@ -2,7 +2,7 @@
 //  Zeitgefühl!
 // ----------------------------------------------------------------------------
 //  Jede Runde bekommen alle Spieler*innen dieselbe zufällige Zielzeit (5-30
-//  Sekunden) genannt. Nach einem "3, 2, 1, Los"-Countdown verschwindet die
+//  Sekunden) genannt. Nach einem Countdown von -3 bis 0 verschwindet die
 //  Zahl und es ist nur noch ein großer roter Buzzer zu sehen - jede Person
 //  zählt für sich "blind" mit und buzzert möglichst genau bei der Zielzeit.
 //  Punkte gibt es nach Rang (wie bei Schätzfragen): wer am weitesten daneben
@@ -21,6 +21,7 @@ import { speichereWertung } from "../../kern/wertung.js";
 const ZIEL_MIN = 5;
 const ZIEL_MAX = 30;
 const COUNTDOWN_MS = 3000;
+const NULL_ANZEIGE_MS = 900;   // wie lange die "0" stehen bleibt, bevor nur noch der Buzzer zu sehen ist
 // Sicherheitsnetz: falls jemand nie buzzert (App im Hintergrund, Verbindung
 // weg o. Ä.), wertet der Spielleiter die Runde spätestens nach dieser Zeit
 // seit "Los" trotzdem aus - sonst würde die Runde für alle ewig hängen.
@@ -59,7 +60,6 @@ const VORLAGE = `
   </div>
 
   <div id="zg-buzzer-screen" class="bildschirm-karte zg-mitte" hidden>
-    <div id="zg-flash" class="zg-flash-overlay" aria-hidden="true"></div>
     <p class="hinweis-text" id="zg-buzzer-hinweis">Zähl für dich mit und drück im richtigen Moment!</p>
     <p><button id="zg-buzzer" class="zg-buzzer-btn" type="button">BUZZER</button></p>
     <p class="zg-ziel-anzeige zg-ziel-unten">Zielzeit: <strong id="zg-buzzer-ziel"></strong> Sekunden</p>
@@ -342,12 +342,13 @@ function rundenTick() {
   if (!el.wurzel || status !== "runde_aktiv") return;
   const elapsedGesamt = Date.now() - vorbereitungSeit;
 
-  if (elapsedGesamt < COUNTDOWN_MS) {
+  if (elapsedGesamt < COUNTDOWN_MS + NULL_ANZEIGE_MS) {
+    // -3, -2, -1, 0: bei "0" beginnt die Zeit zu zählen (ab hier misst elapsedMs) - danach läuft keine Anzeige mehr mit
     $("zg-buzzer-screen").hidden = true;
     $("zg-vorbereitung-screen").hidden = false;
     $("zg-ziel-wert").textContent = String(zielSekunden);
-    const schritt = Math.min(2, Math.floor(elapsedGesamt / (COUNTDOWN_MS / 3)));
-    $("zg-countdown-ziffer").textContent = ["3", "2", "1"][schritt];
+    const schritt = Math.min(3, Math.floor(elapsedGesamt / (COUNTDOWN_MS / 3)));
+    $("zg-countdown-ziffer").textContent = ["-3", "-2", "-1", "0"][schritt];
   } else {
     $("zg-vorbereitung-screen").hidden = true;
     $("zg-buzzer-screen").hidden = false;
