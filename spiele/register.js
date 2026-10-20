@@ -177,8 +177,7 @@ export const SPIELE = [
     bild: "bilder/tetris-stein.webp",
     farbe: "#06b6d4",
     beschreibung: "Alle spielen gleichzeitig Tetris - mit Müllzeilen, auch gegen Bots",
-    minSpieler: 1,
-    mitBots: true,
+    minSpieler: 2,
     laden: () => import(`./tetris/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
@@ -199,9 +198,7 @@ export const SPIELE = [
     bild: "bilder/passgenau-bloecke.webp",
     farbe: "#f59e0b",
     beschreibung: "Legt alle Teile passgenau ins Feld - wer zuerst fertig ist, gewinnt",
-    // TEST: alleine spielbar. Später wieder: minSpieler: 2 und mitBots entfernen.
-    minSpieler: 1,
-    mitBots: true,
+    minSpieler: 2,
     laden: () => import(`./passgenau/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
