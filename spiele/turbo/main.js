@@ -265,7 +265,9 @@ function startAmpel(kurz) {
   $("ampel").className = "an"; for (const l of $("ampel").children) l.className = "";
 }
 function vollbild() {
-  if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return;
+  // Als Home-Bildschirm-App gibt es keine Browserleisten - dort kein Vollbild anfragen (kann das Bild schwarz machen)
+  let standalone = false; try { standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches; } catch (_) {}
+  if (standalone) return;
   try { const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(el); if (r && r.catch) r.catch(() => {}); } } catch (_) {}
 }
 function starte() {
