@@ -174,11 +174,22 @@ function setzeDauer(min) {
 window.addEventListener("message", (e) => {
   const d = e.data || {};
   if (d.typ === "dauer" && [3, 4, 5].includes(d.min)) { dauerDarfWaehlen = !!d.leiter; setzeDauer(d.min); }
-  if (d.typ === "gegner" && Array.isArray(d.liste)) {
-    const box = $("gegner");
-    box.innerHTML = (d.liste = d.liste.filter((g) => !g.strecke || g.strecke === S.id)).length ? d.liste.slice(0, 5).map((g, i) => `<div class="z"><span>${i + 1}. ${String(g.name || "?").replace(/[<>&]/g, "")}</span><i>${fmt(g.zeit)}</i></div>`).join("") : '<div class="leer">noch keine Zeiten</div>';
-  }
+  if (d.typ === "gegner" && Array.isArray(d.liste)) { gegnerListe = d.liste.filter((g) => !g.strecke || g.strecke === S.id); zeigeGegner(); }
 });
+let gegnerListe = [];
+function zeigeGegner() {
+  const box = $("gegner"); if (!box) return;
+  const esc = (t) => String(t || "?").replace(/[<>&]/g, "");
+  const alle = gegnerListe.map((g) => ({ name: g.name, zeit: g.zeit, ich: false }));
+  if (best != null) alle.push({ name: "Du", zeit: best, ich: true });
+  alle.sort((a, b) => a.zeit - b.zeit);
+  if (!alle.length) { box.innerHTML = '<div class="leer">noch keine Zeiten</div>'; return; }
+  const zeile = (g, i) => `<div class="z${g.ich ? " ich" : ""}"><span>${i + 1}. ${esc(g.name)}</span><i>${fmt(g.zeit)}</i></div>`;
+  let teil = alle.slice(0, 5).map(zeile);
+  const ichIdx = alle.findIndex((g) => g.ich);
+  if (ichIdx >= 5) teil.push(zeile(alle[ichIdx], ichIdx));
+  box.innerHTML = teil.join("");
+}
 const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postMessage({ typ: "bestzeit", zeit: z, strecke: S.id }, "*"); };
 {
   const wahl = $("strecken");
@@ -317,7 +328,7 @@ function starte() {
   vollbild(); SPUR.leeren();
   $("menue").classList.add("weg"); $("ende").classList.add("weg"); document.body.classList.add("im-spiel");
   platziere(startPose(S)); cpNext = 0; lapDist = 0; curSplits = []; ghostRec = []; recAkk = 0; best = null; bestSplits = []; ghostBest = null; letzte = null; runden = 0; falsch = 0;
-  $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
+  $("best").textContent = fmt(null); meldeBestzeit(null); zeigeGegner(); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
   setzeTore();
   SESSION_S = ZEIT_PARAM || dauerMin * 60;
   sessionLaeuft = false; letzteFahrt = false; $("b-beenden").hidden = true; meldeFertig(false); startAmpel(false);
@@ -379,7 +390,7 @@ function rundenLogik(dt) {
       const neuBest = best == null || zeit < best - 1e-4;
       if (neuBest) {
         const alt = best; best = zeit; bestSplits = curSplits.slice(); ghostBest = ghostRec.slice();
-        $("best").textContent = fmt(best); meldeBestzeit(best);
+        $("best").textContent = fmt(best); meldeBestzeit(best); zeigeGegner();
         const [m, c] = medaille(best); const mt = $("medal"); mt.textContent = m; mt.style.color = c;
         toast((alt == null ? "ZIEL  " : "NEUE BESTZEIT  ") + fmt(zeit) + (alt != null ? "   " + fmtD(zeit - alt) : "") + (m ? "  ·  " + m : ""), "#ffe14d", 2400);
       } else toast("ZIEL  " + fmt(zeit) + "   " + fmtD(zeit - best), "#ffffff", 1800);
