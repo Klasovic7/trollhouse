@@ -46,13 +46,10 @@ const VORLAGE = `
       <span>Müllzeilen an alle anderen</span>
       <span class="gv-modus-gruppe" id="tt-opt-muell"></span>
     </div>
-    <div class="gv-modus-zeile">
-      <span>Bots</span>
-      <span class="gv-modus-gruppe" id="tt-opt-bots"></span>
-    </div>
-    <div class="gv-modus-zeile" id="tt-zeile-staerke">
-      <span>Bot-Stärke</span>
-      <span class="gv-modus-gruppe" id="tt-opt-staerke"></span>
+    <div hidden>
+      <span id="tt-opt-bots"></span>
+      <span id="tt-zeile-staerke"></span>
+      <span id="tt-opt-staerke"></span>
     </div>
     <p class="hinweis-text" id="tt-bot-hinweis"></p>
     <p class="hinweis-text">Steuerung: Tasten unten oder auf dem Spielfeld wischen (links/rechts bewegen, tippen = drehen, nach unten wischen = fallen lassen).</p>
@@ -540,9 +537,7 @@ function zeigeSetup() {
 }
 
 function botAnzahl() {
-  const menschen = spielerListe.length;
-  const wunsch = botsAnz ?? (menschen === 1 ? 1 : 0);
-  return Math.max(0, Math.min(wunsch, 3, MAX_SPIELER - menschen));
+  return 0; // Bots abgeschaltet
 }
 
 async function spielStarten() {

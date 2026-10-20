@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "335";
+const SPIEL_VERSION = "357";
 
 export const SPIELE = [
   {
@@ -27,7 +27,7 @@ export const SPIELE = [
     emoji: "🎯",
     farbe: "#ff6b5c",
     beschreibung: "Wer tippt am nächsten dran?",
-    minSpieler: 1,
+    minSpieler: 2,
     laden: () => import(`./schaetzfragen/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
@@ -81,7 +81,7 @@ export const SPIELE = [
     emoji: "⚡",
     farbe: "#fbbf24",
     beschreibung: "Drei Frage-Typen auf Zeit: Schnelligkeit, Wortrate, Bild-Reveal",
-    minSpieler: 1,
+    minSpieler: 2,
     laden: () => import(`./blitzquiz/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
@@ -109,7 +109,7 @@ export const SPIELE = [
     emoji: "⏱️",
     farbe: "#ef4444",
     beschreibung: "Blind mitzählen und zur richtigen Sekunde buzzern",
-    minSpieler: 1,
+    minSpieler: 2,
     laden: () => import(`./zeitgefuehl/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
@@ -204,9 +204,7 @@ export const SPIELE = [
     emoji: "🏃",
     farbe: "#f43f5e",
     beschreibung: "Rennt gleichzeitig durch die Stadt - weicht aus, springt und rutscht. Wer am weitesten kommt, gewinnt",
-    // TEST: alleine spielbar. Später wieder: minSpieler: 2 und mitBots entfernen.
-    minSpieler: 1,
-    mitBots: true,
+    minSpieler: 2,
     laden: () => import(`./run/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
@@ -215,9 +213,7 @@ export const SPIELE = [
     emoji: "🏎️",
     farbe: "#06b6d4",
     beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke",
-    // TEST: Prototyp, nur alleine spielbar (noch ohne Raum-Wertung).
-    minSpieler: 1,
-    mitBots: true,
+    minSpieler: 2,
     laden: () => import(`./turbo/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
