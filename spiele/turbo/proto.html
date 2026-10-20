@@ -169,6 +169,27 @@
   #menue .mfuss { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: auto; }
   #menue .rek { font-size: 11px; opacity: .85; display: flex; flex-direction: column; } #menue .rek b { font-size: 16px; }
   #strecken.fix .sw:not(.an) { opacity: .5; cursor: default; }
+  #b-beenden { font: inherit; font-weight: 900; font-size: 13px; letter-spacing: .04em; color: #fff; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer; background: linear-gradient(180deg, #ff5a76, #e0264f); box-shadow: 0 3px 0 #8f1330, 0 6px 14px rgba(0,0,0,.35); }
+  #b-beenden:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f1330; }
+  #e-stand { text-align: left; margin-top: 12px; } #e-stand h4 { margin: 0 0 5px; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #7be9ff; font-weight: 800; }
+  #e-stand-liste { display: grid; gap: 4px; max-height: 34vh; overflow: auto; }
+  #e-stand .st { display: flex; align-items: center; gap: 9px; background: rgba(255,255,255,.07); border-radius: 10px; padding: 5px 9px; font-size: 13px; font-weight: 700; }
+  #e-stand .st img, #e-stand .st .t { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex: none; display: grid; place-items: center; background: #334; box-sizing: border-box; border: 2px solid rgba(255,255,255,.5); }
+  #e-stand .st .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #e-stand .st .r { font-size: 12px; opacity: .85; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  #e-stand .st.fertig .r { color: #4ade80; opacity: 1; } #e-stand .st.faehrt { opacity: .85; } #e-stand .st.faehrt .r { color: #ffd27a; }
+  #e-stand .st.fertig img, #e-stand .st.fertig .t { border-color: #22c55e; }
+  #b-ende-exit { display: block; margin: 12px auto 0; font: inherit; font-size: 12px; font-weight: 800; color: #fff; background: rgba(255,255,255,.1); border: 1.5px solid rgba(255,255,255,.25); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  @media (max-height: 560px) {
+    #ende .karte:has(#e-stand:not([hidden])) { width: min(780px, 96vw); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 4px 22px; align-items: start; padding: 12px 18px; }
+    #ende .karte:has(#e-stand:not([hidden])) > .logo { grid-column: 1 / -1; }
+    #ende .karte:has(#e-stand:not([hidden])) > #e-medal { grid-column: 1; margin: 0 0 4px; font-size: 20px; }
+    #ende .karte:has(#e-stand:not([hidden])) > .zeile { grid-column: 1; padding: 6px 4px; }
+    #ende .karte:has(#e-stand:not([hidden])) > #e-stand { grid-column: 2; grid-row: 2 / span 5; margin: 0; }
+    #ende .karte:has(#e-stand:not([hidden])) > #b-nochmal { grid-column: 1; justify-self: center; margin-top: 10px; padding: 10px 26px; font-size: 16px; }
+    #ende .karte:has(#e-stand:not([hidden])) > #b-ende-exit { grid-column: 1; margin-top: 6px; }
+    #e-stand-liste { max-height: 62vh; }
+  }
   #lobby { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; font-size: 11px; opacity: .95; }
   #lobby .la { position: relative; width: 30px; height: 30px; flex: none; }
   #lobby .la img, #lobby .la span.t { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #334; opacity: .4; filter: grayscale(45%) brightness(.75); border: 2px solid rgba(255,255,255,.5); box-sizing: border-box; }
@@ -202,6 +223,7 @@
     <div class="pnl rest"><span class="lab">Restzeit</span><span id="rest" class="wert num">5:00</span></div>
     <button id="b-ton" class="rund" aria-label="Ton">🔊</button>
     <button id="b-exit" class="rund" aria-label="Beenden">✕</button>
+    <button id="b-beenden" type="button" hidden>Beenden</button>
   </div>
   <div class="tr pnl"><span class="lab">Gegner · beste Zeit</span><div id="gegner"><div class="leer">noch keine Zeiten</div></div></div>
   <div id="delta"></div>
@@ -234,7 +256,9 @@
   <div id="e-medal">–</div>
   <div class="zeile"><span>Beste Zeit</span><b class="num" id="e-best">--</b></div>
   <div class="zeile"><span>Gültige Läufe</span><b class="num" id="e-runden">0</b></div>
+  <div id="e-stand" hidden><h4>Im Raum</h4><div id="e-stand-liste"></div></div>
   <button class="gross" id="b-nochmal">NOCHMAL</button>
+  <button type="button" id="b-ende-exit" hidden>Zurück</button>
 </div></div>
 
 <script>

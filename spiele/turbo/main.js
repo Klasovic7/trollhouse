@@ -105,7 +105,7 @@ const keyMap = { ArrowLeft: "l", KeyA: "l", ArrowRight: "r", KeyD: "r", ArrowDow
 window.addEventListener("keydown", (e) => {
   if (keyMap[e.code]) { taste[keyMap[e.code]] = true; e.preventDefault(); }
   if (e.repeat) return;
-  if (e.code === "KeyR" || e.code === "Enter") { if (zustand === "run" || zustand === "countdown") neustart(); else if (zustand === "menu") starte(); else if (zustand === "ende") starte(); }
+  if (e.code === "KeyR" || e.code === "Enter") { if (zustand === "run" || zustand === "countdown") neustart(); else if (zustand === "menu" && !EINGEBETTET) starte(); else if (zustand === "ende" && !EINGEBETTET) starte(); }
   if (e.code === "KeyM") schalteTon();
 });
 window.addEventListener("keyup", (e) => { if (keyMap[e.code]) taste[keyMap[e.code]] = false; });
@@ -199,7 +199,8 @@ function zeigeLobby() {
 }
 window.addEventListener("message", (e) => {
   const d = e.data || {};
-  if (d.typ === "lobby" && Array.isArray(d.spieler)) { LOBBY = d; zeigeLobby(); }
+  if (d.typ === "lobby" && Array.isArray(d.spieler)) { LOBBY = d; zeigeLobby(); const be = $("b-ende-exit"); be.hidden = false; be.textContent = d.leiter ? "← Spielauswahl" : "Raum verlassen"; }
+  if (d.typ === "stand" && Array.isArray(d.liste)) { STAND = d.liste; if (zustand === "ende" && !$("ende").classList.contains("weg")) zeigeStand(); }
   if (d.typ === "los" && zustand === "menu") starte();
   if (d.typ === "strecke" && d.id !== S.id && zustand === "menu" && STRECKEN.some((t) => t.id === d.id)) wechsleStrecke(d.id);
 });
@@ -212,7 +213,7 @@ $("b-start").addEventListener("click", () => {
   }
   starte();
 });
-$("b-nochmal").addEventListener("click", () => starte());
+$("b-nochmal").addEventListener("click", () => { if (EINGEBETTET) zumMenue(); else starte(); });
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
 function eingabe() {
@@ -252,7 +253,9 @@ function setzeTore() { S.checkpoints.forEach((_, k) => world.setzeTor(k, k < cpN
 function platziere(pose) {
   a = neuesAuto(pose);
 }
+let letzteFahrt = false;   // Zeit ist um: die laufende Fahrt darf noch beendet werden, eine neue gibt es nicht mehr
 function neustart() {
+  if (letzteFahrt && zustand === "run") { toast("Zeit abgelaufen - fahr zu Ende oder tippe auf Beenden", "#ff5470", 2200); return; }
   qSperreBis = performance.now() + 3000;
   imZiel = false;
   platziere(startPose(S));
@@ -279,22 +282,47 @@ function starte() {
   $("best").textContent = fmt(null); meldeBestzeit(null); $("letzte").textContent = "--"; $("runden").textContent = "0"; $("medal").textContent = "";
   setzeTore();
   SESSION_S = ZEIT_PARAM || dauerMin * 60;
-  sessionLaeuft = false; startAmpel(false);
+  sessionLaeuft = false; letzteFahrt = false; $("b-beenden").hidden = true; meldeFertig(false); startAmpel(false);
   simT = 0; lapStart = 0; prevP = a.s;
 }
-function beendeSession() {
-  zustand = "ende"; ende = performance.now();
-  ton.ziel();
-  toast("Zeit abgelaufen", "#ff5470", 1800);
+function beendeSession(schnell) {
+  if (zustand === "ende") return;
+  zustand = "ende"; ende = performance.now(); imZiel = false; $("b-beenden").hidden = true;
+  ton.ziel(); SPUR.ende();
+  meldeFertig(true);
+  toast(schnell ? "Fahrt beendet" : "Zeit abgelaufen", "#ff5470", 1800);
   setTimeout(() => {
+    if (zustand !== "ende") return;
     const [m, c] = best != null ? medaille(best) : ["", "#fff"];
     $("e-best").textContent = fmt(best);
     $("e-medal").textContent = m || (best != null ? "Keine Medaille" : "Kein gültiger Lauf");
     $("e-medal").style.color = c;
     $("e-runden").textContent = runden;
+    $("b-nochmal").textContent = EINGEBETTET ? "ZUM MENÜ" : "NOCHMAL";
+    zeigeStand();
     $("ende").classList.remove("weg");
-  }, 1600);
+  }, schnell ? 500 : 1600);
 }
+// Zurueck ins Menue (im Raum: dort gibt es wieder Bereit/Start)
+function zumMenue() {
+  imZiel = false; platziere(startPose(S)); SPUR.ende();
+  $("ende").classList.add("weg"); $("menue").classList.remove("weg"); document.body.classList.remove("im-spiel");
+  zustand = "menu";
+}
+const meldeFertig = (an) => { if (window.parent !== window) window.parent.postMessage({ typ: "fertig", an }, "*"); };
+let STAND = [];
+function zeigeStand() {
+  const box = $("e-stand"); if (!EINGEBETTET || !STAND.length) { box.hidden = true; return; }
+  const esc = (t) => String(t == null ? "" : t).replace(/[<>&"]/g, "");
+  const fertig = STAND.filter((x) => x.fertig).sort((x, y) => (x.zeit > 0 ? x.zeit : 1e9) - (y.zeit > 0 ? y.zeit : 1e9));
+  const faehrt = STAND.filter((x) => !x.fertig);
+  const zeile = (x, f) => `<div class="st ${f ? "fertig" : "faehrt"}">` + (x.bild ? `<img src="${esc(x.bild)}" alt="">` : `<span class="t">${esc(String(x.name).slice(0, 1))}</span>`) +
+    `<span class="n">${esc(x.name)}${x.ich ? " (du)" : ""}</span><span class="r">${f ? "✓ fertig" + (x.zeit > 0 ? " · " + fmt(x.zeit) : "") : "fährt noch …"}</span></div>`;
+  $("e-stand-liste").innerHTML = fertig.map((x) => zeile(x, true)).join("") + faehrt.map((x) => zeile(x, false)).join("");
+  box.hidden = false;
+}
+$("b-beenden").addEventListener("click", () => beendeSession(true));
+$("b-ende-exit").addEventListener("click", () => verlassen());
 
 // ---------------- Runden-Logik (laeuft im Physikschritt)
 function rundenLogik(dt) {
@@ -697,10 +725,13 @@ function frame(now) {
       }
       if (zustand === "run") {
         rundenLogik(H);
-        if (imZiel) { imZielT += H; if (imZielT > 1.9) { imZiel = false; neustart(); } }
+        if (imZiel) { imZielT += H; if (imZielT > 1.9) { imZiel = false; if (letzteFahrt) beendeSession(); else neustart(); } }
         recAkk += H;
         if (!imZiel && recAkk >= 1 / 30) { recAkk -= 1 / 30; ghostRec.push(0, a.x, a.y, a.z, a.theta); }
-        if (simT - sessionStart >= SESSION_S) { beendeSession(); }
+        if (!letzteFahrt && simT - sessionStart >= SESSION_S) {
+          letzteFahrt = true;
+          if (!imZiel) { toast("Zeit abgelaufen - letzte Fahrt zu Ende fahren", "#ff5470", 2600); $("b-beenden").hidden = false; }
+        }
       }
     }
   }

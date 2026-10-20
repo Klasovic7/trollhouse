@@ -58,11 +58,27 @@ function sendeLobby() {
   }, "*");
 }
 
+function sendeStand() {
+  if (!rahmen || !rahmen.contentWindow || !api) return;
+  const liste = spielerListe.map((sp) => {
+    const z = zeiten.find((x) => x.spielerId === sp.id) || {};
+    const b = avatarBild(sp.icon);
+    return { id: sp.id, name: sp.name || "?", bild: b ? new URL(b, location.href).href : null, fertig: !!z.fertig, zeit: z.zeit > 0 ? z.zeit : null, ich: sp.id === api.spielerId };
+  });
+  rahmen.contentWindow.postMessage({ typ: "stand", liste }, "*");
+}
+
+function speichereFertig(an) {
+  if (!api || !api.spielerId) return;
+  setDoc(doc(api.db, "raeume", api.code, "turboZeiten", api.spielerId), { spielerId: api.spielerId, fertig: !!an, zeitpunkt: serverTimestamp() }, { merge: true })
+    .catch((e) => console.warn("Turbo: Fertig-Status nicht gespeichert", e));
+}
+
 function speichereBestzeit(zeit, strecke) {
   if (!api || !api.spielerId) return;
   setDoc(doc(api.db, "raeume", api.code, "turboZeiten", api.spielerId), {
     spielerId: api.spielerId, zeit: zeit > 0 ? zeit : null, strecke: strecke || "tal", zeitpunkt: serverTimestamp()
-  }).catch((e) => console.warn("Turbo: Bestzeit nicht gespeichert", e));
+  }, { merge: true }).catch((e) => console.warn("Turbo: Bestzeit nicht gespeichert", e));
 }
 
 function zeigeRahmen(an) {
@@ -86,7 +102,7 @@ export async function starten(uebergebeneApi) {
   rahmen.title = "Turbo";
   rahmen.setAttribute("allow", "autoplay; fullscreen");
   rahmen.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:0;background:#0a0e1a;z-index:2147483000;display:block";
-  rahmen.addEventListener("load", () => { sende(); sendeDauer(); sendeLobby(); sendeStrecke(); });
+  rahmen.addEventListener("load", () => { sende(); sendeDauer(); sendeLobby(); sendeStrecke(); sendeStand(); });
   // Alle im Raum starten auf derselben Strecke: sie wird aus dem Raumcode gewaehlt
   let h = 0; for (const ch of String(api.code || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const gespeichert = api.raum && api.raum.turboStrecke;
@@ -106,8 +122,9 @@ export async function starten(uebergebeneApi) {
     else if (d.typ === "bereit") {
       updateDoc(api.raumRef(), { ["bereitSpieler." + api.spielerId]: true }).catch((e) => console.warn("Turbo: Bereit nicht gespeichert", e));
     } else if (d.typ === "start" && api.istLeiter && alleBereit()) {
-      updateDoc(api.raumRef(), { turboStartSeit: Date.now() }).catch((e) => console.warn("Turbo: Start nicht gespeichert", e));
+      updateDoc(api.raumRef(), { turboStartSeit: Date.now(), bereitSpieler: {} }).catch((e) => console.warn("Turbo: Start nicht gespeichert", e));
     }
+    else if (d.typ === "fertig") speichereFertig(d.an);
     else if (d.typ === "strecke-wahl" && api.istLeiter && STRECKEN.some((t) => t.id === d.id)) {
       updateDoc(api.raumRef(), { turboStrecke: d.id }).catch((e) => console.warn("Turbo: Strecke nicht gespeichert", e));
     }
@@ -123,7 +140,7 @@ export async function starten(uebergebeneApi) {
   unsub = onSnapshot(collection(api.db, "raeume", api.code, "turboZeiten"), (snap) => {
     zeiten = [];
     snap.forEach((d) => zeiten.push(d.data()));
-    sende();
+    sende(); sendeStand();
   }, () => {});
 }
 
@@ -136,7 +153,7 @@ export function beenden() {
   api = null;
 }
 
-export function spieler(liste) { spielerListe = liste || []; sende(); sendeLobby(); }
+export function spieler(liste) { spielerListe = liste || []; sende(); sendeLobby(); sendeStand(); }
 export function raumDaten(daten) {
   raum = daten || null;
   const neu = daten && daten.turboStrecke;
