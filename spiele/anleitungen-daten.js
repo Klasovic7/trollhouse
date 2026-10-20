@@ -550,3 +550,74 @@ fix("doppelkopf", 5, { x: [
 ] });
 plus("doppelkopf", 5, "Sagt jemand an, erscheint die Ansage kurz **groß in der Mitte**. Für diese Zeit ist der Ansage-Knopf gesperrt, damit niemand versehentlich die nächste Stufe anklickt.");
 plus("doppelkopf", 6, "Im Ergebnis steht das **Siegerteam oben**, und unter jedem Profilbild siehst du den **Gesamtstand** des Spielers.");
+
+// ---------------------------------------------------------------------------
+// v359: Einheitliches Punktesystem. Platz 1 = so viele Punkte wie Spieler + 1 Extrapunkt,
+// danach n−1, n−2 … (der Letzte bekommt 1); wer nichts geschafft hat, bekommt 0.
+// Beispielszenen gehen von 4 Spielern aus (5 / 3 / 2 / 1).
+// ---------------------------------------------------------------------------
+const unifiedRang = (zeilen) => rang(70, 28, zeilen, 180) + E(40, 45, "🥇", 22);
+fix("schaetzfragen", 3, {
+  x: ["Wer am **nächsten** dran liegt, bekommt **so viele Punkte wie Spieler** im Raum **plus einen Extrapunkt**. Danach gibt es einen Punkt weniger als Spieleranzahl minus 1, dann minus 2 und so weiter - wer am weitesten daneben liegt, bekommt **1 Punkt**.", "Wer **keinen Tipp** abgibt, bekommt 0 Punkte."],
+  s: () => T(160, 24, "Wahrer Wert: 330 m", 13, "#fde68a", 800) + rang(95, 40, [["Du", "330 · 5", 0], ["Mia", "320 · 3", 1], ["Tom", "400 · 2", 2], ["Lea", "900 · 1", 3]], 130) + stern(250, 60) + E(262, 120, "🏆", 26)
+});
+fix("wer-ist-es", 1, {
+  x: ["Es wird ein **Fußballer** gesucht. Nach und nach werden Hinweise aufgedeckt - **alle 7 Sekunden** kommt ein neuer dazu.", "Wer die Person erkennt, **tippt den Namen ein**. Alle raten gleichzeitig und dürfen so oft tippen, wie sie wollen."],
+  s: () => T(160, 30, "Wer ist es?", 14, "#fde68a", 800) + ["Hinweis 1", "Hinweis 2", "Hinweis 3"].map((h, i) => R(50, 42 + i * 30, 220, 24, "#ffffff22", 12) + T(160, 59 + i * 30, h, 11, "#fff", 600)).join("") + R(90, 142, 140, 26, "#fff", 8) + T(160, 160, "Name eintippen …", 11, "#555", 600)
+});
+fix("wer-ist-es", 2, {
+  t: "Punkte nach Reihenfolge",
+  x: ["Wer **zuerst richtig** liegt, bekommt **so viele Punkte wie Spieler plus einen Extrapunkt**, der Nächste einen Punkt weniger als die Spieleranzahl minus 1, dann minus 2 und so weiter. Die anderen **raten weiter**.", "Haben **alle** richtig getippt, endet die Runde sofort - der Letzte bekommt dann **1 Punkt**."],
+  s: () => unifiedRang([["Mia", "+5", 1], ["Du", "+3", 0], ["Tom", "+2", 2], ["Lea", "+1", 3]])
+});
+fix("wer-ist-es", 3, {
+  t: "Nicht gelöst = 0 Punkte",
+  x: ["Wer es bis zum Ende nicht erkennt, bekommt **0 Punkte**.", "Nach dem **letzten Hinweis** bleiben noch **10 Sekunden** zum Lösen, danach wird die Runde aufgelöst."],
+  s: () => uhr(160, 80, 40) + T(160, 90, "10 s", 18, "#ff5b36", 800) + T(160, 160, "Letzter Hinweis - letzte Chance", 11, "#fde68a", 600)
+});
+fix("wer-ist-es", 4, {
+  x: ["Eine falsche Antwort kostet **Punkte** - und alle sehen den falschen Namen in der Liste.", "Tippst du bei derselben Frage nochmal falsch, steigt der Abzug: **−1, −2, −3 …**"]
+});
+fix("wann-war-es", 1, {
+  x: ["Gesucht ist ein **Jahr**. Du bekommst nacheinander Hinweise zu Ereignissen aus diesem Jahr - alle **7 Sekunden** einen neuen.", "Wer das Jahr kennt, **tippt es ein**. Alle raten gleichzeitig und dürfen so oft tippen, wie sie wollen."],
+  s: () => T(160, 30, "Wann war es?", 14, "#fde68a", 800) + ["Hinweis 1", "Hinweis 2", "Hinweis 3"].map((h, i) => R(50, 42 + i * 30, 220, 24, "#ffffff22", 12) + T(160, 59 + i * 30, h, 11, "#fff", 600)).join("") + R(90, 142, 140, 26, "#fff", 8) + T(160, 160, "1954?", 12, "#555", 700)
+});
+fix("wann-war-es", 2, {
+  t: "Jahr tippen",
+  x: ["Gib deinen Tipp ein und schicke ihn ab - **so oft du willst**, bis du richtig liegst. Falsche Tipps kosten Punkte."]
+});
+fix("wann-war-es", 3, {
+  t: "Punkte wie bei \"Wer ist es?\"",
+  x: ["Wer **zuerst richtig** liegt, bekommt **so viele Punkte wie Spieler plus einen Extrapunkt**, danach n−1, n−2 und so weiter (der Letzte 1 Punkt). Wer es nicht löst, bekommt **0**.", "Falsche Tipps kosten **−1, −2, −3 …** je Person und Frage. Nach dem letzten Hinweis bleiben **10 Sekunden** zum Lösen."],
+  s: () => unifiedRang([["Mia", "+5", 1], ["Du", "+3", 0], ["Tom", "+2", 2], ["Lea", "0", 3]])
+});
+fix("blitzquiz", 2, {
+  x: ["Mehrfachauswahl auf Schnelligkeit. Die **schnellste richtige** Antwort bekommt so viele Punkte wie Mitspieler dabei sind **plus einen Extrapunkt**, die zweitschnellste einen Punkt weniger als Spieleranzahl minus 1, die nächste minus 2 usw.", "Falsche oder fehlende Antworten bringen 0 Punkte."]
+});
+fix("doppelblick", 3, {
+  x: ["Unter allen **richtigen** Antworten bekommt die schnellste so viele Punkte wie Mitspieler dabei sind **plus einen Extrapunkt**, jede weitere einen Punkt weniger (n−1, n−2 …). Wer falsch tippt, bekommt 0.", "Im Modus **Turm** gilt dasselbe für die Platzierung am Ende."],
+  s: () => unifiedRang([["Mia", "+5", 1], ["Du", "+3", 0], ["Tom", "+2", 2], ["Lea", "❌ 0", 3]])
+});
+fix("merks-dir", 3, {
+  x: ["Wer **am längsten dabei** ist, bekommt **so viele Punkte wie Spieler plus einen Extrapunkt**, der Nächste einen Punkt weniger als die Spieleranzahl minus 1 und so weiter. Wer **zuerst ausscheidet**, bekommt 1 Punkt.", "Scheiden mehrere gleichzeitig aus, teilen sie sich den besseren Platz."],
+  s: () => rang(70, 22, [["Du", "🏆 5", 0], ["Mia", "3", 1], ["Tom", "2", 2], ["Lea", "1", 3]], 180) + stern(262, 35)
+});
+fix("zeitgefuehl", 3, {
+  x: ["Wer am **nächsten** dran ist, bekommt **so viele Punkte wie Spieler plus einen Extrapunkt**, danach einen Punkt weniger als die Spieleranzahl minus 1 und so weiter. Wer nicht drückt, bekommt 0."],
+  s: () => T(160, 24, "Ziel: 17,0 s", 12, "#fde68a", 800) + rang(70, 36, [["Du", "17,2 · 5", 0], ["Mia", "15,9 · 3", 1], ["Tom", "21,0 · 2", 2], ["Lea", "9,5 · 1", 3]], 180)
+});
+fix("groessenvergleich", 3, {
+  x: ["Wer **prozentual am nächsten** an der echten Größe liegt, bekommt **so viele Punkte wie Spieler plus einen Extrapunkt**, danach einen Punkt weniger als die Spieleranzahl minus 1 und so weiter. Wer nichts abgibt, bekommt 0."],
+  s: () => T(160, 24, "Echt: 30 m", 12, "#fde68a", 800) + rang(70, 36, [["Du", "28 m · 5", 0], ["Mia", "40 m · 3", 1], ["Tom", "5 m · 2", 2], ["Lea", "90 m · 1", 3]], 180)
+});
+fix("tetris", 4, {
+  x: ["Stößt dein Stapel oben an, **scheidest du aus** und schaust den anderen zu. **Gewonnen** hat, wer als **Letzter** übrig bleibt. Mit der Zeit wird das Spiel immer **schneller**.", "Wer **zuletzt übrig** bleibt, bekommt **so viele Punkte wie Spieler plus einen Extrapunkt**, der Nächste einen Punkt weniger als die Spieleranzahl minus 1 und so weiter. Wer als Erster ausscheidet, bekommt 1 Punkt."],
+  s: () => rang(70, 22, [["Du", "4 P.", 0], ["Mia", "2 P.", 1], ["Tom", "1 P.", 2]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Letzter Spieler gewinnt", 11, "#fde68a", 700)
+});
+fix("imposter", 4, {
+  x: ["Wenn genug diskutiert wurde, **löst der Spielleiter auf** und zeigt, wer der Imposter war.", "Danach wählt der Spielleiter aus, **wer gewonnen hat** (Crew, Imposter oder einzelne Personen). Jede(r) Sieger(in) bekommt **1 Punkt** für die Gesamtwertung."]
+});
+plus("schaetzfragen", 3, "Mit eingeschaltetem Dummkopf-Modus kommt bei richtigem Tipp **+1** dazu.");
+plus("wer-ist-es", 3, "Sind alle Hinweise aufgedeckt und niemand kennt die Person, kann der Spielleiter die Runde auch sofort auflösen.");
+plus("wann-war-es", 3, "Sind alle Hinweise aufgedeckt und niemand kennt das Jahr, kann der Spielleiter die Runde auch sofort auflösen.");
+plus("imposter", 4, "Der Spielleiter kann im Setup auch **mehrere Imposter** einstellen.");

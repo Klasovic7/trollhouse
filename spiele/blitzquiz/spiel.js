@@ -44,7 +44,7 @@ import {
 } from "../../kern/firebase.js";
 import { escapeHtml, textMitZusatz, spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
@@ -921,8 +921,7 @@ function berechneRundenpunkte(pos) {
   const sortiert = [...richtige].sort((a, b) => (a.millisekunden ?? 0) - (b.millisekunden ?? 0));
   const n = spielerListe.length;
   sortiert.forEach((a, i) => {
-    const punkte = n - i;
-    if (punkte > 0) ergebnis[a.spielerId] = punkte;
+    ergebnis[a.spielerId] = punkteFuerRang(i + 1, n);   // Schnellster n + 1, dann n - 1, n - 2 ...; falsch/nicht gelöst 0
   });
   return ergebnis;
 }

@@ -212,7 +212,9 @@ export function rangPunkte(summen) {
   const res = {};
   let vorher = null, vorherPunkte = null;
   sortiert.forEach((id, i) => {
-    const p = vorher !== null && summen[id] === vorher ? vorherPunkte : ids.length - 1 - i;
+    // Einheitliches Punktesystem: Sieger n + 1, dann n - 1, n - 2 ... (Gleichstand teilt den Platz)
+    const rang = i + 1;
+    const p = vorher !== null && summen[id] === vorher ? vorherPunkte : (rang === 1 ? ids.length + 1 : ids.length - rang + 1);
     res[id] = p; vorher = summen[id]; vorherPunkte = p;
   });
   return res;

@@ -7,9 +7,12 @@
 //  als Erstes raten. Je weniger Hinweise bis dahin aufgedeckt waren, desto mehr
 //  Punkte gibt es für eine richtige Antwort.
 //
+//  v359 (aktuelle Regeln): Platz 1 = n + 1 Punkte (n = Spieleranzahl), dann n - 1, n - 2 ...;
+//  falsche Tipps kosten 1, 2, 3 ... Punkte je Person und Frage; ohne Lösung 0 Punkte; nach dem
+//  letzten Hinweis bleiben 10 Sekunden. Die älteren Kommentare zu Buzzer/Hinweis-Punkten unten gelten nicht mehr.
+//
 //  Ablauf pro Runde (Felder im Raum-Dokument, alle mit Präfix "wi"):
-//    frage_aktiv - Hinweise werden alle 7 Sekunden nachgelegt, jeder kann buzzern
-//    gebuzzert   - jemand hat zuerst gebuzzert und darf jetzt raten
+//    frage_aktiv - Hinweise werden alle 7 Sekunden nachgelegt, alle raten gleichzeitig (seit v359 ohne Buzzer)
 //    aufgeloest  - Antwort (oder "niemand wusste es") wird gezeigt
 //    beendet     - Endstand
 //
@@ -34,12 +37,11 @@
 import { updateDoc, increment, runTransaction, arrayUnion } from "../../kern/firebase.js";
 import { spielerKarte, teamEndstandHtml, teamGruppeHtml, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
 const HINWEIS_DAUER_MS = 7000;
-// v173: Nach dem Buzzern hat die ratende Person 10 Sekunden Zeit zu antworten -
-// laeuft die Zeit ab, zaehlt das wie eine falsche Antwort (gestaffelter Abzug).
+// v359: Nach dem letzten Hinweis bleiben noch 10 Sekunden zum Lösen, danach wird aufgelöst.
 const ANTWORT_ZEIT_MS = 10000;
 const STANDARD_ANZAHL = 8;
 
@@ -47,8 +49,11 @@ const VORLAGE = `
   <div id="wi-setup" class="bildschirm-karte" hidden>
     <h1>🕵️ Wer ist es?</h1>
     <p class="hinweis-text">Ihr bekommt nacheinander Hinweise zu einem Fußballer - in
-      zufälliger Reihenfolge. Wer zuerst buzzert, darf raten. Je weniger Hinweise
-      es bis dahin gab, desto mehr Punkte gibt es.</p>
+      zufälliger Reihenfolge. Alle raten gleichzeitig, so oft sie wollen. Wer zuerst richtig liegt,
+      bekommt so viele Punkte wie Spieler im Raum plus einen Extrapunkt, der Zweite so viele
+      wie Spieler minus 1, der Dritte minus 2 usw. Ein falscher Tipp kostet 1 Punkt,
+      der nächste falsche bei derselben Frage 2, dann 3 ... Wer es nicht löst, bekommt 0.
+      Nach dem letzten Hinweis bleiben noch 10 Sekunden.</p>
 
     <div id="wi-anzahl-zeile" class="setup-anzahlblock" hidden>
       <div class="setup-anzahl-zeile">
@@ -66,7 +71,7 @@ const VORLAGE = `
           <span class="schalter-text">Teammodus</span>
           <details class="modus-info">
             <summary aria-label="Erklärung zum Teammodus">i</summary>
-            <div>Jeder entscheidet sich für ein Team. Alle dürfen buzzern, aber die Punkte (richtig oder falsch) bekommt bzw. verliert immer nur die einzelne Person - der Team-Gesamtstand ist einfach die Summe aller Mitgliederpunkte.</div>
+            <div>Jeder entscheidet sich für ein Team. Alle dürfen raten, aber die Punkte (richtig oder falsch) bekommt bzw. verliert immer nur die einzelne Person - der Team-Gesamtstand ist einfach die Summe aller Mitgliederpunkte.</div>
           </details>
         </span>
         <label class="schalter-zeile">
@@ -108,10 +113,9 @@ const VORLAGE = `
 
     <ul class="wi-falsch-liste" id="wi-falsch-liste" hidden></ul>
 
-    <p><button id="wi-buzzer" class="wi-buzzer" type="button">🔔 Buzzern!</button></p>
     <p id="wi-frage-status" class="hinweis-text"></p>
 
-    <div id="wi-antwort-bereich" hidden>
+    <div id="wi-antwort-bereich">
       <p class="wi-antwort-zeile">
         <input id="wi-antwort-eingabe" type="text" placeholder="Wer ist es?" autocomplete="off">
         <button id="wi-antwort-absenden">Absenden</button>
@@ -159,14 +163,13 @@ let anzahlEntwurfTimer = null;
 let status = null;
 let hinweisIndex = 1;
 let hinweisSeit = 0;
-let gebuzzertVon = null;
+let loeser = [];   // [{ id, platz, punkte }] in der Reihenfolge der richtigen Antworten (v359)
 let antwortText = "";
 let antwortKorrekt = null;
 let falscheVersuche = [];
 let gewuenschteAnzahl = 0;
 let hinweisFortschreibenLaeuft = false;
 let antwortZeitAblaufLaeuft = false;
-let gebuzzertSeit = 0;
 let timerId = null;
 let teammodus = false;
 let teams = {};
@@ -289,7 +292,7 @@ export async function starten(uebergebeneApi) {
     await setzeGrundzustand("setup");
   }
 
-  timerId = setInterval(() => { aktualisiereCountdown(); pruefeHinweisFortschritt(); pruefeAntwortZeitAblauf(); }, 300);
+  timerId = setInterval(() => { aktualisiereCountdown(); pruefeHinweisFortschritt(); }, 300);
 
   // v196/v199: Olympiade - die Anzahl steht schon vorab fest, wird hier nur
   // vorbelegt (Tick warten, bis spielerListe gefuellt ist). Gestartet wird
@@ -318,7 +321,6 @@ function verdrahteBedienelemente() {
   $("wi-team-wahl-rot").addEventListener("click", () => waehleEigenesTeam("rot"));
   $("wi-teams-zufall").addEventListener("click", zufaelligeTeams);
   $("wi-starten").addEventListener("click", spielStarten);
-  $("wi-buzzer").addEventListener("click", buzzern);
   $("wi-antwort-absenden").addEventListener("click", antwortAbsenden);
   $("wi-antwort-eingabe").addEventListener("keydown", (e) => { if (e.key === "Enter") antwortAbsenden(); });
   $("wi-ueberspringen").addEventListener("click", ueberspringen);
@@ -330,7 +332,7 @@ export function beenden() {
   if (timerId) { clearInterval(timerId); timerId = null; }
   el = {}; raum = {}; spielerListe = [];
   index = -1; reihenfolge = []; hinweisReihenfolgen = []; anzahlFragen = 0; status = null;
-  hinweisIndex = 1; hinweisSeit = 0; gebuzzertVon = null;
+  hinweisIndex = 1; hinweisSeit = 0; loeser = [];
   antwortText = ""; antwortKorrekt = null; falscheVersuche = []; gewuenschteAnzahl = 0; anzahlEntwurf = null;
   hinweisFortschreibenLaeuft = false;
   teammodus = false; teams = {};
@@ -340,7 +342,7 @@ export function spieler(liste) {
   spielerListe = liste;
   if (!el.wurzel) return;
   if (status === "setup" || !status) zeigeSetup();
-  else if (status === "frage_aktiv" || status === "gebuzzert") zeigeFrage();
+  else if (status === "frage_aktiv") zeigeFrage();
   else if (status === "aufgeloest") zeigeErgebnis();
   else if (status === "beendet") zeigeEndstand();
 }
@@ -364,8 +366,7 @@ export function raumDaten(daten) {
   anzahlEntwurf = daten.wiAnzahlEntwurf ?? null;
   hinweisIndex = daten.wiHinweisIndex ?? 1;
   hinweisSeit = daten.wiHinweisSeit ?? 0;
-  gebuzzertVon = daten.wiGebuzzertVon ?? null;
-  gebuzzertSeit = daten.wiGebuzzertSeit ?? 0;
+  loeser = daten.wiLoeser ?? [];
   antwortText = daten.wiAntwortText ?? "";
   antwortKorrekt = daten.wiAntwortKorrekt ?? null;
   falscheVersuche = daten.wiFalscheVersuche ?? [];
@@ -386,7 +387,7 @@ export function raumDaten(daten) {
   // dort steht sie während der Setup-/Endstand-Screens aber nicht sinnvoll zur
   // Verfügung, deshalb nur bei aktiver Frage bzw. Ergebnis anzeigen.
   api.fortschritt(
-    status === "frage_aktiv" || status === "gebuzzert" || status === "aufgeloest"
+    status === "frage_aktiv" || status === "aufgeloest"
       ? `${index + 1}/${anzahlFragen}`
       : ""
   );
@@ -395,7 +396,7 @@ export function raumDaten(daten) {
   if (status === "setup" || !status) {
     zeigeSetup();
     $("wi-setup").hidden = false;
-  } else if (status === "frage_aktiv" || status === "gebuzzert") {
+  } else if (status === "frage_aktiv") {
     zeigeFrage();
     $("wi-frage-screen").hidden = false;
   } else if (status === "aufgeloest") {
@@ -557,7 +558,7 @@ async function setzeGrundzustand(wiStatus) {
     wiStatus, wiReihenfolge: [], wiHinweisReihenfolgen: [], wiFragenIndex: 0, wiAnzahlFragen: 0, wiAnzahlEntwurf: 0,
     wiHinweisIndex: 1, wiHinweisSeit: 0, wiGebuzzertVon: null, wiGebuzzertSeit: 0,
     wiAntwortText: "", wiAntwortKorrekt: null, wiPunkteDieserRunde: 0,
-    wiFalscheVersuche: [], wiTeammodus: false, wiTeams: {}, wiRundenDelta: {}
+    wiFalscheVersuche: [], wiLoeser: [], wiTeammodus: false, wiTeams: {}, wiRundenDelta: {}
   });
 }
 
@@ -602,7 +603,7 @@ async function spielStarten() {
       wiGespielt: neuerGespielt,
       wiHinweisIndex: 1, wiHinweisSeit: Date.now(),
       wiGebuzzertVon: null, wiGebuzzertSeit: 0, wiAntwortText: "", wiAntwortKorrekt: null, wiPunkteDieserRunde: 0,
-      wiFalscheVersuche: [], wiTeammodus: teammodus, wiTeams: neueTeams, wiRundenDelta: {}
+      wiFalscheVersuche: [], wiLoeser: [], wiTeammodus: teammodus, wiTeams: neueTeams, wiRundenDelta: {}
     });
   } catch (e) {
     zeigeDebug("Fehler beim Start: " + e.message);
@@ -653,42 +654,30 @@ function zeigeFrage() {
   });
   falschListe.hidden = falscheVersuche.length === 0;
 
-  const amZug = gebuzzertVon === api.spielerId;
-  const jemandBuzzerte = !!gebuzzertVon;
-  $("wi-buzzer").hidden = jemandBuzzerte;
-  $("wi-buzzer").disabled = jemandBuzzerte;
-  $("wi-antwort-bereich").hidden = !amZug;
-  // v94: Erst ab dem letzten Hinweis anbieten, damit niemand vorzeitig aufgibt,
-  // solange noch Hinweise nachkommen.
+  // v359: Kein Buzzer mehr - alle raten gleichzeitig weiter, bis sie es haben.
+  // Platz 1 bekommt n + 1 Punkte, danach n - 1, n - 2 ... (n = Spieleranzahl).
+  const ichGeloest = loeser.find((l) => l.id === api.spielerId);
+  $("wi-antwort-bereich").hidden = !!ichGeloest;
   $("wi-ueberspringen").hidden = !api.istLeiter || sichtbar < gesamt;
-
-  if (jemandBuzzerte) {
-    const s = spielerListe.find((x) => x.id === gebuzzertVon);
-    $("wi-frage-status").textContent = amZug
-      ? "Du bist dran - wer ist es?"
-      : `${s?.name ?? "Jemand"} antwortet gerade …`;
-  } else {
-    $("wi-frage-status").textContent = "";
-  }
+  const geloestText = loeser.map((l) => `${l.platz}. ${spielerListe.find((x) => x.id === l.id)?.name ?? "?"}`).join(", ");
+  const teile = [];
+  if (ichGeloest) teile.push(`✅ Richtig! Du bist auf Platz ${ichGeloest.platz} (+${ichGeloest.punkte} Punkte). Die anderen raten noch …`);
+  if (loeser.length) teile.push(`Schon gelöst: ${geloestText}`);
+  $("wi-frage-status").textContent = teile.join(" · ");
 }
 
 function aktualisiereCountdown() {
   if (!el.wurzel) return;
-  // v173: Solange jemand gebuzzert hat, zeigt der Countdown die verbleibende
-  // Antwortzeit statt des Hinweis-Countdowns (der pausiert ohnehin, solange
-  // niemand mehr raten kann).
-  if (status === "gebuzzert") {
-    const rest = Math.max(0, ANTWORT_ZEIT_MS - (Date.now() - gebuzzertSeit));
-    $("wi-countdown").textContent = gebuzzertVon === api.spielerId
-      ? `Noch ${Math.ceil(rest / 1000)}s zum Antworten`
-      : `Antwortzeit: ${Math.ceil(rest / 1000)}s`;
-    return;
-  }
   if (status !== "frage_aktiv") { $("wi-countdown").textContent = ""; return; }
   const frage = frageAn(index);
   if (!frage) return;
   const gesamt = frage.hinweise.length;
-  if (hinweisIndex >= gesamt) { $("wi-countdown").textContent = "Letzter Hinweis"; return; }
+  if (hinweisIndex >= gesamt) {
+    // Nach dem letzten Hinweis bleiben noch ANTWORT_ZEIT_MS zum Lösen.
+    const rest = Math.max(0, ANTWORT_ZEIT_MS - (Date.now() - hinweisSeit));
+    $("wi-countdown").textContent = `Letzter Hinweis - noch ${Math.ceil(rest / 1000)}s zum Lösen`;
+    return;
+  }
   const rest = Math.max(0, HINWEIS_DAUER_MS - (Date.now() - hinweisSeit));
   $("wi-countdown").textContent = `Nächster Hinweis in ${Math.ceil(rest / 1000)}s`;
 }
@@ -699,6 +688,25 @@ async function pruefeHinweisFortschritt() {
   if (!api?.istLeiter || status !== "frage_aktiv" || hinweisFortschreibenLaeuft) return;
   const frage = frageAn(index);
   if (!frage) return;
+  // v359: Die Runde endet, wenn alle (aktuellen) Mitspieler gelöst haben oder nach dem
+  // letzten Hinweis ANTWORT_ZEIT_MS (10 s) vergangen sind.
+  const alleGeloest = spielerListe.length > 0 && spielerListe.every((s) => loeser.some((l) => l.id === s.id));
+  const zeitUm = hinweisIndex >= frage.hinweise.length && Date.now() - hinweisSeit >= ANTWORT_ZEIT_MS;
+  if (alleGeloest || zeitUm) {
+    hinweisFortschreibenLaeuft = true;
+    try {
+      await runTransaction(api.db, async (tx) => {
+        const snap = await tx.get(api.raumRef());
+        const d = snap.data();
+        if (!d || d.wiStatus !== "frage_aktiv" || (d.wiFragenIndex ?? 0) !== index) return;
+        tx.update(api.raumRef(), { wiStatus: "aufgeloest" });
+      });
+    } catch (e) {
+      zeigeDebug("Fehler beim Auflösen: " + e.message);
+    }
+    hinweisFortschreibenLaeuft = false;
+    return;
+  }
   if (hinweisIndex >= frage.hinweise.length) return;
   if (Date.now() - hinweisSeit < HINWEIS_DAUER_MS) return;
 
@@ -711,66 +719,16 @@ async function pruefeHinweisFortschritt() {
   hinweisFortschreibenLaeuft = false;
 }
 
-// v173: Wird nur vom Spielleiter-Client ausgewertet (analog zu
-// pruefeHinweisFortschritt), damit die Zeitstrafe nicht mehrfach vergeben
-// wird. Laeuft die Antwortzeit nach dem Buzzern ab, ohne dass eine Antwort
-// abgeschickt wurde, zaehlt das genauso wie eine falsche Antwort - inklusive
-// des gestaffelten Punktabzugs (1., 2., 3. Fehlversuch derselben Person bei
-// derselben Frage).
-async function pruefeAntwortZeitAblauf() {
-  if (!api?.istLeiter || status !== "gebuzzert" || !gebuzzertVon || antwortZeitAblaufLaeuft) return;
-  if (Date.now() - gebuzzertSeit < ANTWORT_ZEIT_MS) return;
-
-  antwortZeitAblaufLaeuft = true;
-  try {
-    const frage = frageAn(index);
-    if (!frage) { antwortZeitAblaufLaeuft = false; return; }
-    const spielerId = gebuzzertVon;
-    const spielerName = spielerListe.find((s) => s.id === spielerId)?.name ?? "?";
-    const naechsterHinweisIndex = Math.min(hinweisIndex + 1, frage.hinweise.length);
-    const vorherigeFalscheDerPerson = falscheVersuche.filter((v) => v.spielerId === spielerId).length;
-    const abzug = vorherigeFalscheDerPerson + 1;
-    const neuesRundenDelta = {
-      ...(raum.wiRundenDelta || {}),
-      [spielerId]: (raum.wiRundenDelta?.[spielerId] ?? 0) - abzug
-    };
-    await updateDoc(api.raumRef(), {
-      wiStatus: "frage_aktiv", wiAntwortText: "", wiAntwortKorrekt: null, wiPunkteDieserRunde: 0,
-      wiGebuzzertVon: null, wiGebuzzertSeit: 0, wiHinweisIndex: naechsterHinweisIndex, wiHinweisSeit: Date.now(),
-      wiFalscheVersuche: arrayUnion({ name: spielerName, text: "(keine Antwort)", spielerId, abzug }),
-      wiRundenDelta: neuesRundenDelta
-    });
-    await updateDoc(api.spielerRef(spielerId), { punkte: increment(-abzug) });
-  } catch (e) {
-    zeigeDebug("Fehler bei Zeitablauf: " + e.message);
-  }
-  antwortZeitAblaufLaeuft = false;
-}
-
-// Wer zuerst hier ankommt, gewinnt - die Transaktion sorgt dafür, dass bei
-// gleichzeitigem Buzzern trotzdem nur eine Person den Zuschlag bekommt.
-async function buzzern() {
-  if (status !== "frage_aktiv") return;
-  $("wi-buzzer").disabled = true;
-  try {
-    await runTransaction(api.db, async (tx) => {
-      const snap = await tx.get(api.raumRef());
-      const daten = snap.data();
-      if (!daten || daten.wiStatus !== "frage_aktiv" || daten.wiGebuzzertVon) {
-        throw new Error("__ZU_SPAET__");
-      }
-      tx.update(api.raumRef(), { wiStatus: "gebuzzert", wiGebuzzertVon: api.spielerId, wiGebuzzertSeit: Date.now() });
-    });
-  } catch (e) {
-    if (e.message !== "__ZU_SPAET__") {
-      zeigeDebug("Fehler beim Buzzern: " + e.message);
-      $("wi-buzzer").disabled = false;
-    }
-  }
-}
-
+// ============================================================================
+//  Antworten (v359): Alle raten gleichzeitig, jede*r beliebig oft.
+//  Richtig: Platz k = Anzahl bisher Richtiger + 1 -> n + 1 Punkte für Platz 1, dann n - 1,
+//  n - 2 ... (der Letzte bekommt 1). Falsch: Abzug 1, 2, 3 ... je Person und Frage.
+//  Wer es bis zum Ende nicht löst, bekommt 0 für diese Frage.
+//  Die Transaktion sorgt dafür, dass bei gleichzeitigen Antworten die Plätze sauber
+//  nacheinander vergeben werden.
+// ============================================================================
 async function antwortAbsenden() {
-  if (gebuzzertVon !== api.spielerId) return;
+  if (status !== "frage_aktiv" || loeser.some((l) => l.id === api.spielerId)) return;
   const text = $("wi-antwort-eingabe").value.trim();
   if (!text) {
     $("wi-antwort-fehler").textContent = "Bitte eine Antwort eingeben.";
@@ -781,49 +739,38 @@ async function antwortAbsenden() {
   try {
     const frage = frageAn(index);
     const richtig = istAntwortRichtig(text, frage.name);
-    // v112: Punkte (richtig +X wie falsch -1) bekommt bzw. verliert immer nur
-    // die einzelne Person, auch im Teammodus - der Team-Gesamtstand ist einfach
-    // die Summe der Mitgliederpunkte (teamEndstandHtml/teamGruppeHtml).
-    // "wiRundenDelta" merkt sich zusätzlich für JEDEN Spieler, wie viele Punkte
-    // er in DIESER Runde bekommen/verloren hat (auch über mehrere Fehlversuche
-    // hinweg, bevor die Runde am Ende richtig aufgelöst wird) - nur so kann das
-    // Rundenergebnis-Badge am Ende auch einen zwischenzeitlichen Fehlversuch
-    // einer anderen Person als der/dem, die/der zuletzt richtig lag, zeigen.
-    if (richtig) {
-      // Richtig: Runde ist zu Ende, ganz normal auflösen und Punkte gutschreiben.
-      const punkte = Math.max(1, frage.hinweise.length - hinweisIndex + 1);
-      const neuesRundenDelta = {
-        ...(raum.wiRundenDelta || {}),
-        [api.spielerId]: (raum.wiRundenDelta?.[api.spielerId] ?? 0) + punkte
-      };
-      await updateDoc(api.raumRef(), {
-        wiStatus: "aufgeloest", wiAntwortText: text, wiAntwortKorrekt: true, wiPunkteDieserRunde: punkte,
-        wiRundenDelta: neuesRundenDelta
-      });
-      await updateDoc(api.spielerRef(), { punkte: increment(punkte) });
-    } else {
-      // v95: Falsch: KEIN Rundenende. Ein Punkt Abzug für die ratende Person,
-      // der genannte Name bleibt für alle sichtbar in der Fehlversuch-Liste,
-      // der Buzzer wird für alle wieder freigegeben und der nächste Hinweis
-      // kommt sofort (ohne auf die volle 10-Sekunden-Wartezeit zu warten).
-      const naechsterHinweisIndex = Math.min(hinweisIndex + 1, frage.hinweise.length);
-      // v171: gestaffelter Abzug - wie oft hat GENAU DIESE Person bei GENAU
-      // DIESER Frage schon falsch getippt? 1. Fehlversuch = -1, 2. = -2, usw.
-      const vorherigeFalscheDerPerson = falscheVersuche.filter((v) => v.spielerId === api.spielerId).length;
-      const abzug = vorherigeFalscheDerPerson + 1;
-      const neuesRundenDelta = {
-        ...(raum.wiRundenDelta || {}),
-        [api.spielerId]: (raum.wiRundenDelta?.[api.spielerId] ?? 0) - abzug
-      };
-      $("wi-antwort-eingabe").value = "";
-      await updateDoc(api.raumRef(), {
-        wiStatus: "frage_aktiv", wiAntwortText: "", wiAntwortKorrekt: null, wiPunkteDieserRunde: 0,
-        wiGebuzzertVon: null, wiGebuzzertSeit: 0, wiHinweisIndex: naechsterHinweisIndex, wiHinweisSeit: Date.now(),
-        wiFalscheVersuche: arrayUnion({ name: api.spielerName, text, spielerId: api.spielerId, abzug }),
-        wiRundenDelta: neuesRundenDelta
-      });
-      await updateDoc(api.spielerRef(), { punkte: increment(-abzug) });
-    }
+    const n = spielerListe.length;
+    let art = "";
+    let abzugGemerkt = 0;
+    await runTransaction(api.db, async (tx) => {
+      const snap = await tx.get(api.raumRef());
+      const daten = snap.data();
+      if (!daten || daten.wiStatus !== "frage_aktiv" || (daten.wiFragenIndex ?? 0) !== index) { art = "zuspaet"; return; }
+      const geloest = daten.wiLoeser ?? [];
+      if (geloest.some((l) => l.id === api.spielerId)) { art = "schon"; return; }
+      if (richtig) {
+        const platz = geloest.length + 1;
+        const punkte = punkteFuerRang(platz, n);
+        const neu = [...geloest, { id: api.spielerId, platz, punkte }];
+        const upd = { wiLoeser: neu, ["wiRundenDelta." + api.spielerId]: increment(punkte) };
+        if (neu.length >= n) upd.wiStatus = "aufgeloest";
+        tx.update(api.raumRef(), upd);
+        tx.update(api.spielerRef(), { punkte: increment(punkte) });
+        art = "richtig";
+      } else {
+        const abzug = (daten.wiFalscheVersuche ?? []).filter((v) => v.spielerId === api.spielerId).length + 1;
+        tx.update(api.raumRef(), {
+          wiFalscheVersuche: arrayUnion({ name: api.spielerName, text, spielerId: api.spielerId, abzug }),
+          ["wiRundenDelta." + api.spielerId]: increment(-abzug)
+        });
+        tx.update(api.spielerRef(), { punkte: increment(-abzug) });
+        abzugGemerkt = abzug;
+        art = "falsch";
+      }
+    });
+    $("wi-antwort-eingabe").value = "";
+    if (art === "zuspaet") $("wi-antwort-fehler").textContent = "Zu spät - die Runde ist schon vorbei.";
+    else if (art === "falsch") $("wi-antwort-fehler").textContent = `Leider falsch (-${abzugGemerkt} ${abzugGemerkt === 1 ? "Punkt" : "Punkte"}). Versuch es nochmal!`;
   } catch (e) {
     zeigeDebug("Fehler beim Absenden der Antwort: " + e.message);
   }
@@ -852,14 +799,18 @@ function zeigeErgebnis() {
   if (!frage) return;
   $("wi-erg-name").textContent = frage.name;
 
-  const raterName = spielerListe.find((s) => s.id === gebuzzertVon)?.name;
-  if (!gebuzzertVon) {
-    $("wi-erg-status").textContent = "Niemand hat gebuzzert";
-  } else if (antwortKorrekt) {
-    $("wi-erg-status").textContent = `${raterName ?? "?"} hatte recht! 🎉`;
+  if (!loeser.length) {
+    $("wi-erg-status").textContent = "Niemand hat es gelöst";
   } else {
-    $("wi-erg-status").textContent = `${raterName ?? "?"} lag daneben ("${antwortText}")`;
+    const erster = spielerListe.find((s) => s.id === loeser[0].id)?.name ?? "?";
+    $("wi-erg-status").textContent = loeser.length === 1
+      ? `${erster} hat es als Einziger/Einzige erkannt! 🎉`
+      : `${erster} war am schnellsten! 🎉`;
   }
+  const platzText = (id) => {
+    const l = loeser.find((x) => x.id === id);
+    return l ? `Platz ${l.platz}` : "nicht gelöst";
+  };
 
   const liste = $("wi-erg-liste");
 
@@ -875,17 +826,17 @@ function zeigeErgebnis() {
       return spielerKarte(
         s.name, s.farbe, s.icon,
         formatiertePunkte(raum.wiRundenDelta?.[s.id] ?? 0),
-        { punkteRechts: s.punkte ?? 0 }
+        { extra: platzText(s.id), punkteRechts: s.punkte ?? 0 }
       );
     });
   } else {
     liste.innerHTML = "";
-    [...spielerListe].sort((a, b) => (b.punkte ?? 0) - (a.punkte ?? 0)).forEach((s) => {
+    [...spielerListe].sort((a, b) => (raum.wiRundenDelta?.[b.id] ?? 0) - (raum.wiRundenDelta?.[a.id] ?? 0)).forEach((s) => {
       const li = document.createElement("li");
       li.innerHTML = spielerKarte(
         s.name, s.farbe, s.icon,
         formatiertePunkte(raum.wiRundenDelta?.[s.id] ?? 0),
-        { punkteRechts: s.punkte ?? 0 }
+        { extra: platzText(s.id), punkteRechts: s.punkte ?? 0 }
       );
       liste.appendChild(li);
     });
@@ -907,7 +858,7 @@ async function weiter() {
         wiStatus: "frage_aktiv", wiFragenIndex: naechster,
         wiHinweisIndex: 1, wiHinweisSeit: Date.now(),
         wiGebuzzertVon: null, wiGebuzzertSeit: 0, wiAntwortText: "", wiAntwortKorrekt: null, wiPunkteDieserRunde: 0,
-        wiFalscheVersuche: [], wiRundenDelta: {}
+        wiFalscheVersuche: [], wiLoeser: [], wiRundenDelta: {}
       });
     }
   } catch (e) {

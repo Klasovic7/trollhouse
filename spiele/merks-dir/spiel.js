@@ -17,7 +17,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 
 const POSITIONEN = 20;
 const STANDARD_ZEIT_SEKUNDEN = 15;
@@ -715,23 +715,9 @@ function distanzFuer(eintrag) {
 }
 
 function berechneSpielpunkte(eintraege) {
+  // Einheitliches Punktesystem: Sieger (am längsten dabei) n + 1, dann n - 1, n - 2 ...
   const sortiert = [...eintraege].sort((a, b) => distanzFuer(a) - distanzFuer(b));
-  const ergebnis = {};
-  let vorherigeDistanz = null;
-  let vorherigeRangpunkte = null;
-  const besteDistanz = sortiert.length ? distanzFuer(sortiert[0]) : null;
-
-  sortiert.forEach((eintrag, i) => {
-    const distanz = distanzFuer(eintrag);
-    const rangpunkte = (vorherigeDistanz !== null && distanz === vorherigeDistanz)
-      ? vorherigeRangpunkte
-      : sortiert.length - 1 - i;
-    const siegerBonus = distanz === besteDistanz ? 1 : 0;
-    ergebnis[eintrag.spielerId] = rangpunkte + siegerBonus;
-    vorherigeDistanz = distanz;
-    vorherigeRangpunkte = rangpunkte;
-  });
-  return ergebnis;
+  return punkteNachRang(sortiert, distanzFuer, eintraege.length);
 }
 
 async function beendeDurchgang() {

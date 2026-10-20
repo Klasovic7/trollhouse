@@ -21,7 +21,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
 
 const STANDARD_ANZAHL = 10;
@@ -686,7 +686,7 @@ async function naechsterSchrittNachRundenergebnis() {
   try {
     if (rundeIndex + 1 >= anzahlRunden) {
       await updateDoc(api.raumRef(), { luStatus: "beendet" });
-      speichereWertung(api, "laenderumrisse", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
+      speichereWertungNachPlatz(api, "laenderumrisse", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
     } else {
       const landId = neueRundeLandId(verwendeteIds);
       await updateDoc(api.raumRef(), {

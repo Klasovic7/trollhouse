@@ -22,7 +22,7 @@ import {
   serverTimestamp, increment, arrayUnion, runTransaction
 } from "../../kern/firebase.js";
 import { escapeHtml, spielerKarte, avatarHtml, renderWarteAvatare, initBereitSystem, zeigeDebug } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import {
   KATEGORIEN, KATEGORIE_NAMEN, STARTMUENZEN, MAX_KARTEN_PRO_SPIELER,
   ANZAHL_GEBOTSRUNDEN, ANZAHL_SPIELRUNDEN,
@@ -1449,7 +1449,7 @@ async function rundeWeiter() {
     const naechste = rundenIndex + 1;
     if (naechste >= ANZAHL_SPIELRUNDEN) {
       await updateDoc(api.raumRef(), { faStatus: "beendet" });
-      speichereWertung(api, "fussball-auktion", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
+      speichereWertungNachPlatz(api, "fussball-auktion", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
     } else {
       await updateDoc(api.raumRef(), {
         faStatus: "runde_spielen",

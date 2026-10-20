@@ -7,7 +7,7 @@
 // ============================================================================
 import { updateDoc, runTransaction, serverTimestamp } from "../../kern/firebase.js";
 import { escapeHtml, avatarHtml, spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 import {
   mischeListe, erstelleTeams, ergaenzeFehlendeTeams, bereinigeTreffer, aktiveSpielerId, aktivesTeam
@@ -806,7 +806,7 @@ async function weiter() {
       const punkteProSpieler = Object.fromEntries(spielerListe.map((s) =>
         [s.id, teammodus ? (teamPunkte[teams[s.id]] ?? 0) : (punkte[s.id] ?? 0)]
       ));
-      speichereWertung(api, "zehn-treffer", punkteProSpieler);
+      speichereWertungNachPlatz(api, "zehn-treffer", punkteProSpieler);
     } else {
       const ids = spielerListe.map((spieler) => spieler.id);
       await updateDoc(api.raumRef(), {

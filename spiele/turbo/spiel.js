@@ -10,6 +10,7 @@
 import { doc, setDoc, updateDoc, collection, onSnapshot, serverTimestamp } from "../../kern/firebase.js";
 import { STRECKEN } from "./strecke.js";
 import { avatarBild } from "../../kern/ui.js";
+import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 
 let api = null, rahmen = null, stil = null, unsub = null, hoerer = null;
 let spielerListe = [], zeiten = [], dauerMin = 5, raum = null, startGesehen = null, streckeId = "tal";
@@ -66,6 +67,26 @@ function sendeStand() {
     return { id: sp.id, name: sp.name || "?", bild: b ? new URL(b, location.href).href : null, fertig: !!z.fertig, zeit: z.zeit > 0 ? z.zeit : null, ich: sp.id === api.spielerId };
   });
   rahmen.contentWindow.postMessage({ typ: "stand", liste }, "*");
+}
+
+// Gesamtwertung: sobald alle, die in dieser Sitzung losgefahren sind, "Beenden" gedrückt haben
+// (oder ihre Zeit abgelaufen ist), schreibt die Spielleitung einmalig die Platzpunkte:
+// schnellste Bestzeit n + 1, dann n - 1, n - 2 ...; ohne gültige Zeit 0.
+let gewertetFuer = 0;
+function pruefeWertung() {
+  if (!api || !api.istLeiter || !raum) return;
+  const start = raum.turboStartSeit || 0;
+  if (!(start > 0) || gewertetFuer === start || raum.turboGewertetSeit === start) return;
+  const ms = (z) => (z && z.zeitpunkt && typeof z.zeitpunkt.toMillis === "function") ? z.zeitpunkt.toMillis() : 0;
+  // Teilnehmende = Dokumente, die seit dem Start dieser Sitzung beschrieben wurden (starte() setzt fertig=false)
+  const dabei = zeiten.filter((z) => ms(z) >= start - 15000 && spielerListe.some((sp) => sp.id === z.spielerId));
+  if (!dabei.length || !dabei.every((z) => z.fertig === true)) return;
+  gewertetFuer = start;
+  const n = spielerListe.length;
+  const sortiert = dabei.filter((z) => z.zeit > 0 && (!z.strecke || z.strecke === streckeId)).sort((a, b) => a.zeit - b.zeit);
+  const punkte = punkteNachRang(sortiert, (z) => Math.round(z.zeit * 1000), n);
+  updateDoc(api.raumRef(), { turboGewertetSeit: start }).catch(() => {});
+  speichereWertung(api, "turbo", punkte);
 }
 
 function speichereFertig(an) {
@@ -140,7 +161,7 @@ export async function starten(uebergebeneApi) {
   unsub = onSnapshot(collection(api.db, "raeume", api.code, "turboZeiten"), (snap) => {
     zeiten = [];
     snap.forEach((d) => zeiten.push(d.data()));
-    sende(); sendeStand();
+    sende(); sendeStand(); pruefeWertung();
   }, () => {});
 }
 
@@ -163,6 +184,7 @@ export function raumDaten(daten) {
   else if (st > 0 && st !== startGesehen) { startGesehen = st; if (rahmen && rahmen.contentWindow) rahmen.contentWindow.postMessage({ typ: "los" }, "*"); }
   else if (st === 0) startGesehen = 0;
   sendeLobby();
+  pruefeWertung();
   const m = daten && daten.turboDauer;
   if ([3, 4, 5].includes(m) && m !== dauerMin) dauerMin = m;
   sendeDauer();

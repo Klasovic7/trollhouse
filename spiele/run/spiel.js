@@ -18,7 +18,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild, avatarHtml, escapeHtml } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
 const COUNTDOWN_MS = 3000;
 const MAX_RUNDEN = 10;
@@ -523,14 +523,15 @@ function vergleiche(a, b) {
 // Rangpunkte: bester Lauf bekommt n (Anzahl Spieler), danach je einen weniger;
 // gleiche Ergebnisse teilen sich den Wert.
 function berechnePunkte(standListe, spielerIds) {
-  const proSpieler = spielerIds.map((id) =>
-    standListe.find((a) => a.spielerId === id) ?? { spielerId: id, dist: 0, muenzen: 0 });
+  // Wer gar kein Ergebnis gemeldet hat (nicht gelaufen), bekommt 0 Punkte.
+  const proSpieler = spielerIds.map((id) => standListe.find((a) => a.spielerId === id)).filter(Boolean);
   const sortiert = [...proSpieler].sort(vergleiche);
   const n = spielerIds.length;
   const ergebnis = {};
+  spielerIds.forEach((id) => { ergebnis[id] = 0; });
   let vorher = null, vorherPunkte = null;
   sortiert.forEach((a, i) => {
-    const punkte = (vorher && vergleiche(a, vorher) === 0) ? vorherPunkte : n - i;
+    const punkte = (vorher && vergleiche(a, vorher) === 0) ? vorherPunkte : punkteFuerRang(i + 1, n);
     ergebnis[a.spielerId] = punkte;
     vorher = a; vorherPunkte = punkte;
   });

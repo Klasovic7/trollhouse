@@ -26,7 +26,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 
 const HAND_ZEIT_MS = 30000;
 const TIPP_ZEIT_MS = 25000;
@@ -658,7 +658,7 @@ async function weiter() {
         knPunkte: neuePunkte, knEndVerlierer: n.loser
       });
       await batch.commit();
-      speichereWertung(api, "knobeln", Object.fromEntries(alle.map((id) => [id, neuePunkte[id] ?? 0])));
+      speichereWertungNachPlatz(api, "knobeln", Object.fromEntries(alle.map((id) => [id, neuePunkte[id] ?? 0])));
     }
   } catch (e) {
     zeigeDebug("Fehler beim Weiterschalten: " + e.message);

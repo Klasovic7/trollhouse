@@ -16,7 +16,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 
 const ZIEL_MIN = 5;
 const ZIEL_MAX = 30;
@@ -420,23 +420,10 @@ function abstandVon(antwort, zielMs) {
 // als unendlich weit weg und bekommt nie den Extrapunkt.
 function berechnePunkteFuerAntworten(antwortenListe, zielSekundenWert) {
   const zielMs = zielSekundenWert * 1000;
-  const sortiert = [...antwortenListe].sort((a, b) => abstandVon(a, zielMs) - abstandVon(b, zielMs));
-  const ergebnis = {};
-  let vorherigerAbstand = null;
-  let vorherigeRangpunkte = null;
-  const kleinsterAbstand = sortiert.length ? abstandVon(sortiert[0], zielMs) : Infinity;
-
-  sortiert.forEach((antwort, i) => {
-    const abstand = abstandVon(antwort, zielMs);
-    const rangpunkte = (vorherigerAbstand !== null && abstand === vorherigerAbstand)
-      ? vorherigeRangpunkte
-      : sortiert.length - 1 - i;
-    const siegerBonus = Number.isFinite(kleinsterAbstand) && abstand === kleinsterAbstand ? 1 : 0;
-    ergebnis[antwort.spielerId] = rangpunkte + siegerBonus;
-    vorherigerAbstand = abstand;
-    vorherigeRangpunkte = rangpunkte;
-  });
-  return ergebnis;
+  const sortiert = antwortenListe.filter((a) => Number.isFinite(abstandVon(a, zielMs)))
+    .sort((a, b) => abstandVon(a, zielMs) - abstandVon(b, zielMs));
+  // Einheitliches Punktesystem: Sieger n + 1, dann n - 1, n - 2 ...; ohne Tipp 0.
+  return punkteNachRang(sortiert, (a) => abstandVon(a, zielMs), spielerListe.length);
 }
 
 function berechneRundenpunkte(pos) {

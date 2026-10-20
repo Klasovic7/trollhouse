@@ -18,7 +18,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 
 const STANDARD_ZEIT_SEKUNDEN = 15;
 const MIN_ZEIT = 5;
@@ -575,7 +575,7 @@ async function naechsterSchrittNachRundenergebnis() {
   try {
     if (rundeIndex + 1 >= anzahlRunden) {
       await updateDoc(api.raumRef(), { stStatus: "beendet" });
-      speichereWertung(api, "stimmts", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
+      speichereWertungNachPlatz(api, "stimmts", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
     } else {
       const frageIndex = neueRundeFrageIndex(verwendeteIndizes);
       await updateDoc(api.raumRef(), {

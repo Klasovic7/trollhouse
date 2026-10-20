@@ -6,7 +6,7 @@
 // ============================================================================
 import { updateDoc, runTransaction } from "../../kern/firebase.js";
 import { escapeHtml, spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 import {
   mischeListe, begriffNachId, richtigerEinfuegeIndex, fuegeEin, aktiveSpielerId,
@@ -826,7 +826,7 @@ async function naechsteKategorie() {
   } catch (e) {
     zeigeDebug("Nächste Kategorie konnte nicht gestartet werden: " + e.message);
   }
-  if (endstandPunkte) speichereWertung(api, "reih-dich-ein", endstandPunkte);
+  if (endstandPunkte) speichereWertungNachPlatz(api, "reih-dich-ein", endstandPunkte);
   aktionLaeuft = false;
   renderAktuellenStatus();
 }

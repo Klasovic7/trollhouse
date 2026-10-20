@@ -14,7 +14,7 @@
 // ============================================================================
 import { doc, updateDoc, setDoc, deleteDoc, collection, getDocs, onSnapshot, writeBatch } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
 const BREITE = 10;
 const HOEHE = 20;
@@ -599,10 +599,10 @@ async function leiterTick() {
   try {
     const n = ids.length;
     const batch = writeBatch(api.db);
-    ergebnis.filter((e) => !isBot(e.id)).forEach((e) => batch.update(api.spielerRef(e.id), { punkte: n - e.platz + 1 }));
+    ergebnis.filter((e) => !isBot(e.id)).forEach((e) => batch.update(api.spielerRef(e.id), { punkte: punkteFuerRang(e.platz, n) }));
     batch.update(api.raumRef(), { ttStatus: "beendet", ttRang: ergebnis });
     await batch.commit();
-    if (n >= 2) speichereWertung(api, "tetris", Object.fromEntries(ergebnis.filter((e) => !isBot(e.id)).map((e) => [e.id, n - e.platz + 1])));
+    if (n >= 2) speichereWertung(api, "tetris", Object.fromEntries(ergebnis.filter((e) => !isBot(e.id)).map((e) => [e.id, punkteFuerRang(e.platz, n)])));
   } catch (e) {
     beendeBusy = false;
     zeigeDebug("Tetris: " + e.message);

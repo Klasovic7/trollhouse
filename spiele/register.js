@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "357";
+const SPIEL_VERSION = "359";
 
 export const SPIELE = [
   {
@@ -62,7 +62,7 @@ export const SPIELE = [
     name: "Wer ist es?",
     emoji: "🕵️",
     farbe: "#4ade80",
-    beschreibung: "Buzzere zuerst und errate den Fußballer",
+    beschreibung: "Rate als Erster den Fußballer - je früher, desto mehr Punkte",
     minSpieler: 2,
     laden: () => import(`./wer-ist-es/spiel.js?v=${SPIEL_VERSION}`)
   },
@@ -71,7 +71,7 @@ export const SPIELE = [
     name: "Wann war es?",
     emoji: "📅",
     farbe: "#c084fc",
-    beschreibung: "Buzzere zuerst und errate das gesuchte Jahr",
+    beschreibung: "Rate als Erster das gesuchte Jahr - je früher, desto mehr Punkte",
     minSpieler: 2,
     laden: () => import(`./wann-war-es/spiel.js?v=${SPIEL_VERSION}`)
   },

@@ -20,7 +20,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 import { OBJEKTE, LAENDER, OBJEKT_NACH_ID, ladeLaender, formatMeter, formatMass, objektSvg, ausdehnung, skalierung } from "./objekte.js";
 
 const MAX_RUNDEN = 15;
@@ -609,21 +609,10 @@ function abstandVon(antwort, zielMeter) {
 // nicht der absolute Meterunterschied - 2 m zu viel bei einer Maus ist etwas
 // anderes als 2 m zu viel bei einem Wal.
 export function berechnePunkteFuerAntworten(antwortenListe, zielMeter) {
-  const sortiert = [...antwortenListe].sort((a, b) => abstandVon(a, zielMeter) - abstandVon(b, zielMeter));
-  const ergebnis = {};
-  let vorherigerAbstand = null;
-  let vorherigeRangpunkte = null;
-  const kleinster = sortiert.length ? abstandVon(sortiert[0], zielMeter) : Infinity;
-  sortiert.forEach((antwort, i) => {
-    const abstand = abstandVon(antwort, zielMeter);
-    const rangpunkte = (vorherigerAbstand !== null && abstand === vorherigerAbstand)
-      ? vorherigeRangpunkte
-      : sortiert.length - 1 - i;
-    const bonus = Number.isFinite(kleinster) && abstand === kleinster ? 1 : 0;
-    ergebnis[antwort.spielerId] = rangpunkte + bonus;
-    vorherigerAbstand = abstand;
-    vorherigeRangpunkte = rangpunkte;
-  });
+  const sortiert = antwortenListe.filter((a) => Number.isFinite(abstandVon(a, zielMeter)))
+    .sort((a, b) => abstandVon(a, zielMeter) - abstandVon(b, zielMeter));
+  // Einheitliches Punktesystem: Sieger n + 1, dann n - 1, n - 2 ...; ohne Tipp 0.
+  const ergebnis = punkteNachRang(sortiert, (a) => abstandVon(a, zielMeter), spielerListe.length);
   return ergebnis;
 }
 

@@ -3,8 +3,7 @@
 // ----------------------------------------------------------------------------
 //  Pro Runde wird eine Stadt genannt. Alle setzen gleichzeitig eine Stecknadel
 //  auf einen drehbaren, zoombaren Globus. Wer (Luftlinie) am nächsten dran ist,
-//  bekommt die meisten Punkte; wer weniger als 100 km danebenliegt, bekommt
-//  einen Volltreffer-Punkt extra. Alle Raumfelder beginnen mit "wl", die Tipps
+//  bekommt n + 1 Punkte (n = Spieleranzahl), der Zweite n - 1, der Dritte n - 2 usw. Alle Raumfelder beginnen mit "wl", die Tipps
 //  liegen getrennt in der Subcollection "wlTipps".
 //
 //  Die Karte zeichnet d3-geo (siehe geo.js, ein gebündelter Auszug von d3-geo
@@ -16,7 +15,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml, avatarBild } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import * as D3 from "./geo.js";
 import { STAEDTE_WELT, STAEDTE_DE, SEHENSWUERDIGKEITEN, SEHENS_ART } from "./staedte.js";
 
@@ -558,8 +557,8 @@ const VORLAGE = `
   <div id="wl-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Ein Ort wird genannt - alle setzen gleichzeitig eine Stecknadel auf den Globus.
       Drehen: mit einem Finger ziehen. Zoomen: zwei Finger auseinander oder mit + / −. Nadel setzen: kurz tippen.
-      Wer (Luftlinie) am nächsten dran ist, bekommt die meisten Punkte, wer weniger als 100 km danebenliegt
-      (bei deutschen Städten weniger als 50 km), zusätzlich einen Volltreffer-Punkt. Pro Runde habt ihr 60 Sekunden.</p>
+      Wer (Luftlinie) am nächsten dran ist, bekommt so viele Punkte wie Spieler im Raum plus einen Extrapunkt, der
+      Zweite so viele wie Spieler minus 1, der Dritte minus 2 usw. Ohne Nadel gibt es 0 Punkte. Pro Runde habt ihr 60 Sekunden.</p>
 
     <div id="wl-modus-block" class="wl-modus-block">
       <span class="wl-modus-titel">Was wird gesucht? <small>(mehrere möglich)</small></span>
@@ -988,8 +987,8 @@ async function nadelAbschicken() {
 }
 
 // --- Auswertung -------------------------------------------------------------
-// Rang nach Entfernung; Punkte = Spielerzahl - Rang + 1 (Gleichstand = gleicher
-// Rang), plus 1 Volltreffer-Punkt unter 100 km (deutsche Städte: unter 50 km). Wer nichts gesetzt hat: 0.
+// Rang nach Entfernung (Gleichstand = gleicher Rang); Punkte: Sieger n + 1, dann n - 1, n - 2 ...
+// Wer nichts gesetzt hat: 0. "Volltreffer" (unter 100 km, deutsche Städte unter 50 km) wird nur angezeigt.
 function bewerte(tipps) {
   const s = stadt(stadtIdx);
   const n = spielerListe.length;
@@ -1006,7 +1005,7 @@ function bewerte(tipps) {
     if (i > 0 && Math.round(e.km) > Math.round(mit[i - 1].km)) rang = i + 1;
     e.rang = rang;
     e.volltreffer = e.km <= (s && s.katalog === "de" ? VOLLTREFFER_KM_DE : VOLLTREFFER_KM);
-    e.punkte = Math.max(1, n - rang + 1) + (e.volltreffer ? 1 : 0);
+    e.punkte = punkteFuerRang(rang, n);   // Sieger n + 1, dann n - 1, n - 2 ...; Volltreffer ist nur noch eine Anzeige
   });
   return [...mit, ...ohne];
 }
@@ -1075,7 +1074,7 @@ function rendereErgebnisListe(neuPassen = false) {
     if (!sp) return;
     const extra = e.km == null
       ? "Keine Nadel gesetzt"
-      : `${kmText(e.km)}${e.volltreffer ? " · Volltreffer +1" : ""}`;
+      : `${kmText(e.km)}${e.volltreffer ? " · Volltreffer" : ""}`;
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(sp.name, sp.farbe, sp.icon, `+${e.punkte}`, { extra, punkteRechts: sp.punkte ?? 0 });
     liste.appendChild(li);

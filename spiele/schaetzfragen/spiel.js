@@ -17,7 +17,7 @@ import {
 } from "../../kern/firebase.js";
 import { escapeHtml, textMitZusatz, spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, avatarHtml, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
 export const KATEGORIEN = [
@@ -901,26 +901,15 @@ async function andereFrage() {
 // Platzierung nach Nähe zur richtigen Antwort (v165: der letzte Platz bekommt
 // 0 Punkte, jeder Platz davor einen mehr, der beste Tipp also so viele Punkte
 // wie Mitspieler minus 1; gleich weit entfernte Spieler teilen sich den Rang)
-// plus 1 Bonuspunkt für exakt richtig.
+// plus 1 Bonuspunkt für exakt richtig.  -> seit v359: einheitliches System, siehe unten.
 function berechneRundenpunkte(pos) {
   const richtig = frageAn(pos).antwort;
   const antworten = alleAntworten.filter((a) => a.fragenIndex === pos);
-  const sortiert = [...antworten].sort(
+  const sortiert = antworten.filter((a) => Number.isFinite(Number(a.schaetzung))).sort(
     (a, b) => Math.abs(a.schaetzung - richtig) - Math.abs(b.schaetzung - richtig)
   );
-  const ergebnis = {};
-  let vorherigerAbstand = null;
-  let vorherigeRangpunkte = null;
-
-  sortiert.forEach((antwort, i) => {
-    const abstand = Math.abs(antwort.schaetzung - richtig);
-    const rangpunkte = (vorherigerAbstand !== null && abstand === vorherigerAbstand)
-      ? vorherigeRangpunkte
-      : sortiert.length - 1 - i;
-    ergebnis[antwort.spielerId] = rangpunkte + (abstand === 0 ? 1 : 0);
-    vorherigerAbstand = abstand;
-    vorherigeRangpunkte = rangpunkte;
-  });
+  // Einheitliches Punktesystem: Sieger n + 1, dann n - 1, n - 2 ...; ohne Tipp 0.
+  const ergebnis = punkteNachRang(sortiert, (a) => Math.abs(a.schaetzung - richtig), spielerListe.length);
 
   // Dummkopf-Bonus: Wer richtig getippt hat, wer am weitesten danebenliegt, bekommt +1.
   if (dummkopfModus) {

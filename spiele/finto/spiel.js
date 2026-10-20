@@ -27,7 +27,7 @@ import {
   doc, setDoc, deleteDoc, updateDoc, collection, getDocs, onSnapshot, serverTimestamp, writeBatch, increment
 } from "../../kern/firebase.js";
 import { spielerKarte, escapeHtml, avatarHtml, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
 const RICHTIG_ID = "richtig";
@@ -639,7 +639,7 @@ async function weiter() {
     const naechster = index + 1;
     if (naechster >= anzahlFragen) {
       await updateDoc(api.raumRef(), { fiStatus: "beendet" });
-      speichereWertung(api, "finto", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
+      speichereWertungNachPlatz(api, "finto", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
     } else {
       await updateDoc(api.raumRef(), { fiStatus: "antwort_aktiv", fiFragenIndex: naechster, fiOptionen: [] });
     }

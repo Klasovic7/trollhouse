@@ -10,7 +10,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
 const VORLAGE = `
@@ -672,7 +672,7 @@ async function weiter() {
     const naechster = index + 1;
     if (naechster >= anzahlFragen) {
       await updateDoc(api.raumRef(), { dgStatus: "beendet" });
-      speichereWertung(api, "denk-gleich", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
+      speichereWertungNachPlatz(api, "denk-gleich", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
     } else {
       await updateDoc(api.raumRef(), { dgStatus: "frage_aktiv", dgFragenIndex: naechster });
     }

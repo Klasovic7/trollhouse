@@ -32,7 +32,7 @@ import {
 } from "../../kern/firebase.js";
 import { spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, avatarHtml, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
 // ----------------------------------------------------------------------------
 //  Deck-Erzeugung: endliche projektive Ebene der Ordnung n (hier n=7).
@@ -1077,7 +1077,7 @@ async function tippeSymbolTurm(symbolId) {
           const anzahlSpieler = rangfolge.length;
           rangfolge.forEach((eintrag, i) => {
             const rang = i + 1; // 1 = Sieger*in (leerer Stapel)
-            const punkte = (anzahlSpieler - rang) + (rang === 1 ? 1 : 0);
+            const punkte = punkteFuerRang(rang, anzahlSpieler);   // Sieger n + 1, dann n - 1, n - 2 ...
             tx.update(api.spielerRef(eintrag.id), { punkte });
           });
         }
@@ -1161,8 +1161,7 @@ function berechneRundenpunkte(pos) {
   const sortiert = [...richtige].sort((a, b) => (a.millisekunden ?? 0) - (b.millisekunden ?? 0));
   const n = spielerListe.length;
   sortiert.forEach((a, i) => {
-    const punkte = n - i;
-    if (punkte > 0) ergebnis[a.spielerId] = punkte;
+    ergebnis[a.spielerId] = punkteFuerRang(i + 1, n);   // Schnellster n + 1, dann n - 1, n - 2 ...; falsch/nicht gelöst 0
   });
   return ergebnis;
 }

@@ -24,11 +24,13 @@
 //    aufgeloest  - wer der Imposter war, wird für alle angezeigt
 //    beendet     - Abschlussbildschirm
 //
-//  Bewusst OHNE Punktesystem/Wertung: Das Spiel lebt vom Gespräch am Tisch -
-//  die App weiß nicht, wer im Gespräch den Imposter korrekt erraten hat, kann
-//  also auch keine sinnvollen Punkte vergeben.
+//  Wertung (ab v359): Die App weiß nicht, wer am Tisch gewonnen hat. Deshalb
+//  wählt der Spielleiter nach dem Auflösen aus, wer gewonnen hat (Knöpfe "Crew"
+//  / "Imposter" oder einzelne Spieler antippen). Jede*r Sieger*in bekommt dafür
+//  1 Punkt in der Gesamtwertung (kern/wertung.js).
 // ============================================================================
 import { updateDoc } from "../../kern/firebase.js";
+import { speichereWertung } from "../../kern/wertung.js";
 import { escapeHtml, avatarHtml, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
@@ -104,13 +106,22 @@ const VORLAGE = `
     <h2 id="imp-aufloesung-titel">🎭 Der Imposter war:</h2>
     <div id="imp-aufloesung-karte"></div>
     <p class="hinweis-text">Der Begriff war "<strong id="imp-aufloesung-wort"></strong>".</p>
+    <div id="imp-sieger-block" hidden>
+      <h3>Wer hat gewonnen?</h3>
+      <p class="hinweis-text">Tippe die Sieger an - jede*r Sieger*in bekommt 1 Punkt für die Gesamtwertung.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+        <button id="imp-sieger-crew" class="btn-sekundaer" type="button">Crew hat gewonnen</button>
+        <button id="imp-sieger-imp" class="btn-sekundaer" type="button">Imposter hat gewonnen</button>
+      </div>
+      <div id="imp-sieger-liste" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+    </div>
     <p><button id="imp-weiter" hidden></button></p>
     <p id="imp-aufloesung-warten" hidden><em>Warte auf den Spielleiter …</em></p>
   </div>
 
   <div id="imp-endstand-screen" class="bildschirm-karte" hidden>
     <h1>🎉 Danke fürs Mitspielen!</h1>
-    <p class="hinweis-text">Imposter läuft ohne Punktestand - die Runden entscheidet ihr am Tisch.</p>
+    <p class="hinweis-text">Die Siegerpunkte findest du in der Gesamtwertung.</p>
     <p id="imp-endstand-warten" hidden><em>Der Spielleiter wählt gleich das nächste Spiel …</em></p>
   </div>
 `;
@@ -130,6 +141,7 @@ let anzahlEntwurf = null;
 let anzahlImposterEntwurf = null;
 let impEntwurfTimer = null;
 let starterId = null;
+let siegerWahl = new Set();   // nur beim Spielleiter: Spieler-IDs, die diese Runde gewonnen haben
 let gespielt = []; // Indizes der zuletzt gespielten Woerter (fuer Wiederholungsschutz)
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
@@ -480,11 +492,34 @@ function zeigeAufloesung() {
   weiterKnopf.hidden = !api.istLeiter;
   weiterKnopf.textContent = letzteRunde ? "Beenden" : "Nächste Runde";
   $("imp-aufloesung-warten").hidden = api.istLeiter;
+  zeigeSiegerWahl(imposter);
+}
+
+function zeigeSiegerWahl(imposter) {
+  const block = $("imp-sieger-block");
+  block.hidden = !api.istLeiter;
+  if (!api.istLeiter) return;
+  const liste = $("imp-sieger-liste");
+  liste.innerHTML = spielerListe.map((sp) =>
+    `<button type="button" class="gv-modus-btn${siegerWahl.has(sp.id) ? " aktiv" : ""}" data-id="${escapeHtml(sp.id)}">${escapeHtml(sp.name)}</button>`).join("");
+  liste.querySelectorAll("[data-id]").forEach((b) => b.addEventListener("click", () => {
+    const id = b.dataset.id;
+    if (siegerWahl.has(id)) siegerWahl.delete(id); else siegerWahl.add(id);
+    zeigeSiegerWahl(imposter);
+  }));
+  const impIds = (imposter || spielerListe.filter((s) => imposterIds.includes(s.id))).map((s) => s.id);
+  $("imp-sieger-crew").onclick = () => { siegerWahl = new Set(spielerListe.filter((s) => !impIds.includes(s.id)).map((s) => s.id)); zeigeSiegerWahl(imposter); };
+  $("imp-sieger-imp").onclick = () => { siegerWahl = new Set(impIds); zeigeSiegerWahl(imposter); };
 }
 
 async function weiter() {
   $("imp-weiter").disabled = true;
   try {
+    if (api.istLeiter && siegerWahl.size) {
+      // Jede*r Sieger*in bekommt 1 Punkt in der Gesamtwertung
+      await speichereWertung(api, "imposter", Object.fromEntries([...siegerWahl].map((id) => [id, 1])));
+    }
+    siegerWahl = new Set();
     const naechsterIndex = rundenIndex + 1;
     if (naechsterIndex >= anzahlRunden) {
       await updateDoc(api.raumRef(), { impStatus: "beendet" });

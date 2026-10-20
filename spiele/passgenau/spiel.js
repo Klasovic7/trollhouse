@@ -18,7 +18,7 @@ import {
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare } from "../../kern/ui.js";
-import { speichereWertung } from "../../kern/wertung.js";
+import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
 const COUNTDOWN_MS = 3000;
 const MAX_RUNDEN = 15;
@@ -604,7 +604,7 @@ function berechnePunkte(fertigListe, spielerIds) {
   spielerIds.forEach((id) => { ergebnis[id] = 0; });
   let vorherMs = null, vorherPunkte = null;
   sortiert.forEach((f, i) => {
-    const punkte = (vorherMs !== null && f.ms === vorherMs) ? vorherPunkte : n - i;
+    const punkte = (vorherMs !== null && f.ms === vorherMs) ? vorherPunkte : punkteFuerRang(i + 1, n);
     ergebnis[f.spielerId] = punkte;
     vorherMs = f.ms; vorherPunkte = punkte;
   });
