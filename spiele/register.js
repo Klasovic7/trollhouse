@@ -136,10 +136,7 @@ export const SPIELE = [
     emoji: "🌍",
     farbe: "#10b981",
     beschreibung: "Städte oder Sehenswürdigkeiten auf dem Globus finden - wer liegt am nächsten dran?",
-    // TEST: alleine spielbar (mitBots umgeht die "Üben ist verboten"-Meldung).
-    // Später wieder: minSpieler: 2 und mitBots entfernen.
-    minSpieler: 1,
-    mitBots: true,
+    minSpieler: 2,
     laden: () => import(`./wo-liegts/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
