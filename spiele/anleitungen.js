@@ -61,7 +61,7 @@ export function oeffneAnleitungen(startId = null) {
       </div>
       <div class="anl-titel"><span class="anl-titel-sym">${symbol(sp)}</span><h2>${esc(sp.name)}</h2></div>
       <div class="anl-folie" id="anl-folie">
-        <div class="anl-bildrahmen"><img class="anl-foto" src="bilder/anleitung/${id}-${seite + 1}.webp?v=335" alt="Screenshot: ${esc(f.t)}" loading="eager"></div>
+        <div class="anl-bildrahmen">${f.ohneFoto ? szene(sp.farbe, f.s()) : `<img class="anl-foto" src="bilder/anleitung/${id}-${seite + 1}.webp?v=335" alt="Screenshot: ${esc(f.t)}" loading="eager">`}</div>
         <h3>${esc(f.t)}</h3>
         ${f.x.map((a) => `<p>${fett(a)}</p>`).join("")}
       </div>
@@ -78,7 +78,7 @@ export function oeffneAnleitungen(startId = null) {
     q("[data-weiter]").onclick = () => letzte ? liste() : zeige(id, seite + 1);
     // Falls ein Screenshot fehlt (z. B. offline): gezeichnete Ersatz-Szene
     const foto = q(".anl-foto");
-    foto.addEventListener("error", () => { foto.parentElement.innerHTML = szene(sp.farbe, f.s()); });
+    if (foto) foto.addEventListener("error", () => { foto.parentElement.innerHTML = szene(sp.farbe, f.s()); });
     dialog.querySelectorAll("[data-n]").forEach((b) => b.onclick = () => zeige(id, +b.dataset.n));
     // Wischen
     const fl = q("#anl-folie");
