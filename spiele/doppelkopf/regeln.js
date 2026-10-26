@@ -107,8 +107,8 @@ export function sortiereHand(hand, regeln) {
   return [...hand].sort((a, b) => {
     const fa = reihenfolgeFarben.indexOf(regeln.farbe(a)), fb = reihenfolgeFarben.indexOf(regeln.farbe(b));
     if (fa !== fb) return fa - fb;
-    // Fehlfarben: hoch -> niedrig; Trumpf: niedrig -> hoch, damit die besten Karten ganz rechts liegen
-    const d = fa === reihenfolgeFarben.length - 1 ? regeln.staerke(a) - regeln.staerke(b) : regeln.staerke(b) - regeln.staerke(a);
+    // Innerhalb jeder Farbe (auch Trumpf): niedrig -> hoch, links liegt die kleinste Karte (9, Koenig, 10, Ass)
+    const d = regeln.staerke(a) - regeln.staerke(b);
     return d || (a < b ? -1 : 1);
   });
 }
