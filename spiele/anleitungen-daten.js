@@ -462,8 +462,8 @@ export const ANLEITUNGEN = {
     },
     {
       t: "Steuerung",
-      x: ["Mit den **Tasten** unten bewegst du den Stein (◀ ▶), lässt ihn schneller fallen (▼), drehst ihn (⟲ ⟳) oder lässt ihn **sofort fallen** (⤓).", "Alternativ **wischst** du auf dem Spielfeld: seitlich = bewegen, **tippen** = drehen, **nach unten wischen** = fallen lassen. Der blasse **Schatten** zeigt, wo der Stein landet."],
-      s: () => knopf(30, 130, 40, 28, "◀", "#ffffff22") + knopf(76, 130, 40, 28, "▶", "#ffffff22") + knopf(122, 130, 40, 28, "▼", "#ffffff22") + knopf(168, 130, 40, 28, "⟲", "#ffffff22") + knopf(214, 130, 40, 28, "⟳", "#ffffff22") + knopf(260, 130, 40, 28, "⤓", "#06b6d4") + R(120, 20, 80, 30, "#06b6d4", 4) + T(160, 90, "oder wischen", 13, "#fde68a", 700)
+      x: ["Mit den **Tasten** unten bewegst du den Stein (◀ ▶), drehst ihn (⟲ ⟳) oder lässt ihn **sofort fallen** (⤓).", "Alternativ **wischst** du auf dem Spielfeld: seitlich = bewegen, **tippen** = drehen, **nach unten wischen** = fallen lassen. Der blasse **Schatten** zeigt, wo der Stein landet."],
+      s: () => knopf(20, 128, 62, 32, "◀", "#ffffff22") + knopf(88, 128, 62, 32, "▶", "#ffffff22") + knopf(156, 128, 40, 32, "⟲", "#ffffff22") + knopf(202, 128, 40, 32, "⟳", "#ffffff22") + knopf(248, 128, 52, 32, "⤓", "#06b6d4") + R(120, 20, 80, 30, "#06b6d4", 4) + T(160, 90, "oder wischen", 13, "#fde68a", 700)
     },
     {
       t: "Müllzeilen an alle",

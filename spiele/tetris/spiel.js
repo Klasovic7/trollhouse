@@ -12,7 +12,7 @@
 //  - Der Spielleiter beendet die Runde, sobald nur noch einer (oder bei Solo keiner) lebt.
 //  Raum-Felder: ttStatus (setup|laeuft|beendet), ttSeed, ttIds, ttMuell, ttNr, ttRang
 // ============================================================================
-import { doc, updateDoc, setDoc, deleteDoc, collection, getDocs, onSnapshot, writeBatch } from "../../kern/firebase.js";
+import { doc, getDoc, updateDoc, setDoc, deleteDoc, collection, getDocs, onSnapshot, writeBatch } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml } from "../../kern/ui.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
@@ -79,7 +79,6 @@ const VORLAGE = `
     <div class="tt-tasten" id="tt-tasten">
       <button type="button" data-a="links" aria-label="Links">◀</button>
       <button type="button" data-a="rechts" aria-label="Rechts">▶</button>
-      <button type="button" data-a="runter" aria-label="Schneller">▼</button>
       <button type="button" data-a="ccw" aria-label="Links drehen">⟲</button>
       <button type="button" data-a="cw" aria-label="Rechts drehen">⟳</button>
       <button type="button" data-a="drop" aria-label="Fallen lassen">⤓</button>
@@ -109,6 +108,7 @@ let bereitSystem = null;
 let docsUnsub = null;
 let docs = {};                 // spielerId -> Dokument
 let zuletzt = {};              // spielerId -> lokale Zeit des letzten Updates (Leiter)
+let ausgesperrt = false;       // Spaeter Wiedereinstieg: kein neues, leeres Feld, nur Zuschauen
 let gestartetNr = -1;          // Rundennummer, fuer die lokal gerade gespielt wird
 let G = null;                  // lokaler Spielzustand
 let rafId = null;
@@ -214,6 +214,20 @@ function erzeugeG(id, bot) {
   g.cur = stein(naechster());
   G = alt;
   return g;
+}
+
+const WIEDEREINSTIEG_MS = 12000;
+
+// Wiedereinsteiger werden sofort als ausgeschieden eingetragen (sofern nicht schon geschehen)
+async function sperreSpieler() {
+  try {
+    const ref = docRef(api.spielerId);
+    const snap = await getDoc(ref);
+    if (snap.exists() && snap.data().lebt === false && snap.data().spiel === nr) return;
+    await setDoc(ref, { spielerId: api.spielerId, spiel: nr, lebt: false, tod: Date.now() }, { merge: true });
+  } catch (e) {
+    zeigeDebug("Tetris: " + e.message);
+  }
 }
 
 function neuesSpiel() {
@@ -442,7 +456,7 @@ export function beenden() {
   stoppeBots();
   if (tasten) { tasten(); tasten = null; }
   bereitSystem = null;
-  G = null; docs = {}; zuletzt = {}; status = null; gestartetNr = -1; ids = []; rang = null; nr = 0;
+  G = null; ausgesperrt = false; docs = {}; zuletzt = {}; status = null; gestartetNr = -1; ids = []; rang = null; nr = 0;
   el = {};
   spielerListe = [];
 }
@@ -466,10 +480,18 @@ export function raumDaten(daten) {
   rang = daten.ttRang ?? null;
   if (status === "laeuft" && (gestartetNr !== nr || alterStatus !== "laeuft") && ids.includes(api.spielerId)) {
     gestartetNr = nr;
-    neuesSpiel();
     zuletzt = {};
     ids.forEach((id) => { zuletzt[id] = Date.now(); });
-    startLoop();
+    // Wer nach dem Start (Countdown + Gnadenfrist) neu einsteigt, bekommt kein frisches Feld:
+    // Er gilt als ausgeschieden und schaut nur zu.
+    ausgesperrt = Date.now() - (daten.ttStartMs ?? 0) > WIEDEREINSTIEG_MS;
+    if (ausgesperrt) {
+      G = null;
+      sperreSpieler();
+    } else {
+      neuesSpiel();
+      startLoop();
+    }
     stoppeBots();
     if (api.istLeiter) starteBots();
   }
@@ -488,7 +510,7 @@ function zeichne() {
   alleVerstecken();
   if (status === "laeuft") {
     $("tt-spiel-screen").hidden = false;
-    $("tt-spiel-screen").classList.toggle("zuschauer", !ids.includes(api.spielerId));
+    $("tt-spiel-screen").classList.toggle("zuschauer", !ids.includes(api.spielerId) || ausgesperrt);
     zeichneGegner();
     api.fortschritt("");
   } else if (status === "beendet") {
@@ -552,7 +574,7 @@ async function spielStarten() {
     teilnehmer.filter((id) => !isBot(id)).forEach((id) => batch.update(api.spielerRef(id), { punkte: 0 }));
     batch.update(api.raumRef(), {
       ttStatus: "laeuft", ttIds: teilnehmer, ttSeed: Math.floor(Math.random() * 4294967296),
-      ttNr: nr + 1, ttRang: null
+      ttNr: nr + 1, ttRang: null, ttStartMs: Date.now()
     });
     await batch.commit();
   } catch (e) {

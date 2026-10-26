@@ -3387,8 +3387,9 @@ body.tt-aktiv:has(#tt-spiel-screen:not([hidden])) #spiel-kopf-titel { display: n
 .tt-werte b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
 .tt-muellbalken { position: relative; width: 14px; height: 70px; border-radius: 7px; background: rgba(255,255,255,.1); overflow: hidden; display: flex; align-items: flex-end; }
 .tt-muellbalken i { display: block; width: 100%; height: 0; background: #ef4444; transition: height .15s; }
-.tt-tasten { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; width: min(100%, 440px); touch-action: manipulation; }
-.tt-tasten button { height: 56px; border-radius: 14px; border: 0; font-size: 1.4rem; font-weight: 800; color: #fff; background: rgba(255,255,255,.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.tt-tasten { display: grid; grid-template-columns: 1.6fr 1.6fr 1fr 1fr 1fr; gap: 6px; width: min(100%, 440px); touch-action: manipulation; }
+.tt-tasten button { height: 68px; border-radius: 14px; border: 0; font-size: 1.4rem; font-weight: 800; color: #fff; background: rgba(255,255,255,.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.tt-tasten button[data-a="links"], .tt-tasten button[data-a="rechts"] { font-size: 2rem; }
 .tt-tasten button:active { background: rgba(255,255,255,.3); }
 .tt-tasten button[data-a="drop"] { background: rgba(6,182,212,.45); }
 .tt-spiel.zuschauer .tt-mitte, .tt-spiel.zuschauer .tt-tasten { display: none; }

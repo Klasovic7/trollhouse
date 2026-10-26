@@ -601,7 +601,8 @@ function zeigeErgebnis() {
   const gruppe = durchgang === 2 ? "Finale" : optFinale ? `Durchgang ${durchgang + 1}` : "Das Spiel";
   info.textContent = n.art === "runde" ? ""
     : `${gruppe} ist vorbei: ${name(n.loser)} hat verloren.` +
-      (n.art === "ende" && optFinale && durchgang === 1 ? " Beide Durchgänge verloren - ein Finale ist nicht nötig." : "");
+      (n.art === "ende" && optFinale && durchgang === 1 ? " Beide Durchgänge verloren - ein Finale ist nicht nötig." : "") +
+      (n.art === "finale" ? ` Im Finale treten ${name(verlierer[0])} und ${name(n.loser)} gegeneinander an.` : "");
   $("kn-weiter").hidden = !api.istLeiter;
   $("kn-weiter").textContent = n.art === "runde" ? "Nächste Runde"
     : n.art === "durchgang2" ? "Durchgang 2 starten"

@@ -1341,7 +1341,8 @@ async function pruefeRundenPhase() {
       const bonus = bonusFuerSpieler(spielerListe.find((x) => x.id === z.spielerId), kategorien)[z.kartenId];
       const werte = k ? effektiveFaehigkeiten(k, bonus) : {};
       const summe = kategorien.reduce((sum, kat) => sum + (werte[kat] ?? 0), 0);
-      return { spielerId: z.spielerId, kartenId: z.kartenId, summe, gesamt: k ? effektiveGesamt(k, bonus) : 0 };
+      const laenderbonus = kategorien.reduce((sum, kat) => sum + (bonus?.boni?.[kat] ?? 0), 0);
+      return { spielerId: z.spielerId, kartenId: z.kartenId, summe, laenderbonus, gesamt: k ? effektiveGesamt(k, bonus) : 0 };
     });
     const punkte = eintraege.length > 0 ? berechneRundenpunkte(eintraege) : {};
 
@@ -1359,7 +1360,7 @@ async function pruefeRundenPhase() {
       const eingesetzt = KATEGORIEN.reduce((sum, kat) => sum + einsaetze[eintrag.spielerId][kat], 0);
       const bezahlt = zahlungen[eintrag.spielerId] ?? 0;
       spielerAnzeige[eintrag.spielerId] = {
-        kartenId: eintrag.kartenId, summe: eintrag.summe, gesamt: eintrag.gesamt,
+        kartenId: eintrag.kartenId, summe: eintrag.summe, laenderbonus: eintrag.laenderbonus ?? 0, gesamt: eintrag.gesamt,
         punkte: punkte[eintrag.spielerId] ?? 0,
         einsatz: einsaetze[eintrag.spielerId], bezahlt, zurueck: eingesetzt - bezahlt
       };
@@ -1425,7 +1426,7 @@ function zeigeRundenErgebnis() {
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(
       s.name, s.farbe, s.icon, formatiertePunkte(daten.punkte),
-      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}${gleichstand ? ` (GW:${daten.gesamt ?? 0})` : ""}`, punkteRechts: s.punkte ?? 0 }
+      { extra: `${k ? k.name : "?"} - Summe ${daten.summe}${daten.laenderbonus > 0 ? ` (davon +${daten.laenderbonus} Länderbonus)` : ""}${gleichstand ? ` (GW:${daten.gesamt ?? 0})` : ""}`, punkteRechts: s.punkte ?? 0 }
     ) + `<p class="fa-erg-muenzen">${MUENZE} ${daten.bezahlt} bezahlt${daten.zurueck > 0 ? `, ${daten.zurueck} zurück` : ""} · noch ${s.faMuenzen ?? 0}</p>`;
     liste.appendChild(li);
   });
