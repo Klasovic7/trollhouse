@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v363";
+export const APP_VERSION = "v364";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -1168,6 +1168,9 @@ function reagiereAufRaum(daten) {
   }
 
   const spielId = daten.aktuellesSpiel ?? null;
+  // Kein Chat waehrend eines Spiels
+  document.body.classList.toggle("im-spiel", Boolean(spielId));
+  if (spielId && !chatDialog.hidden) schliesseChatDialog(false);
   // v198: kommt die Lobby gerade aus einem beendeten Spiel zurueck (vorher
   // aktiv, jetzt keins mehr), zeigt sie wieder die normale Spielauswahl statt
   // eine noch offene Olympiade-Planung stehen zu lassen. Waehrend man selbst

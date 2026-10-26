@@ -3515,3 +3515,6 @@ body.run-laeuft #btn-chat-oeffnen { display: none !important; }
     linear-gradient(45deg, transparent 44%, #ef4444 44% 56%, transparent 56%),
     linear-gradient(-45deg, transparent 44%, #ef4444 44% 56%, transparent 56%);
 }
+
+/* Kein Chat waehrend eines Spiels */
+body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !important; }
