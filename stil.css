@@ -2450,6 +2450,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     .db-karten-bereich-klein .db-symbol { font-size: clamp(15px, 5vw, 24px); }
+    button.db-symbol { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     button.db-symbol:not(:disabled):active { filter: brightness(.92); }
     button.db-symbol:disabled { opacity: .55; }
     .db-symbol.db-symbol-richtig {
@@ -3028,6 +3029,7 @@ body.ank-offen { overflow: hidden; }
 .fa-erg-summe-gewonnen { background: rgba(74,222,128,.25); box-shadow: inset 3px 0 0 #4ade80; }
 .fa-anl-faeh { grid-template-columns: 6px 98px 1fr 24px 22px; }
 
+.fa-erg-karte { margin: 0 auto 14px; }
 .fa-erg-muenzen { margin: 2px 0 10px 6px; font-size: .82rem; opacity: .8; }
 
 #fa-runde-erg-liste > li { list-style: none; }

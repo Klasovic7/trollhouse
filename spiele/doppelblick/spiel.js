@@ -880,7 +880,7 @@ function rendereKarten(container, symboleA, symboleB, eigene, interaktiv) {
 
   if (interaktiv) {
     container.querySelectorAll(".db-symbol").forEach((el) => {
-      el.addEventListener("click", () => antworteSymbol(Number(el.dataset.symbol)));
+      el.addEventListener("pointerdown", (e) => { e.preventDefault(); antworteSymbol(Number(el.dataset.symbol)); });
     });
   }
 }
@@ -912,7 +912,7 @@ function rendereEinzelKarte(container, symbole, rotationen, groessenFaktoren, kl
   container.innerHTML = `<div class="db-karte ${klasse}">${kacheln}</div>`;
   if (interaktiv && !gesperrt) {
     container.querySelectorAll(".db-symbol").forEach((el) => {
-      el.addEventListener("click", () => aufKlick(Number(el.dataset.symbol)));
+      el.addEventListener("pointerdown", (e) => { e.preventDefault(); aufKlick(Number(el.dataset.symbol)); });
     });
   }
 }

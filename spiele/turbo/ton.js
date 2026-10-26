@@ -1,7 +1,8 @@
 // Ton: alles mit WebAudio erzeugt (kein Audio-Datei-Download).
 export class Ton {
-  constructor() { this.ctx = null; this.aus = false; }
+  constructor() { this.ctx = null; this.aus = true; }
   start() {
+    return; // Turbo laeuft komplett ohne Ton
     if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     const c = this.ctx = new AC();

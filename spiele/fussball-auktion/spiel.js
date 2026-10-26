@@ -1427,7 +1427,8 @@ function zeigeRundenErgebnis() {
     li.innerHTML = spielerKarte(
       s.name, s.farbe, s.icon, formatiertePunkte(daten.punkte),
       { extra: `${k ? k.name : "?"} - Summe ${daten.summe}${daten.laenderbonus > 0 ? ` (davon +${daten.laenderbonus} Länderbonus)` : ""}${gleichstand ? ` (GW:${daten.gesamt ?? 0})` : ""}`, punkteRechts: s.punkte ?? 0 }
-    ) + `<p class="fa-erg-muenzen">${MUENZE} ${daten.bezahlt} bezahlt${daten.zurueck > 0 ? `, ${daten.zurueck} zurück` : ""} · noch ${s.faMuenzen ?? 0}</p>`;
+    ) + `<p class="fa-erg-muenzen">${MUENZE} ${daten.bezahlt} bezahlt${daten.zurueck > 0 ? `, ${daten.zurueck} zurück` : ""} · noch ${s.faMuenzen ?? 0}</p>` +
+      (k ? `<div class="fa-karte fa-erg-karte">${kartenKachelHtml(k, { markierteKategorien: rundenKategorien, bonus: bonusFuerSpieler(s, rundenKategorien)[daten.kartenId] })}</div>` : "");
     liste.appendChild(li);
   });
   const ausgesetzt = spielerListe.filter((s) => !spielerErg[s.id]);
