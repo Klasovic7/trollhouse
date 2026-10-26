@@ -22,7 +22,6 @@ const RUNDEN_DAUER_SEKUNDEN = 40;
 
 const VORLAGE = `
   <div id="zt-setup" class="bildschirm-karte" hidden>
-    <h1>💥 10 Treffer!</h1>
     <p class="hinweis-text">Ein Begriff wird angezeigt. Findet die zehn Antworten, die wir suchen. Eine
       Person oder ein Team rät. Alle anderen sehen die Trefferliste und tippen einen Begriff an, sobald
       er genannt wurde. Jeder Treffer gibt einen Punkt.</p>

@@ -39,7 +39,6 @@ const STANDARD_ANZAHL_IMPOSTER = 1;
 
 const VORLAGE = `
   <div id="imp-setup" class="bildschirm-karte" hidden>
-    <h1>🎭 Imposter</h1>
     <p class="hinweis-text">Alle außer den Impostern bekommen denselben Begriff zu sehen. Die Imposter
       bekommen den Begriff nicht - nur einen vagen Hinweis dazu - und müssen unauffällig mitreden, ohne
       aufzufliegen. Zieht eure Karte privat auf und diskutiert danach gemeinsam, wer die Imposter waren.</p>

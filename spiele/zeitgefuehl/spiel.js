@@ -31,7 +31,6 @@ const STANDARD_ANZAHL = 5;
 
 const VORLAGE = `
   <div id="zg-setup" class="bildschirm-karte" hidden>
-    <h1>⏱️ Zeitgefühl!</h1>
     <p class="hinweis-text">Du bekommst eine Zielzeit genannt, zum Beispiel 7 Sekunden - alle im Raum
       bekommen dieselbe. Nach dem Countdown zeigt der Bildschirm nur noch einen Buzzer: zähl für dich
       lautlos mit und drück möglichst genau bei der Zielzeit. Wer am nächsten dran ist, bekommt die

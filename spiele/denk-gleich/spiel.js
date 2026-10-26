@@ -15,7 +15,6 @@ import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf
 
 const VORLAGE = `
   <div id="dg-setup" class="bildschirm-karte" hidden>
-    <h1>🧠 Denk gleich!</h1>
     <p class="hinweis-text">Beantwortet dieselbe Frage und versucht, auf das Gleiche zu kommen. Für jede
       andere Person mit derselben Antwort bekommst du einen Punkt. Drei gleiche Antworten bringen diesen
       drei Spielern also jeweils zwei Punkte.</p>

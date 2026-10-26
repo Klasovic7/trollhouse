@@ -47,7 +47,6 @@ const STANDARD_ANZAHL = 8;
 
 const VORLAGE = `
   <div id="ww-setup" class="bildschirm-karte" hidden>
-    <h1>📅 Wann war es?</h1>
     <p class="hinweis-text">Ihr bekommt nacheinander Hinweise zu einem Jahr - in
       fester Reihenfolge. Alle raten gleichzeitig, so oft sie wollen. Wer zuerst das richtige
       Jahr nennt, bekommt so viele Punkte wie Spieler im Raum plus einen Extrapunkt, der Zweite so viele

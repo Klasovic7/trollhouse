@@ -34,7 +34,6 @@ const RICHTIG_ID = "richtig";
 
 const VORLAGE = `
   <div id="fi-setup" class="bildschirm-karte" hidden>
-    <h1>🦉 Finto</h1>
     <p class="hinweis-text">Denkt euch zu einer Frage eine möglichst glaubwürdige Antwort aus. Danach
       stimmt ihr ab, welche Antwort die echte ist: 2 Punkte fürs Erkennen, 1 Punkt für jede Person,
       die auf eure Antwort hereinfällt.</p>

@@ -47,7 +47,6 @@ const STANDARD_ANZAHL = 8;
 
 const VORLAGE = `
   <div id="wi-setup" class="bildschirm-karte" hidden>
-    <h1>🕵️ Wer ist es?</h1>
     <p class="hinweis-text">Ihr bekommt nacheinander Hinweise zu einem Fußballer - in
       zufälliger Reihenfolge. Alle raten gleichzeitig, so oft sie wollen. Wer zuerst richtig liegt,
       bekommt so viele Punkte wie Spieler im Raum plus einen Extrapunkt, der Zweite so viele

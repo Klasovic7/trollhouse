@@ -15,7 +15,6 @@ import {
 
 const VORLAGE = `
   <div id="rd-setup" class="bildschirm-karte" hidden>
-    <h1>↕️ Reih dich ein!</h1>
     <p class="hinweis-text">Setzt jeden neuen Begriff an die richtige Stelle der Reihe. Ein Startbegriff ist
       bereits eingeordnet. Danach ist immer ein Spieler dran. Eine richtige Position gibt einen Pluspunkt –
       bei einer falschen Position gibt es einen Minuspunkt.</p>

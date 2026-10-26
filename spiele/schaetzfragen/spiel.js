@@ -36,7 +36,6 @@ export const KATEGORIEN = [
 
 const VORLAGE = `
   <div id="sf-setup" class="bildschirm-karte" hidden>
-    <h1>🎯 Schätzfragen</h1>
     <p id="sf-kategorien-hinweis" class="hinweis-text">Jeder kann abstimmen, welche Kategorien dabei sein sollen.</p>
     <p id="sf-olympiade-hinweis" class="hinweis-text" hidden>In der Olympiade sind automatisch alle Kategorien dabei.</p>
     <p id="sf-kategorien-aktionen" class="kategorien-aktionen">

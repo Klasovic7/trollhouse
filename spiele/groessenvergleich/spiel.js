@@ -36,7 +36,6 @@ const SZ_RAND_L = 64, SZ_RAND_R = 30, SZ_OBEN = 74, SZ_LUECKE = 60;
 
 const VORLAGE = `
   <div id="gv-setup" class="bildschirm-karte" hidden>
-    <h1>📏 Größenvergleich</h1>
     <p class="hinweis-text">Links siehst du ein blaues Vorbild mit echter Größe, rechts eine rote
       Silhouette, die du mit dem Regler auf die richtige Größe ziehst - zum Beispiel: Wie hoch
       ist ein Elefant, wenn der Mensch daneben 1,75 m misst? Wer prozentual am nächsten dran ist,

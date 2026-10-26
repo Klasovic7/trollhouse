@@ -35,7 +35,6 @@ const FINALE_BONUS = 3;
 
 const VORLAGE = `
   <div id="kn-setup" class="bildschirm-karte" hidden>
-    <h1>Knobeln</h1>
     <p class="hinweis-text">Jede*r nimmt heimlich 0 bis 3 Streichhölzer in die Faust. Dann tippt ihr
       reihum, wie viele Hölzer insgesamt im Spiel sind - jede Zahl darf nur einmal genannt werden.
       Wer richtig tippt, ist raus und in Sicherheit. Mit den Übrigen geht es weiter, bis nur noch
