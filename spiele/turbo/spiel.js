@@ -55,7 +55,7 @@ function sendeLobby() {
   });
   rahmen.contentWindow.postMessage({
     typ: "lobby", leiter: !!api.istLeiter, spieler, ichBereit: !!bereit[api.spielerId], alleBereit: alleBereit(),
-    laufend: !!(raum && raum.turboStartSeit > 0)
+    laufend: !!(raum && raum.turboStartSeit > 0 && Date.now() - raum.turboStartSeit < (dauerMin * 60 + 120) * 1000)
   }, "*");
 }
 
@@ -64,7 +64,9 @@ function sendeStand() {
   const liste = spielerListe.map((sp) => {
     const z = zeiten.find((x) => x.spielerId === sp.id) || {};
     const b = avatarBild(sp.icon);
-    return { id: sp.id, name: sp.name || "?", bild: b ? new URL(b, location.href).href : null, fertig: !!z.fertig, zeit: z.zeit > 0 ? z.zeit : null, ich: sp.id === api.spielerId };
+    const gleicheStrecke = !z.strecke || z.strecke === streckeId;
+    return { id: sp.id, name: sp.name || "?", bild: b ? new URL(b, location.href).href : null, fertig: !!z.fertig,
+      zeit: z.zeit > 0 && gleicheStrecke ? z.zeit : null, laeufe: gleicheStrecke ? (z.laeufe || 0) : 0, ich: sp.id === api.spielerId };
   });
   rahmen.contentWindow.postMessage({ typ: "stand", liste }, "*");
 }
@@ -95,10 +97,16 @@ function speichereFertig(an) {
     .catch((e) => console.warn("Turbo: Fertig-Status nicht gespeichert", e));
 }
 
-function speichereBestzeit(zeit, strecke) {
+function speichereLaeufe(n, strecke) {
+  if (!api || !api.spielerId) return;
+  setDoc(doc(api.db, "raeume", api.code, "turboZeiten", api.spielerId), { spielerId: api.spielerId, laeufe: n || 0, strecke: strecke || "tal" }, { merge: true })
+    .catch((e) => console.warn("Turbo: Laeufe nicht gespeichert", e));
+}
+
+function speichereBestzeit(zeit, strecke, laeufe) {
   if (!api || !api.spielerId) return;
   setDoc(doc(api.db, "raeume", api.code, "turboZeiten", api.spielerId), {
-    spielerId: api.spielerId, zeit: zeit > 0 ? zeit : null, strecke: strecke || "tal", zeitpunkt: serverTimestamp()
+    spielerId: api.spielerId, zeit: zeit > 0 ? zeit : null, strecke: strecke || "tal", laeufe: laeufe || 0, zeitpunkt: serverTimestamp()
   }, { merge: true }).catch((e) => console.warn("Turbo: Bestzeit nicht gespeichert", e));
 }
 
@@ -139,7 +147,12 @@ export async function starten(uebergebeneApi) {
       zeigeRahmen(false);
       const b = document.getElementById("btn-verlassen");
       if (b) b.click();
-    } else if (d.typ === "bestzeit") speichereBestzeit(d.zeit, d.strecke);
+    } else if (d.typ === "bestzeit") speichereBestzeit(d.zeit, d.strecke, d.laeufe);
+    else if (d.typ === "laeufe") speichereLaeufe(d.n, d.strecke);
+    else if (d.typ === "menue") {
+      // Spielleitung zurueck im Menue: alter Start und alte Bereit-Haken verfallen, sonst gilt das Rennen fuer alle als "laufend"
+      if (api.istLeiter) updateDoc(api.raumRef(), { turboStartSeit: 0, bereitSpieler: {} }).catch(() => {});
+    }
     else if (d.typ === "bereit") {
       updateDoc(api.raumRef(), { ["bereitSpieler." + api.spielerId]: true }).catch((e) => console.warn("Turbo: Bereit nicht gespeichert", e));
     } else if (d.typ === "start" && api.istLeiter && alleBereit()) {

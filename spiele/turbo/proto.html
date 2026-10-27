@@ -183,13 +183,13 @@
   @media (max-height: 560px) {
     #ende .karte:has(#e-stand:not([hidden])) { width: min(780px, 96vw); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 4px 22px; align-items: start; padding: 12px 18px; }
     #ende .karte:has(#e-stand:not([hidden])) > .logo { grid-column: 1 / -1; }
-    #ende .karte:has(#e-stand:not([hidden])) > #e-medal { grid-column: 1; margin: 0 0 4px; font-size: 20px; }
-    #ende .karte:has(#e-stand:not([hidden])) > .zeile { grid-column: 1; padding: 6px 4px; }
-    #ende .karte:has(#e-stand:not([hidden])) > #e-stand { grid-column: 2; grid-row: 2 / span 5; margin: 0; }
-    #ende .karte:has(#e-stand:not([hidden])) > #b-nochmal { grid-column: 1; justify-self: center; margin-top: 10px; padding: 10px 26px; font-size: 16px; }
-    #ende .karte:has(#e-stand:not([hidden])) > #b-ende-exit { grid-column: 1; margin-top: 6px; }
+    #ende .karte:has(#e-stand:not([hidden])) > #e-stand { grid-column: 1; grid-row: 2 / span 3; margin: 0; }
+    #ende .karte:has(#e-stand:not([hidden])) > #b-nochmal { grid-column: 2; grid-row: 2; align-self: end; justify-self: center; margin-top: 10px; padding: 10px 26px; font-size: 16px; }
+    #ende .karte:has(#e-stand:not([hidden])) > #b-ende-exit { grid-column: 2; grid-row: 3; align-self: start; margin-top: 6px; }
     #e-stand-liste { max-height: 62vh; }
   }
+  #ende .karte:has(#e-stand:not([hidden])) > #e-medal, #ende .karte:has(#e-stand:not([hidden])) > .zeile { display: none; }
+  #e-stand .st .r b { color: #fff; font-weight: 800; } #e-stand .st .pl { width: 16px; text-align: center; opacity: .7; font-size: 12px; }
   #lobby { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; font-size: 11px; opacity: .95; }
   #lobby .la { position: relative; width: 30px; height: 30px; flex: none; }
   #lobby .la img, #lobby .la span.t { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #334; opacity: .4; filter: grayscale(45%) brightness(.75); border: 2px solid rgba(255,255,255,.5); box-sizing: border-box; }
@@ -214,7 +214,7 @@
 <div id="hud">
   <div class="tl">
     <div class="pnl"><span class="lab">Aktuelle Zeit</span><span id="lap" class="wert gr num">0:00.00</span></div>
-    <div class="pnl"><span class="lab">Beste Zeit <span id="medal"></span></span><span id="best" class="wert num">--:--.--</span></div>
+    <div class="pnl" style="display:none"><span class="lab">Beste Zeit <span id="medal"></span></span><span id="best" class="wert num">--:--.--</span></div>
     <canvas id="karte" width="300" height="192"></canvas>
     <span class="weg" id="letzte"></span><span class="weg" id="runden"></span>
   </div>
@@ -256,7 +256,7 @@
   <div id="e-medal">–</div>
   <div class="zeile"><span>Beste Zeit</span><b class="num" id="e-best">--</b></div>
   <div class="zeile"><span>Gültige Läufe</span><b class="num" id="e-runden">0</b></div>
-  <div id="e-stand" hidden><h4>Im Raum</h4><div id="e-stand-liste"></div></div>
+  <div id="e-stand" hidden><h4>Rangliste</h4><div id="e-stand-liste"></div></div>
   <button class="gross" id="b-nochmal">NOCHMAL</button>
   <button type="button" id="b-ende-exit" hidden>Zurück</button>
 </div></div>

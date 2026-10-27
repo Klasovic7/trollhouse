@@ -190,7 +190,8 @@ function zeigeGegner() {
   if (ichIdx >= 5) teil.push(zeile(alle[ichIdx], ichIdx));
   box.innerHTML = teil.join("");
 }
-const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postMessage({ typ: "bestzeit", zeit: z, strecke: S.id }, "*"); };
+const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postMessage({ typ: "bestzeit", zeit: z, strecke: S.id, laeufe: runden }, "*"); };
+const meldeLaeufe = () => { if (window.parent !== window) window.parent.postMessage({ typ: "laeufe", n: runden, strecke: S.id }, "*"); };
 {
   const wahl = $("strecken");
   STRECKEN.forEach((t) => {
@@ -355,6 +356,7 @@ function beendeSession(schnell) {
 }
 // Zurueck ins Menue (im Raum: dort gibt es wieder Bereit/Start)
 function zumMenue() {
+  if (window.parent !== window) window.parent.postMessage({ typ: "menue" }, "*");
   loseAlleTasten();
   imZiel = false; platziere(startPose(S)); SPUR.ende();
   $("ende").classList.add("weg"); $("menue").classList.remove("weg"); document.body.classList.remove("im-spiel");
@@ -365,11 +367,11 @@ let STAND = [];
 function zeigeStand() {
   const box = $("e-stand"); if (!EINGEBETTET || !STAND.length) { box.hidden = true; return; }
   const esc = (t) => String(t == null ? "" : t).replace(/[<>&"]/g, "");
-  const fertig = STAND.filter((x) => x.fertig).sort((x, y) => (x.zeit > 0 ? x.zeit : 1e9) - (y.zeit > 0 ? y.zeit : 1e9));
-  const faehrt = STAND.filter((x) => !x.fertig);
-  const zeile = (x, f) => `<div class="st ${f ? "fertig" : "faehrt"}">` + (x.bild ? `<img src="${esc(x.bild)}" alt="">` : `<span class="t">${esc(String(x.name).slice(0, 1))}</span>`) +
-    `<span class="n">${esc(x.name)}${x.ich ? " (du)" : ""}</span><span class="r">${f ? "✓ fertig" + (x.zeit > 0 ? " · " + fmt(x.zeit) : "") : "fährt noch …"}</span></div>`;
-  $("e-stand-liste").innerHTML = fertig.map((x) => zeile(x, true)).join("") + faehrt.map((x) => zeile(x, false)).join("");
+  // Rangliste aller Mitspielenden: beste Zeit und gueltige Laeufe (ohne Zeit ganz unten)
+  const sortiert = [...STAND].sort((x, y) => (x.zeit > 0 ? x.zeit : 1e9) - (y.zeit > 0 ? y.zeit : 1e9));
+  const zeile = (x, i) => `<div class="st ${x.fertig ? "fertig" : "faehrt"}"><span class="pl">${x.zeit > 0 ? i + 1 : "–"}</span>` + (x.bild ? `<img src="${esc(x.bild)}" alt="">` : `<span class="t">${esc(String(x.name).slice(0, 1))}</span>`) +
+    `<span class="n">${esc(x.name)}${x.ich ? " (du)" : ""}</span><span class="r">${x.zeit > 0 ? "<b>" + fmt(x.zeit) + "</b>" : "keine Zeit"} · ${x.laeufe || 0} ${(x.laeufe || 0) === 1 ? "Lauf" : "Läufe"}${x.fertig ? "" : " · fährt noch"}</span></div>`;
+  $("e-stand-liste").innerHTML = sortiert.map(zeile).join("");
   box.hidden = false;
 }
 $("b-beenden").addEventListener("click", () => beendeSession(true));
@@ -385,7 +387,7 @@ function rundenLogik(dt) {
       const f = (S.zielS - prevP) / Math.max(1e-6, p - prevP);
       const tc = simT - dt * (1 - f);
       const zeit = tc - lapStart;
-      runden++; letzte = zeit;
+      runden++; letzte = zeit; meldeLaeufe();
       $("letzte").textContent = fmt(zeit); $("runden").textContent = runden;
       const neuBest = best == null || zeit < best - 1e-4;
       if (neuBest) {
