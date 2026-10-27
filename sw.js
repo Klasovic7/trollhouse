@@ -4,7 +4,7 @@
 // Nur dann wirft der Browser den alten Zwischenspeicher weg und alle Spieler
 // bekommen zuverlässig die neue Version. Das ist der einzige Handgriff, den man
 // nach dem Bearbeiten von Dateien nicht vergessen darf.
-const CACHE_NAME = "trollhouse-v372";
+const CACHE_NAME = "trollhouse-v373";
 
 const DATEIEN = [
   "./",
@@ -74,18 +74,18 @@ const DATEIEN = [
   "bilder/fussball-auktion/spieler-it-5.png?v=335",
   "bilder/fussball-auktion/spieler-de-1.png?v=335",
   "bilder/doppelkopf-dame.webp",
-  "bilder/doppelkopf/kreuz-9.webp?v=372",
-  "bilder/doppelkopf/kreuz-10.webp?v=372",
-  "bilder/doppelkopf/kreuz-bube.webp?v=372",
-  "bilder/doppelkopf/kreuz-dame.webp?v=372",
-  "bilder/doppelkopf/kreuz-koenig.webp?v=372",
-  "bilder/doppelkopf/kreuz-ass.webp?v=372",
-  "bilder/doppelkopf/herz-9.webp?v=372",
-  "bilder/doppelkopf/herz-10.webp?v=372",
-  "bilder/doppelkopf/herz-bube.webp?v=372",
-  "bilder/doppelkopf/herz-dame.webp?v=372",
-  "bilder/doppelkopf/herz-koenig.webp?v=372",
-  "bilder/doppelkopf/herz-ass.webp?v=372",
+  "bilder/doppelkopf/kreuz-9.webp?v=373",
+  "bilder/doppelkopf/kreuz-10.webp?v=373",
+  "bilder/doppelkopf/kreuz-bube.webp?v=373",
+  "bilder/doppelkopf/kreuz-dame.webp?v=373",
+  "bilder/doppelkopf/kreuz-koenig.webp?v=373",
+  "bilder/doppelkopf/kreuz-ass.webp?v=373",
+  "bilder/doppelkopf/herz-9.webp?v=373",
+  "bilder/doppelkopf/herz-10.webp?v=373",
+  "bilder/doppelkopf/herz-bube.webp?v=373",
+  "bilder/doppelkopf/herz-dame.webp?v=373",
+  "bilder/doppelkopf/herz-koenig.webp?v=373",
+  "bilder/doppelkopf/herz-ass.webp?v=373",
   "bilder/tetris-stein.webp",
   "bilder/knobeln-streichhoelzer.webp",
   "bilder/merks-dir-karten.webp",
