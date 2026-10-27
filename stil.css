@@ -3518,3 +3518,6 @@ body.run-laeuft #btn-chat-oeffnen { display: none !important; }
 
 /* Kein Chat waehrend eines Spiels */
 body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !important; }
+
+/* Kein Doppeltipp-Zoom auf dem iPhone (Elemente mit eigenem touch-action behalten es) */
+* { touch-action: manipulation; }

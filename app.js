@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v369";
+export const APP_VERSION = "v370";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -1894,3 +1894,6 @@ if ("serviceWorker" in navigator) {
 // Hinweis-Dialog "Üben ist verboten" (wenn jemand alleine im Raum ein Spiel anklickt)
 document.getElementById("btn-ueben-ok").addEventListener("click", () => { uebenDialog.hidden = true; });
 uebenDialog.addEventListener("click", (e) => { if (e.target === uebenDialog) uebenDialog.hidden = true; });
+
+// iOS: Pinch-/Doppeltipp-Zoom unterbinden
+["gesturestart", "gesturechange", "gestureend"].forEach((n) => document.addEventListener(n, (e) => e.preventDefault()));
