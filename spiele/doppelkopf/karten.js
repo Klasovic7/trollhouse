@@ -158,7 +158,7 @@ function index(rang, farbe) {
 const BILD_KARTEN = {
   C9: "kreuz-9", CT: "kreuz-10", CJ: "kreuz-bube", CQ: "kreuz-dame", CK: "kreuz-koenig", CA: "kreuz-ass",
   S9: "pik-9", ST: "pik-10", SJ: "pik-bube", SQ: "pik-dame", SK: "pik-koenig", SA: "pik-ass",
-  D9: "karo-9", DT: "karo-10", DJ: "karo-bube", DA: "karo-ass",
+  D9: "karo-9", DT: "karo-10", DJ: "karo-bube", DQ: "karo-dame", DK: "karo-koenig", DA: "karo-ass",
   H9: "herz-9", HT: "herz-10", HJ: "herz-bube", HQ: "herz-dame", HK: "herz-koenig", HA: "herz-ass",
 };
 export const KARTEN_BILDER = Object.values(BILD_KARTEN).map((n) => `bilder/doppelkopf/${n}.webp`);
@@ -170,7 +170,7 @@ export function kartenSvg(id) {
   if (cache.has(id)) return cache.get(id);
   const bild = BILD_KARTEN[farbe + rang];
   if (bild) {
-    const html = `<img class="dk-karte-svg dk-karte-bild" src="bilder/doppelkopf/${bild}.webp?v=377" alt="${farbe}${rang}" draggable="false">`;
+    const html = `<img class="dk-karte-svg dk-karte-bild" src="bilder/doppelkopf/${bild}.webp?v=378" alt="${farbe}${rang}" draggable="false">`;
     cache.set(id, html);
     return html;
   }
