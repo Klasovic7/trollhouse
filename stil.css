@@ -2068,17 +2068,36 @@
        .anzahl-picker/.anzahl-eingabe, siehe weiter oben).
        ====================================================================== */
 
+    /* v377: Hinweise nummeriert - neuester groß oben, frühere darunter (neu -> alt),
+       dazu ein Fortschrittsbalken mit einem Segment je Hinweis. */
+    .wi-balken { display: flex; gap: 4px; margin: 4px 0 10px; }
+    .wi-balken span { flex: 1; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .12); }
+    .wi-balken span.gezeigt { background: rgba(255, 130, 101, .45); }
+    .wi-balken span.aktuell { background: #ff8265; }
     .wi-hinweis-aktuell {
-      margin: 10px 0 8px; padding: 16px 14px;
-      border-radius: 16px; border: 1px solid rgba(255, 130, 101, .28);
-      background: rgba(255, 255, 255, .035);
-      font-size: 1.25rem; font-weight: 750; line-height: 1.35;
+      display: flex; gap: 12px; align-items: flex-start;
+      margin: 0 0 10px; padding: 14px;
+      border-radius: 16px; border: 1px solid rgba(255, 130, 101, .5);
+      background: rgba(255, 130, 101, .1);
+      font-size: 1.2rem; font-weight: 750; line-height: 1.3;
     }
-    .wi-hinweis-liste { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .wi-hinweis-liste { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
     .wi-hinweis-liste li {
-      color: var(--club-muted); font-size: 0.85rem; opacity: .8;
-      padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .02);
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 0.95rem; line-height: 1.3; color: inherit;
+      padding: 9px 12px; border-radius: 12px; background: rgba(255, 255, 255, .06);
     }
+    .wi-nr {
+      flex: none; min-width: 1.7em; height: 1.7em; padding: 0 .35em; box-sizing: border-box;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px; font-size: .8rem; font-weight: 800; line-height: 1;
+      background: rgba(255, 255, 255, .14);
+    }
+    .wi-hinweis-aktuell .wi-nr { background: #ff8265; color: #fff; }
+    .wi-hinweis-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .wi-vorschlaege { list-style: none; margin: 0 0 8px; padding: 4px; display: flex; flex-direction: column; border-radius: 14px; background: #fffaf0; border: 1px solid rgba(0, 0, 0, .12); }
+    .wi-vorschlaege button { width: 100%; text-align: left; padding: 11px 12px; border: 0; border-radius: 10px; background: transparent; color: #1f1b16; font-size: 1.05rem; font-weight: 600; }
+    .wi-vorschlaege button:active { background: rgba(255, 130, 101, .25); }
     .wi-countdown { color: var(--club-muted); font-size: 0.85rem; margin: 0 0 14px; }
 
     /* v95: Liste der bisherigen Fehlversuche dieser Runde - bewusst in Rot/Orange,

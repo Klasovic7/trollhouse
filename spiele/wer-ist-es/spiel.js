@@ -105,9 +105,10 @@ const VORLAGE = `
   <div id="wi-frage-screen" class="bildschirm-karte" hidden>
     <p class="kategorie">Fußballer</p>
     <p class="fortschritt" id="wi-frage-fortschritt"></p>
+    <div class="wi-balken" id="wi-balken" aria-hidden="true"></div>
 
-    <p class="wi-hinweis-aktuell" id="wi-hinweis-aktuell"></p>
-    <ul class="wi-hinweis-liste" id="wi-hinweis-liste"></ul>
+    <div class="wi-hinweis-aktuell" id="wi-hinweis-aktuell"></div>
+    <ol class="wi-hinweis-liste" id="wi-hinweis-liste" reversed></ol>
     <p class="wi-countdown" id="wi-countdown"></p>
 
     <ul class="wi-falsch-liste" id="wi-falsch-liste" hidden></ul>
@@ -115,8 +116,9 @@ const VORLAGE = `
     <p id="wi-frage-status" class="hinweis-text"></p>
 
     <div id="wi-antwort-bereich">
+      <ul class="wi-vorschlaege" id="wi-vorschlaege" hidden></ul>
       <p class="wi-antwort-zeile">
-        <input id="wi-antwort-eingabe" type="text" placeholder="Wer ist es?" autocomplete="off">
+        <input id="wi-antwort-eingabe" type="text" placeholder="Name eintippen …" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send">
         <button id="wi-antwort-absenden">Absenden</button>
       </p>
       <p id="wi-antwort-fehler" class="fehler-text"></p>
@@ -260,6 +262,62 @@ function istAntwortRichtig(eingabe, name) {
   return false;
 }
 
+
+// v377: Namensvorschläge beim Tippen - man wählt einen Namen aus der Liste,
+// dadurch gibt es keine Tippfehler mehr. Treffer: Wortanfang eines beliebigen
+// Namensteils zuerst (Nachname vor Vorname), dann irgendwo im Namen.
+function vorschlaegeFuer(eingabe) {
+  const q = normalisiere(eingabe);
+  if (q.length < 2) return [];
+  const treffer = [];
+  const gesehen = new Set();
+  for (const f of fragen) {
+    const name = f.name;
+    if (gesehen.has(name)) continue;
+    const n = normalisiere(name);
+    const woerter = n.split(" ");
+    let rang = -1;
+    if (n === q) rang = 0;
+    else if (woerter.slice(1).some((_, i) => woerter.slice(i + 1).join(" ").startsWith(q))) rang = 1;
+    else if (woerter.some((w) => w.startsWith(q)) || n.startsWith(q)) rang = 2;
+    else if (n.includes(q)) rang = 3;
+    if (rang >= 0) { gesehen.add(name); treffer.push({ name, rang }); }
+  }
+  treffer.sort((a, b) => a.rang - b.rang || a.name.localeCompare(b.name, "de"));
+  return treffer.slice(0, 5).map((t) => t.name);
+}
+
+function zeigeVorschlaege() {
+  const liste = $("wi-vorschlaege");
+  const eingabe = $("wi-antwort-eingabe").value;
+  const namen = vorschlaegeFuer(eingabe);
+  liste.innerHTML = "";
+  // Schon vollständig gewählt -> Liste einklappen
+  const gewaehlt = namen.length === 1 && normalisiere(namen[0]) === normalisiere(eingabe);
+  if (!namen.length || gewaehlt) { liste.hidden = true; return; }
+  for (const name of namen) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = name;
+    // pointerdown + preventDefault: das Eingabefeld behält den Fokus (Tastatur bleibt offen)
+    b.addEventListener("pointerdown", (e) => e.preventDefault());
+    b.addEventListener("click", () => {
+      $("wi-antwort-eingabe").value = name;
+      $("wi-antwort-fehler").textContent = "";
+      liste.hidden = true;
+    });
+    li.appendChild(b);
+    liste.appendChild(li);
+  }
+  liste.hidden = false;
+}
+
+function eingabeIstGueltigerName(text) {
+  const q = normalisiere(text);
+  return fragen.some((f) => normalisiere(f.name) === q);
+}
+
 function formatiertePunkte(p) {
   return p > 0 ? `+${p}` : `${p}`;
 }
@@ -322,6 +380,8 @@ function verdrahteBedienelemente() {
   $("wi-starten").addEventListener("click", spielStarten);
   $("wi-antwort-absenden").addEventListener("click", antwortAbsenden);
   $("wi-antwort-eingabe").addEventListener("keydown", (e) => { if (e.key === "Enter") antwortAbsenden(); });
+  $("wi-antwort-eingabe").addEventListener("input", () => { $("wi-antwort-fehler").textContent = ""; zeigeVorschlaege(); });
+  $("wi-antwort-eingabe").addEventListener("focus", zeigeVorschlaege);
   $("wi-ueberspringen").addEventListener("click", ueberspringen);
   $("wi-weiter").addEventListener("click", weiter);
 }
@@ -379,6 +439,7 @@ export function raumDaten(daten) {
     index = neuerIndex;
     $("wi-antwort-eingabe").value = "";
     $("wi-antwort-fehler").textContent = "";
+    $("wi-vorschlaege").hidden = true;
   }
 
   // v112: die frühere "Frage X von Y"-Zeile auf dem Bildschirm ist jetzt die
@@ -631,13 +692,36 @@ function zeigeFrage() {
   const sichtbar = Math.min(Math.max(hinweisIndex, 1), gesamt);
   const perm = hinweisPermutation(index);
   $("wi-frage-fortschritt").textContent = `Hinweis ${sichtbar} von ${gesamt}`;
-  $("wi-hinweis-aktuell").textContent = frage.hinweise[perm[sichtbar - 1] ?? sichtbar - 1] ?? "";
+  const balken = $("wi-balken");
+  balken.innerHTML = "";
+  for (let i = 0; i < gesamt; i++) {
+    const punkt = document.createElement("span");
+    if (i < sichtbar) punkt.className = i === sichtbar - 1 ? "aktuell" : "gezeigt";
+    balken.appendChild(punkt);
+  }
+  // Neuester Hinweis groß oben mit Nummer, die früheren darunter (neu -> alt),
+  // alle gut lesbar und nummeriert.
+  const aktuell = $("wi-hinweis-aktuell");
+  aktuell.innerHTML = "";
+  const nr = document.createElement("span");
+  nr.className = "wi-nr";
+  nr.textContent = String(sichtbar);
+  const txt = document.createElement("span");
+  txt.className = "wi-hinweis-text";
+  txt.textContent = frage.hinweise[perm[sichtbar - 1] ?? sichtbar - 1] ?? "";
+  aktuell.append(nr, txt);
 
   const liste = $("wi-hinweis-liste");
   liste.innerHTML = "";
-  for (let i = 0; i < sichtbar - 1; i++) {
+  for (let i = sichtbar - 2; i >= 0; i--) {
     const li = document.createElement("li");
-    li.textContent = frage.hinweise[perm[i] ?? i];
+    const n = document.createElement("span");
+    n.className = "wi-nr";
+    n.textContent = String(i + 1);
+    const t = document.createElement("span");
+    t.className = "wi-hinweis-text";
+    t.textContent = frage.hinweise[perm[i] ?? i];
+    li.append(n, t);
     liste.appendChild(li);
   }
 
@@ -733,6 +817,17 @@ async function antwortAbsenden() {
     $("wi-antwort-fehler").textContent = "Bitte eine Antwort eingeben.";
     return;
   }
+  if (!eingabeIstGueltigerName(text)) {
+    const moeglich = vorschlaegeFuer(text);
+    if (moeglich.length === 1) {
+      $("wi-antwort-eingabe").value = moeglich[0];
+      $("wi-antwort-fehler").textContent = "Bitte nochmal auf Absenden tippen.";
+    } else {
+      $("wi-antwort-fehler").textContent = "Bitte einen Namen aus der Vorschlagsliste antippen.";
+      zeigeVorschlaege();
+    }
+    return;
+  }
   $("wi-antwort-fehler").textContent = "";
   $("wi-antwort-absenden").disabled = true;
   try {
@@ -768,6 +863,7 @@ async function antwortAbsenden() {
       }
     });
     $("wi-antwort-eingabe").value = "";
+    $("wi-vorschlaege").hidden = true;
     if (art === "zuspaet") $("wi-antwort-fehler").textContent = "Zu spät - die Runde ist schon vorbei.";
     else if (art === "falsch") $("wi-antwort-fehler").textContent = `Leider falsch (-${abzugGemerkt} ${abzugGemerkt === 1 ? "Punkt" : "Punkte"}). Versuch es nochmal!`;
   } catch (e) {
