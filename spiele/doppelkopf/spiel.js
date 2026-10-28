@@ -23,7 +23,7 @@ import {
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import * as R from "./regeln.js";
-import { kartenSvg, rueckSvg } from "./karten.js?v=378";
+import { kartenSvg, rueckSvg } from "./karten.js?v=379";
 
 const VORBEHALT_ZEIT_MS = 30000;
 const BOT_VB_MS = 1400;
@@ -790,7 +790,7 @@ function zeigeAnsagePopup(id, text) {
   setTimeout(() => { if (el.wurzel) zeichne(); }, 2050);
   const pop = document.createElement("div");
   pop.className = "dk-ansage-pop";
-  pop.innerHTML = `<small>${escapeHtml(id === api.spielerId ? "Du" : name(id))} sagt</small><b>${escapeHtml(text)}!</b>`;
+  pop.innerHTML = `<small>${id === api.spielerId ? "Du sagst" : escapeHtml(name(id)) + " sagt"}</small><b>${escapeHtml(text)}!</b>`;
   document.body.appendChild(pop);
   setTimeout(() => pop.remove(), 1900);
 }

@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=378";
+import { kartenSvg } from "./doppelkopf/karten.js?v=379";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -759,3 +759,116 @@ ANLEITUNGEN["turbo"] = [
     s: () => unifiedRang([["Mia", "1:02,4 · 5", 1], ["Du", "1:05,0 · 3", 0], ["Tom", "1:11,9 · 2", 2], ["Lea", "keine · 0", 3]])
   }
 ];
+
+// ============================================================================
+//  v379: Abgleich aller Anleitungen mit dem echten Spiel (Texte + echte Screenshots).
+//  Alle Seiten zeigen jetzt Screenshots aus dem laufenden Spiel; die gezeichneten Szenen
+//  bleiben nur als Ersatz, falls ein Bild nicht geladen werden kann.
+// ============================================================================
+for (const folien of Object.values(ANLEITUNGEN)) folien.forEach((f) => { delete f.ohneFoto; });
+
+fix("reih-dich-ein", 2, { x: [
+  "Immer **ein Spieler ist dran**: Er bekommt einen neuen Begriff und setzt ihn an die Stelle, an die er seiner Meinung nach gehört.",
+  "Der Spielleiter kann vor dem Start den **Fairen Modus** einschalten: Dann hat jede Kategorie gleich viele Begriffe, der Startspieler wechselt jede Runde und alle kommen **gleich oft** dran."
+] });
+fix("stimmts", 1, { x: [
+  "Pro Runde wird eine **Behauptung** gezeigt - ein bekannter Fakt oder ein Mythos. Alle tippen: **Stimmt** oder **Stimmt nicht**?",
+  "Du hast dafür **15 Sekunden** Zeit (der Spielleiter kann 5 bis 30 Sekunden einstellen). Wer nicht rechtzeitig tippt, geht leer aus."
+] });
+fix("stimmts", 2, { x: [
+  "Danach wird aufgelöst - mit einer **kurzen Erklärung** und mit allen Antworten.",
+  "Nach wenigen Sekunden geht es **automatisch** mit der nächsten Behauptung weiter."
+] });
+fix("wer-ist-es", 1, { x: [
+  "Es wird ein **Fußballer** gesucht. Nach und nach werden **nummerierte Hinweise** aufgedeckt - **alle 7 Sekunden** kommt ein neuer dazu.",
+  "Wer die Person erkennt, **tippt ein paar Buchstaben des Namens**, **wählt den Namen aus der Vorschlagsliste** und tippt auf **Absenden**. Nur Namen aus der Liste sind möglich. Alle raten gleichzeitig und dürfen so oft tippen, wie sie wollen."
+] });
+fix("blitzquiz", 1, { x: ["Drei Frage-Typen **im Wechsel** (Wort, Schnell, Bild) - alle **auf Zeit**. Je schneller du richtig antwortest, desto mehr Punkte bekommst du."] });
+fix("blitzquiz", 3, { x: [
+  "Für jeden Buchstaben der Lösung ein leeres Kästchen. **Alle 10 Sekunden** wird ein weiterer Buchstabe aufgedeckt - der letzte bleibt immer verdeckt.",
+  "Du hast **nur einen Versuch**: Liegst du falsch, bist du für diese Runde gesperrt.",
+  "Punkte wie bei Typ 1: die **schnellste richtige** Lösung bekommt am meisten."
+] });
+fix("blitzquiz", 4, { x: [
+  "Ein Bild startet **stark unscharf** und wird **gleichmäßig schärfer** - nach **32 Sekunden** ist es ganz scharf.",
+  "Auch hier gilt: **ein Versuch**. Die **schnellste richtige** Lösung bekommt die meisten Punkte (bei 4 Spielern **5 · 3 · 2 · 1**)."
+] });
+fix("doppelblick", 2, { x: [
+  "Finde das gemeinsame Symbol und **tippe es an** - auf einer der beiden Karten.",
+  "**Schnelligkeit:** Du hast pro Runde **einen Versuch**. Tippst du falsch, bist du für diese Runde raus.",
+  "**Turm:** Tippe das gemeinsame Symbol auf **deiner** Karte an (die Karte in der **Mitte** ist nur zum Vergleichen). Richtig: deine Karte kommt in die Mitte, die nächste ist dran. Falsch: du bekommst von **jedem anderen die unterste Karte** - dein Stapel wächst."
+] });
+fix("doppelblick", 3, { x: [
+  ANLEITUNGEN["doppelblick"][2].x[0],
+  "Wer falsch tippt, bekommt 0 Punkte. Im Modus **Turm** endet das Spiel sofort, wenn jemand seinen Stapel **leer** hat; danach gilt dieselbe Punkteverteilung nach den **übrigen Karten** (wenigste Karten = Platz 1).",
+  ANLEITUNGEN["doppelblick"][2].x[2]
+] });
+fix("merks-dir", 2, { x: [
+  "Danach wird **Stelle für Stelle** gefragt: Welches Emoji stand an Nummer 7? Tippe das richtige an.",
+  "Wer falsch tippt oder zu langsam ist, **scheidet aus**. Der Durchgang endet, sobald **nur noch eine Person** übrig ist - oder nach Stelle 20."
+] });
+fix("zeitgefuehl", 2, { x: ["Nach dem Countdown bleibt nur ein **großer roter Buzzer** (die **Zielzeit** steht klein darunter). Zähl für dich im Kopf mit und drück genau dann, wenn deiner Meinung nach die Zielzeit erreicht ist."] });
+fix("laenderumrisse", 1, { x: ["Du siehst nur den **Umriss eines Landes**. Welches Land ist das? Die Antwort tippst du selbst in die **Buchstabenkästchen** ein - es gibt keine Auswahl."] });
+fix("laenderumrisse", 3, { x: ["Eine Runde dauert 45 Sekunden. **Nach 12 Sekunden** wird ein **zufälliger Buchstabe** des Landes aufgedeckt, danach alle 7 Sekunden ein weiterer (bis zu 4). Nach dem letzten bleiben noch 12 Sekunden zum Tippen."] });
+fix("knobeln", 2, { x: [
+  "Danach tippt **reihum** jede(r), wie viele Hölzer **insgesamt** in allen Fäusten stecken. Jede Zahl darf pro Runde **nur einmal** getippt werden.",
+  "Zum Wählen und Tippen bleiben **30 bzw. 25 Sekunden** - danach wird zufällig gewählt."
+] });
+fix("knobeln", 4, { x: [
+  "Der Spielleiter stellt ein, **wie viele richtige Tipps** man braucht, um rauszugehen (1 bis 3). Optional gibt es ein **Finale**: zwei Durchgänge mit allen, danach spielen die beiden Verlierer gegeneinander (bei zweimal derselben Person entfällt es).",
+  ANLEITUNGEN["knobeln"][3].x[1],
+  ANLEITUNGEN["knobeln"][3].x[2]
+] });
+fix("fussball-auktion", 2, { x: [
+  ANLEITUNGEN["fussball-auktion"][1].x[0],
+  ANLEITUNGEN["fussball-auktion"][1].x[1],
+  "Für Gebote und Spielrunden hast du jeweils **60 Sekunden**. Wer am Ende weniger als 5 Karten hat, bekommt unverkaufte Karten zufällig geschenkt - dafür gibt es **2 Münzen weniger Bonus pro geschenkter Karte**."
+] });
+fix("fussball-auktion", 6, { x: [
+  "Jede der 5 Runden hat zwei Schritte: Erst wählst du **verdeckt eine Karte**, die du noch nicht gespielt hast. Dann setzt du **Münzen auf die 6 Fähigkeiten** (Schuss, Pass, Technik, Verteidigung, Geschwindigkeit, Spielverständnis).",
+  "Die **zwei Fähigkeiten mit den meisten Münzen** entscheiden die Runde (bei Gleichstand zählen alle gleichauf liegenden).",
+  "Bezahlt werden nur die Münzen auf den **entscheidenden Fähigkeiten**, der Rest kommt zurück."
+] });
+fix("doppelkopf", 2, { x: [
+  "Trümpfe sind **Herz-10 (Dulle)**, alle **Damen**, alle **Buben** und alle **Karo**-Karten. Die Reihenfolge von stark nach schwach: Dulle, Damen (Kreuz, Pik, Herz, Karo), Buben (gleiche Reihenfolge), dann Karo-Ass, Karo-10, Karo-König, Karo-9.",
+  "Wer **beide Karo-Asse** hat (**Sau**), spielt sie als höchste Trümpfe, sogar über der Dulle. Sobald die Sau gespielt wurde, stechen die Karo-Neunen sie (**Super-Sau**). Die **zweite Dulle** sticht die erste. Der Spielleiter kann das im Setup ausschalten.",
+  "Im Blatt liegen die **besten Karten ganz rechts**."
+] });
+fix("doppelkopf", 4, { x: [
+  "Vor dem Spiel wird **reihum** gefragt: **Gesund** (ganz normal spielen) oder **Vorbehalt**?",
+  "Vorbehalte sind: **Hochzeit** (beide Kreuz-Damen: du suchst dir einen Partner), **Armut** (höchstens 3 Trümpfe), **Schmeißen** (mindestens 5 Neuner) oder ein **Solo** - alleine gegen die anderen, mit dreifachen Punkten. Der Spielleiter kann Armut, Schmeißen und Solos im Setup abschalten.",
+  "Wer nach **30 Sekunden** nicht entscheidet, ist automatisch gesund (mit beiden Kreuz-Damen: Hochzeit)."
+] });
+fix("wo-liegts", 2, { x: [
+  "**Drehen:** mit einem Finger ziehen. **Zoomen:** zwei Finger auseinander oder mit + / −.",
+  "**Kurz tippen** setzt die Nadel (woanders tippen verschiebt sie) - mit **\"Nadel setzen\"** bestätigst du sie. Nur bestätigte Nadeln zählen. Pro Runde hast du **60 Sekunden**, sind alle fertig, geht es früher weiter."
+] });
+fix("wo-liegts", 4, { x: [
+  "Liegt deine Nadel **unter 100 km** daneben (bei **deutschen Städten unter 50 km**), steht im Ergebnis **Volltreffer**.",
+  "Das ist nur eine Anzeige - Punkte gibt es allein nach **Platz**. Wo liegt's braucht **mindestens 2 Spieler**."
+] });
+fix("passgenau", 3, { x: [
+  "Der Spielleiter stellt **Runden** (bis 15), **Teile pro Feld** (3, 4 oder 5) und das **Zeitlimit** (60, 90, 120 oder 180 Sekunden) ein.",
+  "Nach einem **3-2-1-Countdown** geht es für alle gleichzeitig los. Wer es nicht schafft, sieht am Ende die **Lösung**."
+] });
+fix("run", 3, { x: [
+  "**Niedrige Hürden** überspringst du, **hohe Tore** unterrutschst du, **Blöcke** umläufst du. Bei einem Treffer verlierst du ein Leben, wirst kurz langsamer und bist einen Moment **unverwundbar**.",
+  "Der Spielleiter stellt **1 oder 3 Leben** ein. Hast du keins mehr, bist du **gestürzt**. Eine Runde endet, wenn **alle gestürzt** sind."
+] });
+fix("turbo", 2, { x: [
+  "Der **Spielleiter** wählt die **Strecke** (10 Stück mit Länge in km, Untergrund Asphalt, Eis, Sand oder Offroad) und die **Dauer** (3, 4 oder 5 Minuten). Bei allen anderen stellt sich das automatisch ein.",
+  "Halte das Handy **quer**. Alle anderen drücken **Bereit** - ihre Profilbilder zeigen, wer schon so weit ist. Erst wenn **alle bereit** sind, kann der Spielleiter **starten**."
+] });
+fix("turbo", 3, { x: [
+  "**Lenken** mit den Tasten links, **Gas** und **Bremse** rechts. **Bremse + Lenken** = Drift.",
+  "**Boost-Felder** geben Extra-Tempo, der **blaue Geist** zeigt ab deiner ersten Zielfahrt deinen Bestlauf. Mit **↻** oben startest du neu - im Ziel geht es automatisch neu los."
+] });
+fix("turbo", 4, { x: [
+  "Du kannst **so lange neue Fahrten starten, bis die Zeit abgelaufen ist**. Die laufende Fahrt darfst du danach noch **zu Ende fahren**.",
+  "Nach Ablauf der Zeit erscheint oben **Beenden**: Damit beendest du das Zeitfahren (oder es endet im Ziel automatisch) - du verlässt **nicht den Raum**. Dann siehst du eine **Rangliste**: wer noch fährt und wer schon fertig ist."
+] });
+fix("turbo", 5, { x: [
+  ANLEITUNGEN["turbo"][4].x[0],
+  ANLEITUNGEN["turbo"][4].x[1],
+  "Wer keine gültige Runde schafft, bekommt 0 Punkte. Die Punkte gibt es, sobald alle Fahrer **Beenden** gedrückt haben oder ihre Zeit abgelaufen ist."
+] });

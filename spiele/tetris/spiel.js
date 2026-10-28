@@ -89,7 +89,7 @@ const VORLAGE = `
     <h1>Endstand</h1>
     <p id="tt-sieger" class="kn-verlierer"></p>
     <ul id="tt-endstand-liste"></ul>
-    <p class="hinweis-text" style="margin-top:12px">Große Zahl = Spielpunkte aus der Runde. „Wertung“ = Punkte für die Gesamtwertung (der Letzte bekommt 1, jeder bessere Platz einen mehr).</p>
+    <p class="hinweis-text" style="margin-top:12px">Große Zahl = Spielpunkte aus der Runde. „Wertung“ = Punkte für die Gesamtwertung (Platz 1 bekommt Spieleranzahl + 1, Platz 2 einen weniger als die Spieleranzahl, Platz 3 zwei weniger usw.; der Letzte bekommt 1).</p>
     <p id="tt-ende-warten" hidden><em>Der Spielleiter startet gleich die nächste Runde oder wählt ein anderes Spiel …</em></p>
     <p><button id="tt-nochmal" class="btn-primaer" type="button" hidden>Noch eine Runde</button></p>
   </div>
@@ -643,7 +643,7 @@ function zeigeEnde() {
   r.forEach((e) => {
     const s = spielerVon(e.id);
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s?.name ?? "?", s?.farbe, s?.icon, e.punkte, { rang: e.platz, extra: r.length >= 2 ? `+${r.length - e.platz + 1} Wertung` : `${e.zeilen} Zeilen` });
+    li.innerHTML = spielerKarte(s?.name ?? "?", s?.farbe, s?.icon, e.punkte, { rang: e.platz, extra: r.length >= 2 ? `+${punkteFuerRang(e.platz, r.length)} Wertung` : `${e.zeilen} Zeilen` });
     liste.appendChild(li);
   });
   $("tt-ende-warten").hidden = api.istLeiter;

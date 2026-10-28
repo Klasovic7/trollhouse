@@ -25,7 +25,7 @@ function merkeGezeigt(raumCode) {
 }
 
 const KURZ = {
-  SCH: "Schuss", PAS: "Pass", TEC: "Technik", VER: "Verteidigung", GES: "Tempo", SPI: "Spielverständnis"
+  SCH: "Schuss", PAS: "Pass", TEC: "Technik", VER: "Verteidigung", GES: "Geschwindigkeit", SPI: "Spielverständnis"
 };
 const FLAGGEN = {
   Italien: "🇮🇹", Frankreich: "🇫🇷", Argentinien: "🇦🇷", "Türkei": "🇹🇷", Brasilien: "🇧🇷",
@@ -216,7 +216,7 @@ function szenen(kh) {
         <div class="fa-anl-rang">
           ${[
             ["Schuss", 14, true], ["Pass", 9, true], ["Technik", 9, true],
-            ["Verteidigung", 4, false], ["Tempo", 2, false], ["Spielverst.", 0, false]
+            ["Verteidigung", 4, false], ["Geschwindigkeit", 2, false], ["Spielverst.", 0, false]
           ].map(([n, s, w], i) => `
             <div class="fa-anl-rang-zeile fa-anl-faeh ${w ? "fa-anl-top" : ""}" style="animation-delay:${0.6 + i * 0.5}s">
               <span class="fa-anl-rang-nr"></span>
