@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=379";
+import { kartenSvg } from "./doppelkopf/karten.js?v=380";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -78,7 +78,7 @@ const pfeil = (x1, y1, x2, y2, f = "#fff") =>
 const buzzerSzene = (frage, hinweise) =>
   ph(105, 10, 110, 160, T(160, 38, frage, 10.5, "#fff", 700) +
     hinweise.map((h, i) => kachel(120, 50 + i * 24, 80, 19, h, "#ffffff22", "#fff", 9)).join("") +
-    E(160, 138, "🔴", 34)) + avatar(45, 80, 0, "Du") + avatar(275, 80, 1, "Mia") + blase(60, 48, "Buzzer!", 50, "l");
+    E(160, 138, "🔴", 34)) + avatar(45, 80, 0, "Du") + avatar(275, 80, 1, "Kevin") + blase(60, 48, "Buzzer!", 50, "l");
 
 // ============================================================================
 //  Anleitungen
@@ -90,24 +90,24 @@ export const ANLEITUNGEN = {
       t: "Worum geht's?",
       x: ["Eine Frage, deren Antwort eine **Zahl** ist - zum Beispiel die Höhe eines Turms. Alle schätzen gleichzeitig auf dem eigenen Handy.", "Wer am nächsten dran liegt, bekommt die meisten Punkte."],
       s: () => ph(105, 10, 110, 160, TZ(160, 40, ["Wie hoch ist", "der Eiffelturm?"], 11) + R(120, 78, 80, 28, "#fff", 8) + T(160, 97, "330", 15, "#222", 800) + knopf(125, 122, 70, 24, "Abschicken", "#ff5b36", "#fff", 10)) +
-        avatar(45, 70, 0, "Du") + avatar(275, 70, 1, "Mia") + blase(62, 38, "250 m?", 48, "l") + blase(214, 38, "400 m?", 48, "r") + E(45, 140, "🤔", 24) + E(275, 140, "🤷", 24)
+        avatar(45, 70, 0, "Du") + avatar(275, 70, 1, "Luca") + blase(62, 38, "250 m?", 48, "l") + blase(214, 38, "400 m?", 48, "r") + E(45, 140, "🤔", 24) + E(275, 140, "🤷", 24)
     },
     {
       t: "Wer liegt am weitesten daneben?",
       x: ["Vor der Auflösung tippst du, **wer am weitesten danebenliegt**. Hast du richtig getippt, bekommst du einen Extrapunkt."],
       s: () => ph(95, 8, 130, 164, T(160, 34, "Wer liegt am weitesten", 10, "#fff") + T(160, 47, "daneben?", 10, "#fff") +
-        [0, 1, 2].map((i) => R(108, 56 + i * 36, 104, 30, i === 1 ? "#ff5b3655" : "#ffffff22", 10, i === 1 ? 'stroke="#ff5b36" stroke-width="2"' : "") + avatar(126, 71 + i * 36, i + 1, "", 9) + T(142, 75 + i * 36, ["Mia", "Tom", "Lea"][i], 11, "#fff", 700, "start")).join("")) + E(250, 100, "👆", 30)
+        [0, 1, 2].map((i) => R(108, 56 + i * 36, 104, 30, i === 1 ? "#ff5b3655" : "#ffffff22", 10, i === 1 ? 'stroke="#ff5b36" stroke-width="2"' : "") + avatar(126, 71 + i * 36, i + 1, "", 9) + T(142, 75 + i * 36, ["Luca", "Kevin", "Niklas"][i], 11, "#fff", 700, "start")).join("")) + E(250, 100, "👆", 30)
     },
     {
       t: "Punkte nach Rang",
       x: ["Wer am **weitesten daneben** liegt, bekommt 0 Punkte. Jeder Platz näher dran gibt einen Punkt mehr.", "Genau richtig geschätzt? Dann gibt es **einen Extrapunkt**."],
-      s: () => T(160, 24, "Wahrer Wert: 330 m", 13, "#fde68a", 800) + rang(95, 40, [["Du", "330 · 3+1", 0], ["Mia", "320 · 2", 1], ["Tom", "400 · 1", 2], ["Lea", "900 · 0", 3]], 130) + stern(250, 60) + E(262, 120, "🏆", 26)
+      s: () => T(160, 24, "Wahrer Wert: 330 m", 13, "#fde68a", 800) + rang(95, 40, [["Du", "330 · 3+1", 0], ["Luca", "320 · 2", 1], ["Kevin", "400 · 1", 2], ["Niklas", "900 · 0", 3]], 130) + stern(250, 60) + E(262, 120, "🏆", 26)
     },
     {
       t: "Teammodus",
       x: ["Der Spielleiter kann **Teams** einschalten. Jeder wählt ein Team, die Punkte werden aber weiter einzeln vergeben.", "Zusätzlich seht ihr die Summe pro Team."],
       s: () => R(30, 30, 120, 120, "#f8717144", 16, 'stroke="#f87171" stroke-width="2"') + R(170, 30, 120, 120, "#60a5fa44", 16, 'stroke="#60a5fa" stroke-width="2"') +
-        T(90, 52, "Team Rot", 12, "#fff") + T(230, 52, "Team Blau", 12, "#fff") + avatar(65, 90, 0, "Du") + avatar(115, 90, 5, "Lea") + avatar(205, 90, 1, "Mia") + avatar(255, 90, 2, "Tom") +
+        T(90, 52, "Team Rot", 12, "#fff") + T(230, 52, "Team Blau", 12, "#fff") + avatar(65, 90, 0, "Du") + avatar(115, 90, 5, "Niklas") + avatar(205, 90, 1, "Luca") + avatar(255, 90, 2, "Kevin") +
         T(90, 140, "7 Punkte", 12, "#fde68a", 800) + T(230, 140, "5 Punkte", 12, "#fde68a", 800)
     }
   ],
@@ -116,18 +116,18 @@ export const ANLEITUNGEN = {
     {
       t: "Worum geht's?",
       x: ["Alle bekommen **dieselbe offene Frage** und schreiben eine kurze Antwort - zum Beispiel \"Nenne eine Farbe\".", "Ziel: Antworte so, wie es auch die anderen tun würden."],
-      s: () => ph(100, 10, 120, 160, TZ(160, 40, ["Nenne ein Obst,", "das gelb ist"], 11) + R(115, 78, 90, 28, "#fff", 8) + T(160, 97, "Banane", 13, "#222", 700) + knopf(120, 122, 80, 24, "Abschicken", "#ff5b36", "#fff", 10)) + avatar(45, 80, 0, "Du") + avatar(275, 80, 1, "Mia") + E(45, 135, "💭", 22) + E(275, 135, "💭", 22)
+      s: () => ph(100, 10, 120, 160, TZ(160, 40, ["Nenne ein Obst,", "das gelb ist"], 11) + R(115, 78, 90, 28, "#fff", 8) + T(160, 97, "Banane", 13, "#222", 700) + knopf(120, 122, 80, 24, "Abschicken", "#ff5b36", "#fff", 10)) + avatar(45, 80, 0, "Du") + avatar(275, 80, 1, "Kevin") + E(45, 135, "💭", 22) + E(275, 135, "💭", 22)
     },
     {
       t: "Gleiche Antwort = Punkte",
       x: ["Nach dem Abschicken werden alle Antworten aufgedeckt. Für **jede andere Person mit derselben Antwort** bekommst du einen Punkt.", "Dieselbe Antwort wird dabei nicht streng nach Schreibweise verglichen, sondern ähnlich geschriebene gelten als gleich."],
-      s: () => [["Du", "Banane", 0], ["Mia", "Banane", 1], ["Tom", "Zitrone", 2], ["Lea", "Banane", 3]].map(([n, a, i], k) =>
+      s: () => [["Du", "Banane", 0], ["Kevin", "Banane", 1], ["Sinan", "Zitrone", 2], ["Nader", "Banane", 3]].map(([n, a, i], k) =>
         R(60, 22 + k * 36, 200, 30, a === "Banane" ? "#4ade8055" : "#ffffff22", 12, a === "Banane" ? 'stroke="#4ade80" stroke-width="2"' : "") + avatar(78, 37 + k * 36, i, "", 10) + T(96, 41 + k * 36, n, 11, "#fff", 700, "start") + T(248, 41 + k * 36, a, 12, "#fff", 800, "end")).join("")
     },
     {
       t: "Mehr Gleiche, mehr Punkte",
       x: ["Drei gleiche Antworten bringen diesen drei Spielern also **jeweils zwei Punkte**. Wer eine Einzelantwort hat, geht leer aus.", "Gewinner ist, wer am Ende die meisten Punkte hat."],
-      s: () => avatar(70, 70, 0, "Du") + avatar(160, 70, 1, "Mia") + avatar(250, 70, 3, "Lea") + [70, 160, 250].map((x) => R(x - 24, 100, 48, 22, "#4ade8066", 11) + T(x, 115, "Banane", 10, "#fff", 800)).join("") + T(160, 150, "Jede(r): 2 Punkte", 14, "#fde68a", 800) + [70, 160, 250].map((x) => stern(x, 40, 13)).join("")
+      s: () => avatar(70, 70, 0, "Du") + avatar(160, 70, 1, "Kevin") + avatar(250, 70, 3, "Nader") + [70, 160, 250].map((x) => R(x - 24, 100, 48, 22, "#4ade8066", 11) + T(x, 115, "Banane", 10, "#fff", 800)).join("") + T(160, 150, "Jede(r): 2 Punkte", 14, "#fde68a", 800) + [70, 160, 250].map((x) => stern(x, 40, 13)).join("")
     }
   ],
   // -------------------------------------------------------------------------
@@ -248,7 +248,7 @@ export const ANLEITUNGEN = {
     {
       t: "Punkte nach Tempo",
       x: ["Unter allen **richtigen** Antworten bekommt die schnellste so viele Punkte, wie Mitspieler dabei sind. Jede weitere einen weniger."],
-      s: () => rang(70, 28, [["Mia", "+4", 1], ["Du", "+3", 0], ["Tom", "+2", 2], ["Lea", "❌ 0", 3]], 180) + E(40, 45, "🥇", 22)
+      s: () => rang(70, 28, [["Nader", "+4", 1], ["Du", "+3", 0], ["Luca", "+2", 2], ["Niklas", "❌ 0", 3]], 180) + E(40, 45, "🥇", 22)
     }
   ],
   // -------------------------------------------------------------------------
@@ -266,7 +266,7 @@ export const ANLEITUNGEN = {
     {
       t: "Punkte nach Rang",
       x: ["Wer **zuerst ausscheidet**, bekommt 0 Punkte, jeder Platz später einen mehr. Scheiden mehrere gleichzeitig aus, teilen sie sich den besseren Platz.", "Wer als **Einzige(r) übrig** bleibt, bekommt einen Extrapunkt."],
-      s: () => rang(70, 22, [["Du", "🏆 4", 0], ["Mia", "2", 1], ["Tom", "1", 2], ["Lea", "0", 3]], 180) + stern(262, 35)
+      s: () => rang(70, 22, [["Du", "🏆 4", 0], ["Niklas", "2", 1], ["Sinan", "1", 2], ["Kevin", "0", 3]], 180) + stern(262, 35)
     }
   ],
   // -------------------------------------------------------------------------
@@ -284,7 +284,7 @@ export const ANLEITUNGEN = {
     {
       t: "Wer liegt am nächsten?",
       x: ["Wer am **weitesten daneben** liegt, bekommt 0 Punkte, jeder Platz näher dran einen mehr.", "Wer am nächsten dran ist, bekommt einen **Extrapunkt**."],
-      s: () => T(160, 24, "Ziel: 17,0 s", 12, "#fde68a", 800) + rang(70, 36, [["Du", "17,2 · 3+1", 0], ["Mia", "15,9 · 2", 1], ["Tom", "21,0 · 1", 2], ["Lea", "9,5 · 0", 3]], 180)
+      s: () => T(160, 24, "Ziel: 17,0 s", 12, "#fde68a", 800) + rang(70, 36, [["Du", "17,2 · 3+1", 0], ["Nader", "15,9 · 2", 1], ["Sinan", "21,0 · 1", 2], ["Luca", "9,5 · 0", 3]], 180)
     }
   ],
   // -------------------------------------------------------------------------
@@ -297,12 +297,12 @@ export const ANLEITUNGEN = {
     {
       t: "Auflösung mit Erklärung",
       x: ["Danach wird aufgelöst - mit einer **kurzen Erklärung** und mit allen Antworten. Dann kommt die nächste Behauptung."],
-      s: () => R(50, 25, 220, 70, "#4ade8044", 14, 'stroke="#4ade80" stroke-width="2"') + E(80, 60, "✅", 28) + T(180, 52, "Falsch!", 18, "#bbf7d0", 800) + T(180, 72, "Goldfische merken sich Monate.", 9.5, "#fff", 600) + reihe(130, 4, 70, 250, ["Du", "Mia", "Tom", "Lea"])
+      s: () => R(50, 25, 220, 70, "#4ade8044", 14, 'stroke="#4ade80" stroke-width="2"') + E(80, 60, "✅", 28) + T(180, 52, "Falsch!", 18, "#bbf7d0", 800) + T(180, 72, "Goldfische merken sich Monate.", 9.5, "#fff", 600) + reihe(130, 4, 70, 250, ["Du", "Sinan", "Luca", "Nader"])
     },
     {
       t: "Punkte",
       x: ["Wer richtig tippt, bekommt **einen Punkt**. Wer am **schnellsten richtig** getippt hat, bekommt zusätzlich einen Bonuspunkt."],
-      s: () => rang(60, 30, [["Mia (schnell)", "+1 +1", 1], ["Du", "+1", 0], ["Tom", "0", 2]], 200) + E(40, 45, "⚡", 24) + stern(280, 45)
+      s: () => rang(60, 30, [["Sinan (schnell)", "+1 +1", 1], ["Du", "+1", 0], ["Luca", "0", 2]], 200) + E(40, 45, "⚡", 24) + stern(280, 45)
     }
   ],
   // -------------------------------------------------------------------------
@@ -325,7 +325,7 @@ export const ANLEITUNGEN = {
     {
       t: "Punkte",
       x: ["Wer richtig tippt, bekommt **einen Punkt**, wer am schnellsten richtig war, noch **einen Bonuspunkt**."],
-      s: () => rang(60, 30, [["Mia (schnell)", "+1 +1", 1], ["Du", "+1", 0], ["Tom", "0", 2]], 200) + E(40, 45, "🌍", 26)
+      s: () => rang(60, 30, [["Sinan (schnell)", "+1 +1", 1], ["Du", "+1", 0], ["Kevin", "0", 2]], 200) + E(40, 45, "🌍", 26)
     }
   ],
   // -------------------------------------------------------------------------
@@ -394,7 +394,7 @@ export const ANLEITUNGEN = {
     {
       t: "Wer bekommt die Karte?",
       x: ["Das **höchste Gebot** gewinnt und zahlt genau diesen Betrag.", "Gleichstand = **Stechen**: Wer gleichauf liegt, hat 10 Sekunden zum Erhöhen. Läuft der Timer ab, entscheidet das Los. Unverkaufte Karten kommen in einer Bonusrunde nochmal dran."],
-      s: () => avatar(70, 70, 0, "Du") + avatar(250, 70, 1, "Mia") + blase(30, 30, "20 🪙", 50, "l") + blase(222, 30, "20 🪙", 50, "r") + T(160, 80, "= Stechen", 16, "#fde68a", 800) + uhr(160, 125, 14) + T(160, 160, "10 Sekunden", 10, "#fff", 600)
+      s: () => avatar(70, 70, 0, "Du") + avatar(250, 70, 1, "Luca") + blase(30, 30, "20 🪙", 50, "l") + blase(222, 30, "20 🪙", 50, "r") + T(160, 80, "= Stechen", 16, "#fde68a", 800) + uhr(160, 125, 14) + T(160, 160, "10 Sekunden", 10, "#fff", 600)
     },
     {
       t: "Länderboni",
@@ -409,7 +409,7 @@ export const ANLEITUNGEN = {
     {
       t: "Punkte pro Runde",
       x: ["Alle Karten werden aufgedeckt und nach ihrer Summe sortiert. **Letzter Platz: −1**, der Vorletzte 1, jeder Platz weiter oben einen Punkt mehr. **Der Beste bekommt zusätzlich +2.**"],
-      s: () => rang(70, 22, [["Mia", "+5", 1], ["Du", "+2", 0], ["Tom", "+1", 2], ["Lea", "−1", 3]], 180) + E(44, 35, "🥇", 24) + T(262, 35, "+2 Bonus", 9, "#fde68a", 700)
+      s: () => rang(70, 22, [["Luca", "+5", 1], ["Du", "+2", 0], ["Sinan", "+1", 2], ["Niklas", "−1", 3]], 180) + E(44, 35, "🥇", 24) + T(262, 35, "+2 Bonus", 9, "#fde68a", 700)
     }
   ],
   // -------------------------------------------------------------------------
@@ -427,7 +427,7 @@ export const ANLEITUNGEN = {
     {
       t: "Wer liegt am nächsten?",
       x: ["Wer **prozentual am nächsten** an der echten Größe liegt, bekommt die meisten Punkte - Rang-Punkte wie bei Zeitgefühl, plus ein Extrapunkt für die beste Schätzung."],
-      s: () => T(160, 24, "Echt: 30 m", 12, "#fde68a", 800) + rang(70, 36, [["Du", "28 m · 3+1", 0], ["Mia", "40 m · 2", 1], ["Tom", "5 m · 1", 2], ["Lea", "90 m · 0", 3]], 180)
+      s: () => T(160, 24, "Echt: 30 m", 12, "#fde68a", 800) + rang(70, 36, [["Du", "28 m · 3+1", 0], ["Niklas", "40 m · 2", 1], ["Kevin", "5 m · 1", 2], ["Nader", "90 m · 0", 3]], 180)
     }
   ],
   // -------------------------------------------------------------------------
@@ -445,12 +445,12 @@ export const ANLEITUNGEN = {
     {
       t: "Aufdecken",
       x: ["Dann wird aufgelöst: Wer die **Gesamtzahl richtig** getippt hat, ist **raus** (gerettet). Mit den Übrigen beginnt die nächste Runde.", "Das geht so weiter, bis nur noch eine Person übrig ist - das ist der **Verlierer**."],
-      s: () => E(160, 55, "🔥", 36) + T(160, 98, "Gesamt: 6", 18, "#fde68a", 800) + avatar(60, 140, 0, "Du ✅") + avatar(130, 140, 1, "Mia") + avatar(200, 140, 2, "Tom") + avatar(270, 140, 3, "Lea") + E(60, 120, "🎉", 16)
+      s: () => E(160, 55, "🔥", 36) + T(160, 98, "Gesamt: 6", 18, "#fde68a", 800) + avatar(60, 140, 0, "Du ✅") + avatar(130, 140, 1, "Kevin") + avatar(200, 140, 2, "Nader") + avatar(270, 140, 3, "Niklas") + E(60, 120, "🎉", 16)
     },
     {
       t: "Optionen & Punkte",
       x: ["Der Spielleiter stellt ein, **wie viele richtige Tipps** man braucht, um rauszugehen (1 bis 3). Optional gibt es ein **Finale**: zwei Durchgänge mit allen, danach spielen die beiden Verlierer gegeneinander.", "Wer zuerst rausgeht, bekommt die meisten Punkte, der Verlierer 0. Der Finalsieger erhält **3 Zusatzpunkte**."],
-      s: () => rang(70, 22, [["Mia (zuerst raus)", "4", 1], ["Du", "3", 0], ["Tom", "2", 2], ["Lea (Verlierer)", "0", 3]], 180) + E(44, 35, "🏁", 22)
+      s: () => rang(70, 22, [["Kevin (zuerst raus)", "4", 1], ["Du", "3", 0], ["Nader", "2", 2], ["Niklas (Verlierer)", "0", 3]], 180) + E(44, 35, "🏁", 22)
     }
   ],
   // -------------------------------------------------------------------------
@@ -473,7 +473,7 @@ export const ANLEITUNGEN = {
     {
       t: "Ausscheiden und Gewinnen",
       x: ["Stößt dein Stapel oben an, **scheidest du aus** und schaust den anderen zu. **Gewonnen** hat, wer als **Letzter** übrig bleibt. Mit der Zeit wird das Spiel immer **schneller**.", "Der Letzte bekommt **1 Punkt**, jeder bessere Platz einen mehr. Auch allein kannst du spielen: Im Setup nimmst du **1 bis 3 Bots** dazu und stellst ihre **Stärke** ein (Leicht, Mittel, Schwer). Die Bots laufen auf dem Handy des Spielleiters."],
-      s: () => rang(70, 22, [["Du", "3 P.", 0], ["Mia", "2 P.", 1], ["Tom", "1 P.", 2]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Letzter Spieler gewinnt", 11, "#fde68a", 700)
+      s: () => rang(70, 22, [["Du", "3 P.", 0], ["Luca", "2 P.", 1], ["Niklas", "1 P.", 2]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Letzter Spieler gewinnt", 11, "#fde68a", 700)
     }
   ],
   // -------------------------------------------------------------------------
@@ -506,7 +506,7 @@ export const ANLEITUNGEN = {
     {
       t: "Mehrere Runden",
       x: ["Gespielt werden **mehrere Runden** (Anzahl stellt der Spielleiter ein). Die Punkte jeder Partie werden zusammengezählt.", "Zwischendurch gibt es **Bockrunden** (nach 0-Punkte-Spielen, doppelte Punkte) und je Spieler ein **Pflichtsolo**, wenn aktiviert. Ein Tipp: Mit \"Letzter Stich\" siehst du den vorherigen Stich nochmal."],
-      s: () => rang(70, 22, [["Mia", "+12", 1], ["Du", "+5", 0], ["Tom", "−7", 2], ["Lea", "−10", 3]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Punktestand nach 4 Partien", 11, "#fde68a", 700)
+      s: () => rang(70, 22, [["Sinan", "+12", 1], ["Du", "+5", 0], ["Nader", "−7", 2], ["Kevin", "−10", 3]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Punktestand nach 4 Partien", 11, "#fde68a", 700)
     }
   ]
 };
@@ -564,7 +564,7 @@ const unifiedRang = (zeilen) => rang(70, 28, zeilen, 180) + E(40, 45, "🥇", 22
 fix("schaetzfragen", 3, {
   ohneFoto: true,
   x: ["Wer am **nächsten** an der richtigen Zahl liegt, ist Platz 1. " + PL, "Wer **keinen Tipp** abgibt, bekommt 0 Punkte.", RUNDEN],
-  s: () => T(160, 24, "Wahrer Wert: 330 m", 13, "#fde68a", 800) + rang(95, 40, [["Du", "330 · 5", 0], ["Mia", "320 · 3", 1], ["Tom", "400 · 2", 2], ["Lea", "900 · 1", 3]], 130) + stern(250, 60) + E(262, 120, "🏆", 26)
+  s: () => T(160, 24, "Wahrer Wert: 330 m", 13, "#fde68a", 800) + rang(95, 40, [["Du", "330 · 5", 0], ["Luca", "320 · 3", 1], ["Kevin", "400 · 2", 2], ["Niklas", "900 · 1", 3]], 130) + stern(250, 60) + E(262, 120, "🏆", 26)
 });
 plus("schaetzfragen", 3, "Mit eingeschaltetem Dummkopf-Modus kommt bei richtigem Tipp **+1** dazu.");
 
@@ -577,7 +577,7 @@ fix("wer-ist-es", 2, {
   ohneFoto: true,
   t: "Punkte nach Reihenfolge",
   x: ["Wer **zuerst richtig** liegt, ist Platz 1, wer als Nächster richtig liegt, Platz 2 und so weiter. " + PL, "Die anderen **raten weiter**. Haben **alle** richtig getippt, endet die Runde sofort.", RUNDEN],
-  s: () => unifiedRang([["Mia", "+5", 1], ["Du", "+3", 0], ["Tom", "+2", 2], ["Lea", "+1", 3]])
+  s: () => unifiedRang([["Kevin", "+5", 1], ["Du", "+3", 0], ["Luca", "+2", 2], ["Sinan", "+1", 3]])
 });
 fix("wer-ist-es", 3, {
   ohneFoto: true,
@@ -604,7 +604,7 @@ fix("wann-war-es", 3, {
   ohneFoto: true,
   t: "Punkte wie bei \"Wer ist es?\"",
   x: ["Wer **zuerst das richtige Jahr** nennt, ist Platz 1. " + PL, "Wer es nicht löst, bekommt **0**. Nach dem letzten Hinweis bleiben **10 Sekunden** zum Lösen. Sind alle richtig, endet die Runde sofort.", "Sind alle Hinweise aufgedeckt und niemand kennt das Jahr, kann der Spielleiter die Runde auch sofort auflösen.", RUNDEN],
-  s: () => unifiedRang([["Mia", "+5", 1], ["Du", "+3", 0], ["Tom", "+2", 2], ["Lea", "0", 3]])
+  s: () => unifiedRang([["Luca", "+5", 1], ["Du", "+3", 0], ["Sinan", "+2", 2], ["Nader", "0", 3]])
 });
 fix("blitzquiz", 2, {
   ohneFoto: true,
@@ -613,12 +613,12 @@ fix("blitzquiz", 2, {
 fix("doppelblick", 3, {
   ohneFoto: true,
   x: ["Unter allen **richtigen** Antworten ist die schnellste Platz 1. " + PL, "Wer falsch tippt, bekommt 0 Punkte. Im Modus **Turm** gilt dieselbe Punkteverteilung für die Platzierung am Ende.", RUNDEN],
-  s: () => unifiedRang([["Mia", "+5", 1], ["Du", "+3", 0], ["Tom", "+2", 2], ["Lea", "❌ 0", 3]])
+  s: () => unifiedRang([["Nader", "+5", 1], ["Du", "+3", 0], ["Luca", "+2", 2], ["Niklas", "❌ 0", 3]])
 });
 fix("merks-dir", 3, {
   ohneFoto: true,
   x: ["Wer **am längsten dabei** ist, ist Platz 1. " + PL.replace("Der Letzte bekommt 1 Punkt.", "Wer als Erster ausscheidet, bekommt 1 Punkt."), "Scheiden mehrere gleichzeitig aus, teilen sie sich den besseren Platz.", RUNDEN],
-  s: () => rang(70, 22, [["Du", "🏆 5", 0], ["Mia", "3", 1], ["Tom", "2", 2], ["Lea", "1", 3]], 180) + stern(262, 35)
+  s: () => rang(70, 22, [["Du", "🏆 5", 0], ["Niklas", "3", 1], ["Sinan", "2", 2], ["Kevin", "1", 3]], 180) + stern(262, 35)
 });
 fix("zeitgefuehl", 1, {
   ohneFoto: true,
@@ -628,17 +628,17 @@ fix("zeitgefuehl", 1, {
 fix("zeitgefuehl", 3, {
   ohneFoto: true,
   x: ["Wer am **nächsten** an der Zielzeit dran ist, ist Platz 1. " + PL, "Wer nicht drückt, bekommt 0 Punkte.", RUNDEN],
-  s: () => T(160, 24, "Ziel: 17,0 s", 12, "#fde68a", 800) + rang(70, 36, [["Du", "17,2 · 5", 0], ["Mia", "15,9 · 3", 1], ["Tom", "21,0 · 2", 2], ["Lea", "9,5 · 1", 3]], 180)
+  s: () => T(160, 24, "Ziel: 17,0 s", 12, "#fde68a", 800) + rang(70, 36, [["Du", "17,2 · 5", 0], ["Nader", "15,9 · 3", 1], ["Sinan", "21,0 · 2", 2], ["Luca", "9,5 · 1", 3]], 180)
 });
 fix("groessenvergleich", 3, {
   ohneFoto: true,
   x: ["Wer **prozentual am nächsten** an der echten Größe liegt, ist Platz 1. " + PL, "Wer nichts abgibt, bekommt 0 Punkte.", RUNDEN],
-  s: () => T(160, 24, "Echt: 30 m", 12, "#fde68a", 800) + rang(70, 36, [["Du", "28 m · 5", 0], ["Mia", "40 m · 3", 1], ["Tom", "5 m · 2", 2], ["Lea", "90 m · 1", 3]], 180)
+  s: () => T(160, 24, "Echt: 30 m", 12, "#fde68a", 800) + rang(70, 36, [["Du", "28 m · 5", 0], ["Niklas", "40 m · 3", 1], ["Kevin", "5 m · 2", 2], ["Nader", "90 m · 1", 3]], 180)
 });
 fix("tetris", 4, {
   ohneFoto: true,
   x: ["Stößt dein Stapel oben an, **scheidest du aus** und schaust den anderen zu. **Gewonnen** hat, wer als **Letzter** übrig bleibt. Mit der Zeit wird das Spiel immer **schneller**.", "Wer **zuletzt übrig** bleibt, ist Platz 1. " + PL.replace("Der Letzte bekommt 1 Punkt.", "Wer als Erster ausscheidet, bekommt 1 Punkt."), "Tetris braucht **mindestens 2 Spieler**."],
-  s: () => rang(70, 22, [["Du", "4 P.", 0], ["Mia", "2 P.", 1], ["Tom", "1 P.", 2]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Letzter Spieler gewinnt", 11, "#fde68a", 700)
+  s: () => rang(70, 22, [["Du", "4 P.", 0], ["Luca", "2 P.", 1], ["Niklas", "1 P.", 2]], 180) + E(44, 35, "🏆", 24) + T(160, 150, "Letzter Spieler gewinnt", 11, "#fde68a", 700)
 });
 fix("imposter", 4, {
   ohneFoto: true,
@@ -680,7 +680,7 @@ ANLEITUNGEN["wo-liegts"] = [
   {
     t: "Punkte nach Entfernung",
     x: ["Wer (Luftlinie) am **nächsten** am Ziel liegt, ist Platz 1. " + PL, "Wer **keine Nadel** setzt, bekommt 0 Punkte. " + RUNDEN],
-    s: () => unifiedRang([["Mia", "12 km · 5", 1], ["Du", "80 km · 3", 0], ["Tom", "410 km · 2", 2], ["Lea", "keine · 0", 3]])
+    s: () => unifiedRang([["Luca", "12 km · 5", 1], ["Du", "80 km · 3", 0], ["Niklas", "410 km · 2", 2], ["Nader", "keine · 0", 3]])
   },
   {
     t: "Volltreffer",
@@ -707,7 +707,7 @@ ANLEITUNGEN["passgenau"] = [
   {
     t: "Punkte nach Tempo",
     x: ["Wer **zuerst fertig** ist, ist Platz 1. " + PL, "Wer es im **Zeitlimit nicht schafft**, bekommt 0 Punkte. Wer gleichzeitig fertig wird, teilt sich den Platz. " + RUNDEN + " Passgenau braucht **mindestens 2 Spieler**."],
-    s: () => unifiedRang([["Mia", "42 s · 5", 1], ["Du", "55 s · 3", 0], ["Tom", "71 s · 2", 2], ["Lea", "⏰ 0", 3]])
+    s: () => unifiedRang([["Nader", "42 s · 5", 1], ["Du", "55 s · 3", 0], ["Kevin", "71 s · 2", 2], ["Niklas", "⏰ 0", 3]])
   }
 ];
 ANLEITUNGEN["run"] = [
@@ -729,7 +729,7 @@ ANLEITUNGEN["run"] = [
   {
     t: "Punkte nach Strecke",
     x: ["Wer **am weitesten kommt**, ist Platz 1. " + PL, "Wer gleich weit kommt, teilt sich den Platz. Wer kein Ergebnis hat, bekommt 0 Punkte. " + RUNDEN + " Run braucht **mindestens 2 Spieler**."],
-    s: () => unifiedRang([["Mia", "1240 m · 5", 1], ["Du", "980 m · 3", 0], ["Tom", "600 m · 2", 2], ["Lea", "310 m · 1", 3]])
+    s: () => unifiedRang([["Niklas", "1240 m · 5", 1], ["Du", "980 m · 3", 0], ["Sinan", "600 m · 2", 2], ["Kevin", "310 m · 1", 3]])
   }
 ];
 ANLEITUNGEN["turbo"] = [
@@ -741,7 +741,7 @@ ANLEITUNGEN["turbo"] = [
   {
     t: "Strecke, Zeit und Bereit",
     x: ["Der **Spielleiter** wählt die **Strecke** (Asphalt, Eis, Sand oder Offroad - mit Länge in km) und die **Dauer** (3, 4 oder 5 Minuten). Bei allen anderen stellt sich das automatisch ein.", "Alle anderen drücken **Bereit** - ihre Profilbilder zeigen, wer schon so weit ist. Erst wenn **alle bereit** sind, kann der Spielleiter **starten**."],
-    s: () => avatar(70, 70, 0, "Mia") + avatar(160, 70, 1, "Tom") + avatar(250, 70, 2, "Lea") + T(70, 112, "✅", 14) + T(160, 112, "✅", 14) + T(250, 112, "⏳", 14) + knopf(90, 135, 140, 28, "Starten", "#ff5b36")
+    s: () => avatar(70, 70, 0, "Kevin") + avatar(160, 70, 1, "Luca") + avatar(250, 70, 2, "Nader") + T(70, 112, "✅", 14) + T(160, 112, "✅", 14) + T(250, 112, "⏳", 14) + knopf(90, 135, 140, 28, "Starten", "#ff5b36")
   },
   {
     t: "Steuerung",
@@ -756,7 +756,7 @@ ANLEITUNGEN["turbo"] = [
   {
     t: "Bestzeiten und Punkte",
     x: ["Oben rechts siehst du die **Bestzeiten** der anderen - und **deine eigene** mit deinem aktuellen Platz.", "Für die Gesamtwertung zählt am Ende die **schnellste Runde**: Wer sie fährt, ist Platz 1. " + PL, "Wer keine gültige Runde schafft, bekommt 0 Punkte."],
-    s: () => unifiedRang([["Mia", "1:02,4 · 5", 1], ["Du", "1:05,0 · 3", 0], ["Tom", "1:11,9 · 2", 2], ["Lea", "keine · 0", 3]])
+    s: () => unifiedRang([["Kevin", "1:02,4 · 5", 1], ["Du", "1:05,0 · 3", 0], ["Luca", "1:11,9 · 2", 2], ["Nader", "keine · 0", 3]])
   }
 ];
 
