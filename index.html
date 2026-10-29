@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <script>
+    // Kleine Handys (schmaler als 375 px): ganze App "herauszoomen", damit nichts rechts/links abgeschnitten wird
+    (function () {
+      var b = Math.min(screen.width || 9999, screen.height || 9999);
+      if (b < 375) document.querySelector('meta[name="viewport"]').setAttribute("content", "width=375, user-scalable=no, viewport-fit=cover");
+    })();
+  </script>
   <title>Trollhouse</title>
 
   <!-- Damit die Seite auf dem Handy als App gestartet werden kann -->

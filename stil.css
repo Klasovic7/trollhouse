@@ -3584,3 +3584,10 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 .kt-ziel img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; border: 3px solid #fde047; background: #fffdf5; }
 .kt-ziel strong { font-size: 1rem; }
 .kt-ziel span { font-size: 0.85rem; opacity: 0.8; }
+
+/* kleine Bildschirme: Joystick und Knopf etwas kompakter, damit Feld + Steuerung ohne Scrollen passen */
+@media (max-height: 720px) {
+  .mm-joy { width: 112px; height: 112px; }
+  .mm-joy-knopf { width: 48px; height: 48px; margin: -24px 0 0 -24px; }
+  .mm-aktion { min-height: 70px; }
+}

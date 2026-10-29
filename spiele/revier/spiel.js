@@ -625,10 +625,7 @@ function baueSpielfeld(layout) {
   const anzeige = new Map();
   let letzterKnopfKey = "", letzteChipsKey = "";
 
-  function layoutBerechnen() {
-    W = Math.floor(wrap.clientWidth || 300);
-    const maxH = Math.max(220, (window.innerHeight || 700) - 400);
-    c = Math.max(14, Math.min(W / (w + 0.2), maxH / (h + 0.2), 64));
+  function groesseSetzen() {
     ox = Math.round((W - w * c) / 2);
     oy = Math.round(0.1 * c) + 2;
     H = Math.ceil(h * c + 0.2 * c) + 4;
@@ -639,6 +636,19 @@ function baueSpielfeld(layout) {
     canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     boden = null; bodenKey = "";
+  }
+  function layoutBerechnen() {
+    W = Math.floor(wrap.clientWidth || 300);
+    c = Math.min(W / (w + 0.2), 64);
+    groesseSetzen();
+    // Auf kleinen Handys so verkleinern, dass alles ohne Scrollen auf den Bildschirm passt
+    for (let i = 0; i < 4 && c > 12; i++) {
+      const unten = hinweis.getBoundingClientRect().bottom + window.scrollY;
+      const ueber = unten + 12 - (window.innerHeight || 700);
+      if (ueber <= 0) break;
+      c = Math.max(12, c - ueber / (h + 0.2));
+      groesseSetzen();
+    }
   }
 
   // ---- Zustand

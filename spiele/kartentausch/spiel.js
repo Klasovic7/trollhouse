@@ -39,7 +39,7 @@ const T_TAUSCH_START = ZEIGEN_MS + UMDREHEN_MS + PAUSE_MS;
 const T_ZAEHLEN = T_TAUSCH_START + ANZAHL_TAUSCH * TAUSCH_MS;
 const T_WAHL = T_ZAEHLEN + ZAEHLEN_MS;
 const MOTIVE = 22;
-const BILD_VERSION = "395";
+const BILD_VERSION = "396";
 const TEMPO = 3.2;              // Zellen pro Sekunde
 const KARTE = 0.82;
 const FIGUR_R = 0.3;
@@ -549,7 +549,7 @@ function zeigeErgebnisListe(pos) {
     const p = punkte[id] ?? 0;
     const w = wahl[id];
     const extra = w === undefined ? "Nichts gewählt"
-      : istRichtig(layout, w.slot) ? `Richtig - nach ${formatZeit(w.ms)}` : "Falsche Karte";
+      : istRichtig(layout, w.slot) ? `Richtig - nach ${formatZeit(w.ms)}` : "";
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, p > 0 ? `+${p}` : "0", {
       extra, punkteRechts: s.punkte ?? 0
@@ -650,10 +650,7 @@ function baueSpielfeld(layout) {
   const anzeige = new Map();
   let letzterKnopfKey = "", letzteChipsKey = "";
 
-  function layoutBerechnen() {
-    W = Math.floor(wrap.clientWidth || 300);
-    const maxH = Math.max(240, (window.innerHeight || 700) - 440);
-    c = Math.max(40, Math.min(W / (SPALTEN + 0.4), maxH / (TISCH_ZEILEN + 0.2), 96));
+  function groesseSetzen() {
     ox = Math.round((W - SPALTEN * c) / 2);
     oy = Math.round(0.2 * c) + 4;
     H = Math.ceil(TISCH_ZEILEN * c) + oy + 6;
@@ -663,6 +660,20 @@ function baueSpielfeld(layout) {
     canvas.style.width = W + "px";
     canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function layoutBerechnen() {
+    hinweis.style.minHeight = "2.7em";   // Platz fuer zwei Zeilen, damit sich das Layout nicht verschiebt
+    W = Math.floor(wrap.clientWidth || 300);
+    c = Math.min(W / (SPALTEN + 0.4), 96);
+    groesseSetzen();
+    // Auf kleinen Handys das Feld so verkleinern, dass Feld, Joystick und Knopf ohne Scrollen auf den Bildschirm passen
+    for (let i = 0; i < 6 && c > 14; i++) {
+      const unten = hinweis.getBoundingClientRect().bottom + window.scrollY;
+      const ueber = unten + 12 - (window.innerHeight || 700);
+      if (ueber <= 0) break;
+      c = Math.max(14, c - ueber / TISCH_ZEILEN);
+      groesseSetzen();
+    }
     baueRueck();
   }
 
@@ -1052,9 +1063,7 @@ function baueSpielfeld(layout) {
       else if (ph.name === "tausch") text = "Aufpassen: Vier Karten tauschen die Plätze!";
       else if (ph.name === "zaehlen") text = "Gleich darfst du laufen …";
       else if (ph.name === "aufdecken") {
-        const w = wahlDieserRunde(pos)[api.spielerId];
-        text = w === undefined ? "Du hast nichts gewählt."
-          : istRichtig(layout, w.slot) ? "✅ Richtig getroffen!" : "❌ Falsche Karte.";
+        text = "";
       } else if (meldung) text = meldung;
       else if (meinePlatz(bm) !== null) text = "Gewählt! Warte auf die anderen …";
       else if (l.grund === "belegt") text = "Diese Karte hat schon jemand gewählt.";
