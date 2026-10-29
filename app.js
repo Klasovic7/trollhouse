@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v389";
+export const APP_VERSION = "v390";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -1081,17 +1081,22 @@ function baueApi() {
 async function ladeSpiel(id) {
   const info = spielInfo(id);
   if (!info) { zeigeDebug("Unbekanntes Spiel: " + id); return; }
+  // Sofort merken, welches Spiel gerade geladen wird. Sonst startet jede weitere
+  // Raum-Aktualisierung waehrend des Ladens das Spiel noch einmal - bei Turbo
+  // entstanden so zwei Vollbild-Rahmen, von denen einer nie mehr entfernt wurde.
+  aktivesSpielId = id;
   try {
     const modul = await info.laden();
+    // Wurde das Spiel inzwischen beendet oder gewechselt, nichts mehr starten.
+    if (aktivesSpielId !== id) return;
     aktivesSpielModul = modul;
-    aktivesSpielId = id;
     await modul.starten(baueApi());
+    if (aktivesSpielId !== id) { try { modul.beenden?.(); } catch (e) { console.warn(e); } return; }
     // Der Zustand kann sich während des Ladens geändert haben - einmal nachziehen.
     modul.raumDaten?.(zustand.raum);
     modul.spieler?.(zustand.spieler);
   } catch (e) {
-    aktivesSpielModul = null;
-    aktivesSpielId = null;
+    if (aktivesSpielId === id) { aktivesSpielModul = null; aktivesSpielId = null; }
     zeigeDebug("Spiel konnte nicht geladen werden: " + e.message);
   }
 }

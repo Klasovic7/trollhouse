@@ -119,6 +119,8 @@ function zeigeRahmen(an) {
 
 export async function starten(uebergebeneApi) {
   api = uebergebeneApi;
+  // Sicherheitsnetz: alte Turbo-Rahmen (z. B. aus einem doppelten Start) entfernen
+  document.querySelectorAll('iframe[title="Turbo"]').forEach((f) => { f.src = "about:blank"; f.remove(); });
   api.wurzel.innerHTML = '<div style="text-align:center;padding:40px 20px"><p class="hinweis-text">Turbo ist pausiert.</p>' +
     '<button id="turbo-weiter" class="btn-primaer" type="button" hidden>▶ Turbo fortsetzen</button></div>';
   api.wurzel.querySelector("#turbo-weiter").addEventListener("click", () => zeigeRahmen(true));
@@ -182,6 +184,7 @@ export function beenden() {
   if (unsub) { unsub(); unsub = null; }
   if (hoerer) { window.removeEventListener("message", hoerer); hoerer = null; }
   if (rahmen) { rahmen.src = "about:blank"; rahmen.remove(); rahmen = null; }
+  document.querySelectorAll('iframe[title="Turbo"]').forEach((f) => { f.src = "about:blank"; f.remove(); });
   if (stil) { stil.remove(); stil = null; }
   document.body.classList.remove("turbo-voll");
   api = null;
