@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "393";
+const SPIEL_VERSION = "394";
 
 export const SPIELE = [
   {
@@ -219,14 +219,14 @@ export const SPIELE = [
     laden: () => import(`./revier/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
-    id: "kartentrick",
-    name: "Kartentrick",
+    id: "kartentausch",
+    name: "Kartentausch",
     emoji: "🎴",
-    bild: "bilder/kartentrick-karten.webp",
+    bild: "bilder/kartentausch-karten.webp",
     farbe: "#a855f7",
     beschreibung: "Merkt euch den Fußballer, verfolgt die Tauschaktion und findet ihn wieder - jeder wählt eine Karte",
     minSpieler: 2,
-    laden: () => import(`./kartentrick/spiel.js?v=${SPIEL_VERSION}`)
+    laden: () => import(`./kartentausch/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "run",

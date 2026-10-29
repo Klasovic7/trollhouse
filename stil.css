@@ -3579,7 +3579,7 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 .rv-chip.fertig { opacity: 1; background: rgba(255,255,255,0.14); }
 .rv-chip .rv-platz { min-width: 0; margin-right: -2px; }
 
-/* Kartentrick */
+/* Kartentausch */
 .kt-ziel { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .kt-ziel img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; border: 3px solid #fde047; background: #fffdf5; }
 .kt-ziel strong { font-size: 1rem; }

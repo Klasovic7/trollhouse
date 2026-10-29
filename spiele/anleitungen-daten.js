@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=393";
+import { kartenSvg } from "./doppelkopf/karten.js?v=394";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -770,10 +770,10 @@ ANLEITUNGEN["revier"] = [
     s: () => unifiedRang([["Luca", "26 Quadrate · 5", 1], ["Du", "25 · 3", 0], ["Kevin", "23 · 2", 2], ["Sinan", "22 · 1", 3]])
   }
 ];
-ANLEITUNGEN["kartentrick"] = [
+ANLEITUNGEN["kartentausch"] = [
   {
     t: "Worum geht's?",
-    x: ["Auf dem Tisch liegen **20 Karten** mit Fußballern. Oben siehst du **einen Fußballer** - er steckt **so oft im Feld, wie Spieler mitspielen**.", "Merk dir, wo er liegt: Die Karten werden **umgedreht** und dann **dreimal zwei Karten vertauscht**."],
+    x: ["Auf dem Tisch liegen **20 Karten** mit Fußballern. Oben siehst du **einen Fußballer** - er steckt **so oft im Feld, wie Spieler mitspielen**.", "Merk dir, wo er liegt: Die Karten werden **umgedreht** und dann **dreimal vier Karten vertauscht** (je zwei Paare gleichzeitig)."],
     s: () => mmKarte(80, 40, "#6d4ee6", true) + mmKarte(124, 40, "#6d4ee6", true) + mmKarte(168, 40, "#6d4ee6", true) + T(160, 120, "⇄ Karten tauschen", 14, "#fde68a", 800) + T(160, 150, "Immer im Blick behalten!", 11, "#fff", 600)
   },
   {
@@ -788,7 +788,7 @@ ANLEITUNGEN["kartentrick"] = [
   },
   {
     t: "Punkte",
-    x: ["Wer **richtig** gewählt hat, steht vor allen, die falsch lagen - und unter den Richtigen zählt, **wer schneller gewählt hat**. Wer nichts wählt, ist Letzter. " + PL, RUNDEN + " Kartentrick braucht **mindestens 2 Spieler**."],
+    x: ["Wer **richtig** gewählt hat, steht vor allen, die falsch lagen - und unter den Richtigen zählt, **wer schneller gewählt hat**. Wer nichts wählt, ist Letzter. " + PL, RUNDEN + " Kartentausch braucht **mindestens 2 Spieler**."],
     s: () => unifiedRang([["Luca", "richtig · 5", 1], ["Du", "richtig · 3", 0], ["Kevin", "falsch · 2", 2], ["Sinan", "nichts · 1", 3]])
   }
 ];

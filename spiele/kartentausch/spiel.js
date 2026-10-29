@@ -1,9 +1,9 @@
 // ============================================================================
-//  Kartentrick
+//  Kartentausch
 // ----------------------------------------------------------------------------
 //  20 Karten mit Fußballer-Bildern liegen offen auf dem Tisch. Ein Bild wird
 //  vorgeschlagen - es steckt so oft im Feld, wie Spieler mitspielen. Die Karten
-//  werden umgedreht, dann tauschen dreimal zwei Karten die Plätze. Nach einem
+//  werden umgedreht, dann tauschen dreimal vier Karten die Plätze. Nach einem
 //  3-2-1-Countdown läuft jede*r mit dem Joystick (alle starten oben in der
 //  Mitte) auf eine Karte und wählt sie aus. Eine gewählte Karte ist für alle
 //  anderen gesperrt. Zum Schluss werden alle Karten aufgedeckt.
@@ -25,7 +25,8 @@ const MAX_RUNDEN = 15;
 const STANDARD_RUNDEN = 3;
 const SPALTEN = 5, ZEILEN = 4, ANZAHL = SPALTEN * ZEILEN;   // 20 Karten
 const TISCH_ZEILEN = ZEILEN + 1;                            // eine Reihe Platz oben fuer den Start
-const ANZAHL_TAUSCH = 3;
+const ANZAHL_TAUSCH = 3;       // Tauschrunden
+const PAARE_JE_TAUSCH = 2;     // je Runde tauschen 4 Karten (2 Paare) gleichzeitig
 const ZEIGEN_MS = 4500;         // Karten offen, Ziel wird gezeigt
 const UMDREHEN_MS = 600;
 const PAUSE_MS = 500;
@@ -38,7 +39,7 @@ const T_TAUSCH_START = ZEIGEN_MS + UMDREHEN_MS + PAUSE_MS;
 const T_ZAEHLEN = T_TAUSCH_START + ANZAHL_TAUSCH * TAUSCH_MS;
 const T_WAHL = T_ZAEHLEN + ZAEHLEN_MS;
 const MOTIVE = 22;
-const BILD_VERSION = "393";
+const BILD_VERSION = "394";
 const TEMPO = 3.2;              // Zellen pro Sekunde
 const KARTE = 0.82;
 const FIGUR_R = 0.3;
@@ -76,6 +77,11 @@ function mische(liste) {
   return a;
 }
 
+function zufallZiel(karten, ziel) {
+  const plaetze = karten.map((m, i) => (m === ziel ? i : -1)).filter((i) => i >= 0);
+  return plaetze[zufall(plaetze.length)];
+}
+
 // Eine Runde: Anordnung (Motiv je Platz), Zielmotiv, drei Tausche.
 function erzeugeRunde(spielerAnzahl) {
   const motive = mische([...Array(MOTIVE).keys()]);
@@ -85,18 +91,27 @@ function erzeugeRunde(spielerAnzahl) {
   const tausch = [];
   const jetzt = [...karten];
   for (let i = 0; i < ANZAHL_TAUSCH; i++) {
-    const a = zufall(ANZAHL);
-    let b;
-    do { b = zufall(ANZAHL); } while (b === a || jetzt[b] === jetzt[a]);
-    [jetzt[a], jetzt[b]] = [jetzt[b], jetzt[a]];
-    tausch.push([a, b]);
+    const benutzt = new Set();
+    const schritt = [];
+    for (let p = 0; p < PAARE_JE_TAUSCH; p++) {
+      let a, b;
+      do {
+        // erstes Paar enthaelt immer eine Zielkarte, damit sich wirklich etwas verschiebt
+        a = p === 0 ? zufallZiel(jetzt, ziel) : zufall(ANZAHL);
+        b = zufall(ANZAHL);
+      } while (a === b || benutzt.has(a) || benutzt.has(b) || jetzt[a] === jetzt[b]);
+      benutzt.add(a); benutzt.add(b);
+      schritt.push([a, b]);
+    }
+    schritt.forEach(([a, b]) => { [jetzt[a], jetzt[b]] = [jetzt[b], jetzt[a]]; });
+    tausch.push(schritt);
   }
   return { karten, ziel, tausch, ende: jetzt };
 }
 
 const VORLAGE = `
   <div id="kt-setup" class="bildschirm-karte" hidden>
-    <p class="hinweis-text">Kartentrick: Ein Fußballer wird gezeigt - er steckt so oft im Feld, wie Spieler
+    <p class="hinweis-text">Kartentausch: Ein Fußballer wird gezeigt - er steckt so oft im Feld, wie Spieler
       mitspielen. Die Karten werden umgedreht und vertauscht. Danach wählt jeder eine Karte aus:
       Wer eine richtige erwischt, punktet - und wer schneller war, bekommt mehr.</p>
     <div id="kt-einstellungen" hidden>
@@ -115,7 +130,7 @@ const VORLAGE = `
   </div>
 
   <div id="kt-vorbereitung-screen" class="bildschirm-karte pg-mitte" hidden>
-    <p class="kategorie">Kartentrick</p>
+    <p class="kategorie">Kartentausch</p>
     <p class="pg-vorb-text">Gleich geht's los: <strong id="kt-vorb-text"></strong></p>
     <p class="zg-countdown-ziffer" id="kt-countdown-ziffer"></p>
   </div>
@@ -140,7 +155,7 @@ const VORLAGE = `
   </div>
 
   <div id="kt-ergebnis-screen" class="bildschirm-karte" hidden>
-    <p class="kategorie">Kartentrick</p>
+    <p class="kategorie">Kartentausch</p>
     <h2 id="kt-erg-titel"></h2>
     <ul id="kt-erg-liste"></ul>
     <p><button id="kt-weiter" hidden>Weiter</button></p>
@@ -366,11 +381,11 @@ function zeigeSetup() {
 async function spielStarten() {
   $("kt-setup-fehler").textContent = "";
   if (spielerListe.length < 2) {
-    $("kt-setup-fehler").textContent = "Für Kartentrick braucht ihr mindestens 2 Spieler.";
+    $("kt-setup-fehler").textContent = "Für Kartentausch braucht ihr mindestens 2 Spieler.";
     return;
   }
   if (spielerListe.length > 10) {
-    $("kt-setup-fehler").textContent = "Kartentrick geht mit höchstens 10 Spielern.";
+    $("kt-setup-fehler").textContent = "Kartentausch geht mit höchstens 10 Spielern.";
     return;
   }
   let anzahl = parseInt($("kt-anzahl").value, 10);
@@ -556,7 +571,7 @@ async function weiter() {
     const naechster = rundenIndex + 1;
     if (naechster >= anzahlRunden) {
       await updateDoc(api.raumRef(), { ktStatus: "beendet" });
-      speichereWertung(api, "kartentrick", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
+      speichereWertung(api, "kartentausch", Object.fromEntries(spielerListe.map((s) => [s.id, s.punkte ?? 0])));
     } else {
       await updateDoc(api.raumRef(), {
         ktStatus: "runde_aktiv",
@@ -941,8 +956,8 @@ function baueSpielfeld(layout) {
     const l = lage(ph, bm);
     // Karten
     const bewegt = new Set();
-    let tauschPaar = null;
-    if (ph.name === "tausch") { tauschPaar = layout.tausch[ph.k]; bewegt.add(tauschPaar[0]); bewegt.add(tauschPaar[1]); }
+    let tauschPaare = [];
+    if (ph.name === "tausch") { tauschPaare = layout.tausch[ph.k]; tauschPaare.forEach(([a, b]) => { bewegt.add(a); bewegt.add(b); }); }
     for (let i = 0; i < ANZAHL; i++) {
       if (bewegt.has(i)) continue;
       const m = kartePlatz(i);
@@ -959,22 +974,25 @@ function baueSpielfeld(layout) {
         if (bes) rahmen = farbeVon(bes);
         else if (l.modus === "waehlen" && l.slot === i) { rahmen = "#fde047"; leuchten = true; }
       } else if (bm.get(i) && flip >= 1) {
-        // gewaehlte Karte: Ring in Spielerfarbe, bei falscher Wahl rot
-        rahmen = layout.ende[i] === layout.ziel ? "#22c55e" : "#ef4444";
+        // gewaehlte Karte: nur in der Farbe des Spielers umrandet
+        rahmen = farbeVon(bm.get(i));
         leuchten = true;
       }
       const f2 = ph.name === "aufdecken" || ph.name === "zeigen" || ph.name === "umdrehen" ? flip : 0;
       zeichneKarte(m.px, m.py, motiv, f2, { rahmen, leuchten });
     }
     // gerade tauschende Karten (Rueckseiten) bewegen sich ueber Kreuz
-    if (tauschPaar) {
-      const [a, b] = tauschPaar;
-      const A = kartePlatz(a), B = kartePlatz(b);
+    if (tauschPaare.length) {
       const p = ph.p, e = p * p * (3 - 2 * p);
-      const dx = B.px - A.px, dy = B.py - A.py, len = Math.hypot(dx, dy) || 1;
-      const nx = -dy / len, ny = dx / len, bogen = Math.sin(Math.PI * e) * 0.5 * c;
-      zeichneKarte(A.px + dx * e + nx * bogen, A.py + dy * e + ny * bogen, 0, 0, { skala: 1 + 0.12 * Math.sin(Math.PI * e) });
-      zeichneKarte(B.px - dx * e - nx * bogen, B.py - dy * e - ny * bogen, 0, 0, { skala: 1 + 0.12 * Math.sin(Math.PI * e) });
+      tauschPaare.forEach(([a, b], idx) => {
+        const A = kartePlatz(a), B = kartePlatz(b);
+        const dx = B.px - A.px, dy = B.py - A.py, len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len, ny = dx / len;
+        const bogen = Math.sin(Math.PI * e) * 0.5 * c * (idx % 2 ? -1 : 1);
+        const skala = 1 + 0.12 * Math.sin(Math.PI * e);
+        zeichneKarte(A.px + dx * e + nx * bogen, A.py + dy * e + ny * bogen, 0, 0, { skala });
+        zeichneKarte(B.px - dx * e - nx * bogen, B.py - dy * e - ny * bogen, 0, 0, { skala });
+      });
     }
     if (ph.name === "zaehlen") {
       const rest = Math.max(1, Math.ceil((ZAEHLEN_MS - ph.t) / 1000));
@@ -983,7 +1001,8 @@ function baueSpielfeld(layout) {
       grosseZahl("LOS!");
     }
 
-    // Figuren
+    // Figuren (bei der Aufloesung ausgeblendet)
+    if (ph.name === "aufdecken") { aktualisiereAnzeige(ph, bm, l); return; }
     const gesetzt = new Map();
     bm.forEach((id, slot) => gesetzt.set(id, slot));
     spielerListe.forEach((s) => {
@@ -1015,11 +1034,12 @@ function baueSpielfeld(layout) {
       kreuz.classList.toggle("gesperrt", !darfLaufen(ph, bm));
       if (!darfLaufen(ph, bm)) stoppeHalten();
       $("kt-steuerung").hidden = ph.name === "aufdecken";
+      if (ph.name === "aufdecken") $("kt-status").innerHTML = "";
       $("kt-ziel-info").textContent = ph.name === "aufdecken" ? "" : `${bm.size} / ${N} gewählt`;
       let text;
       if (ph.name === "zeigen") text = "Merk dir, wo dieser Fußballer liegt!";
       else if (ph.name === "umdrehen" || ph.name === "pause") text = "Die Karten werden umgedreht …";
-      else if (ph.name === "tausch") text = "Aufpassen: Karten tauschen die Plätze!";
+      else if (ph.name === "tausch") text = "Aufpassen: Vier Karten tauschen die Plätze!";
       else if (ph.name === "zaehlen") text = "Gleich darfst du laufen …";
       else if (ph.name === "aufdecken") {
         const w = wahlDieserRunde(pos)[api.spielerId];
