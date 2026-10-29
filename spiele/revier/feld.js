@@ -12,7 +12,8 @@ function mische(liste) {
 }
 
 export function feldMasse(n) {
-  const w = n <= 2 ? 8 : 12;
+  if (n <= 2) return [10, 8];
+  const w = 12;
   const h = Math.max(6, Math.min(20, Math.ceil((n * 22) / w)));
   return [w, h];
 }
@@ -42,6 +43,12 @@ function nachbarn(i, w, h) {
 function startpunkte(n, w, h) {
   const T = w * h;
   const starts = [zufall(T)];
+  if (n === 2) {
+    // bei 2 Gebieten: Startpunkte eher dicht beieinander, damit sie ineinander greifen
+    let b;
+    do { b = zufall(T); } while (Math.hypot((b % w) - (starts[0] % w), Math.floor(b / w) - Math.floor(starts[0] / w)) > 4 || b === starts[0]);
+    return [starts[0], b];
+  }
   while (starts.length < n) {
     const kand = [];
     for (let i = 0; i < T; i++) {
@@ -73,7 +80,7 @@ function wachseFrei(n, w, h) {
           if (reg[nb] !== -1 || gesehen.has(nb)) continue;
           gesehen.add(nb);
           const eigene = nachbarn(nb, w, h).filter((q) => reg[q] === g).length;
-          const score = eigene + Math.random() * 1.3;
+          const score = n === 2 ? eigene * 0.35 + Math.random() * 2 : eigene + Math.random() * 1.3;
           if (score > bestScore) { bestScore = score; beste = nb; }
         }
       }
@@ -158,6 +165,16 @@ function wachse(n, w, h, ziele) {
   return null;
 }
 
+function grenzLaenge(reg, w, h) {
+  let l = 0;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const k = j * w + i;
+    if (i < w - 1 && reg[k] !== reg[k + 1]) l++;
+    if (j < h - 1 && reg[k] !== reg[k + w]) l++;
+  }
+  return l;
+}
+
 // Notlösung: Schlangenlinie in Stücke zerlegen (immer zusammenhängend)
 function schlange(n, w, h, ziele) {
   const reg = new Array(w * h).fill(-1);
@@ -173,11 +190,38 @@ function schlange(n, w, h, ziele) {
 }
 
 // Ergebnis: { w, h, reg: [Gebiet je Zelle], ord: [[Zellen in Abbau-Reihenfolge] je Gebiet] }
+// Zwei Gebiete: aus einem welligen Zufallsfeld geschnitten, damit sie ineinander greifen.
+function zweiGebiete(w, h, ziele) {
+  const T = w * h;
+  for (let v = 0; v < 5000; v++) {
+    const bumps = Array.from({ length: 9 }, () => ({
+      x: Math.random() * w, y: Math.random() * h, a: Math.random() < 0.5 ? -1 : 1, s: 1.1 + Math.random() * 1.0
+    }));
+    const wert = [...Array(T).keys()].map((k) => {
+      const x = k % w, y = Math.floor(k / w);
+      return bumps.reduce((acc, b) => acc + b.a * Math.exp(-((x - b.x) ** 2 + (y - b.y) ** 2) / (2 * b.s * b.s)), 0) + Math.random() * 0.15;
+    });
+    const rang = [...Array(T).keys()].sort((a, b) => wert[b] - wert[a]);
+    const reg = new Array(T).fill(0);
+    for (let i = 0; i < ziele[1]; i++) reg[rang[i]] = 1;
+    if (grenzLaenge(reg, w, h) < 30 || grenzLaenge(reg, w, h) > 64) continue;
+    if (!bleibtZusammenhaengend(reg, 0, -1, w, h) || !bleibtZusammenhaengend(reg, 1, -1, w, h)) continue;
+    return reg;
+  }
+  return null;
+}
+
 export function erzeugeFeld(n) {
   const [w, h] = feldMasse(n);
   const ziele = mische(gebietsGroessen(n, w * h));
-  let reg = null;
-  for (let v = 0; v < 60 && !reg; v++) reg = wachse(n, w, h, ziele);
+  let reg = n === 2 ? zweiGebiete(w, h, ziele) : null;
+  for (let v = 0; v < 60 && !reg; v++) {
+    if (n === 2) break;
+    const k = wachse(n, w, h, ziele);
+    // bei 2 Gebieten muss die Grenze deutlich verschachtelt sein (viel laenger als eine gerade Trennlinie)
+    if (k && n === 2 && grenzLaenge(k, w, h) < 2.6 * Math.min(w, h)) continue;
+    reg = k;
+  }
   if (!reg) reg = schlange(n, w, h, ziele);
   const ord = Array.from({ length: n }, () => []);
   reg.forEach((g, i) => ord[g].push(i));
