@@ -3511,25 +3511,18 @@ body.tt-aktiv:has(#tt-spiel-screen:not([hidden])) #spiel-kopf-titel { display: n
   display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 10px;
   user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
-.mm-kreuz {
-  display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 4px;
-  touch-action: none;
+.mm-joy {
+  position: relative; width: 140px; height: 140px; flex: none; border-radius: 50%; touch-action: none;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0.32) 100%);
+  border: 3px solid rgba(255, 255, 255, 0.3);
 }
-.mm-pfeil {
-  margin: 0; padding: 0; width: 56px; height: 56px; border-radius: 14px; font-size: 1.35rem; line-height: 1;
-  border: 2px solid rgba(255, 255, 255, 0.35); background: rgba(124, 58, 237, 0.55); color: #fff;
-  touch-action: none; -webkit-tap-highlight-color: transparent;
+.mm-joy-knopf {
+  position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a78bfa, #6d28d9 70%); border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45); pointer-events: none;
 }
-.mm-pfeil:active { background: rgba(124, 58, 237, 0.95); transform: scale(0.95); }
-.mm-pfeil-u { grid-column: 2; grid-row: 1; }
-.mm-pfeil-l { grid-column: 1; grid-row: 2; }
-.mm-pfeil-r { grid-column: 3; grid-row: 2; }
-.mm-pfeil-d { grid-column: 2; grid-row: 3; }
-.mm-kreuz.gesperrt .mm-pfeil,
-.mm-pfeil:disabled {
-  background: rgba(120, 120, 130, 0.35); border-color: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.35);
-  transform: none;
-}
+.mm-joy.gesperrt { pointer-events: none; background: rgba(120, 120, 130, 0.2); border-color: rgba(255, 255, 255, 0.12); }
+.mm-joy.gesperrt .mm-joy-knopf { background: rgba(120, 120, 130, 0.55); border-color: rgba(255, 255, 255, 0.15); box-shadow: none; }
 .mm-aktion {
   margin: 0; flex: 1; min-width: 0; min-height: 92px; max-width: 190px; padding: 0 6px; border-radius: 22px; font-size: 1rem; font-weight: 800; white-space: normal; overflow-wrap: anywhere;
   border: 3px solid rgba(255, 255, 255, 0.15); background: rgba(120, 120, 130, 0.35); color: rgba(255, 255, 255, 0.4);

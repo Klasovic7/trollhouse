@@ -7,10 +7,9 @@
 //  derselben Stelle (der Spielleiter erzeugt die Anordnung pro Runde).
 //  Aufdecken geht nur, wenn die Figur auf einer Karte steht; dann leuchtet der
 //  Aufdecken-Knopf. Höchstens 2 Karten sind gleichzeitig offen. Ist es kein
-//  Paar, bleiben beide offen - man muss selbst zu ihnen laufen und sie mit
-//  demselben Knopf wieder umdrehen. Gefundene Paare bleiben liegen.
+//  Paar, drehen sich beide nach kurzer Zeit automatisch wieder um. Gefundene Paare bleiben liegen.
 //  Wer zuerst alle Paare hat, bekommt die meisten Punkte, dann der zweitschnellste
-//  usw.; wer es im Zeitlimit nicht schafft, bekommt 0.
+//  usw. Es gibt kein Zeitlimit - die Runde endet, wenn alle fertig sind.
 //
 //  Teammodus: beide Teams spielen je auf EINEM gemeinsamen Feld. Jede*r deckt
 //  nur eine Karte auf (das Paar entsteht aus den Karten zweier Teammitglieder)
@@ -35,12 +34,10 @@ const MAX_RUNDEN = 15;
 const STANDARD_RUNDEN = 3;
 const PAARE_OPTIONEN = [6, 8, 10, 12];
 const STANDARD_PAARE = 8;
-const ZEIT_OPTIONEN = [120, 180, 300];
-const STANDARD_ZEIT = 180;
-const AUSWERTUNG_PUFFER_MS = 3000;
+const FLIP_MS = 1100;         // so lange bleibt ein Fehlpaar sichtbar
 const SPALTEN = 4;
 const MOTIVE = 22;            // bilder/memory/f01.webp ... f22.webp
-const BILD_VERSION = "383";
+const BILD_VERSION = "384";
 const TEMPO = 2.7;            // Zellen pro Sekunde
 const KARTE = 0.8;            // Kartenkantenlänge in Zellen
 const FIGUR_R = 0.3;          // Figurenradius in Zellen
@@ -102,10 +99,6 @@ const VORLAGE = `
         <span class="pg-opt-titel">Paare pro Feld</span>
         <div id="mm-paare-opt" class="pg-opt"></div>
       </div>
-      <div class="pg-opt-block">
-        <span class="pg-opt-titel">Zeitlimit pro Runde</span>
-        <div id="mm-zeit-opt" class="pg-opt"></div>
-      </div>
     </div>
 
     <div id="mm-teammodus-zeile" class="setup-modusblock" hidden>
@@ -114,7 +107,7 @@ const VORLAGE = `
           <span class="schalter-text">Teammodus</span>
           <details class="modus-info">
             <summary aria-label="Erklärung zum Teammodus">i</summary>
-            <div>Jedes Team spielt auf einem gemeinsamen Feld. Jede*r deckt nur eine Karte auf und kann sich dabei nicht bewegen - das Paar entsteht aus den Karten von zwei Teammitgliedern. Jedes Team braucht mindestens 2 Personen.</div>
+            <div>Jedes Team spielt auf einem gemeinsamen Feld. Jede*r deckt nur eine Karte auf und kann sich dabei nicht bewegen - das Paar entsteht aus den Karten von zwei Teammitgliedern. Geht nur bei gerader Spielerzahl, jedes Team braucht mindestens 2 Personen.</div>
           </details>
         </span>
         <label class="schalter-zeile">
@@ -125,6 +118,8 @@ const VORLAGE = `
         </label>
       </div>
     </div>
+
+    <p id="mm-teammodus-hinweis" class="hinweis-text" hidden>Der Teammodus geht nur bei einer geraden Spielerzahl.</p>
 
     <div id="mm-teams" hidden>
       <div class="zt-team-grid">
@@ -154,20 +149,16 @@ const VORLAGE = `
 
   <div id="mm-spiel-screen" class="bildschirm-karte" hidden>
     <div class="pg-kopf">
-      <span id="mm-zeit-text" class="pg-zeit-text"></span>
+      <span id="mm-zeit-text" class="pg-zeit-text">⏱ 0 s</span>
       <span id="mm-paare-text" class="mm-paare-text"></span>
     </div>
-    <div class="pg-zeitbalken"><div id="mm-zeitbalken-fuell"></div></div>
     <div id="mm-canvas-wrap" class="pg-canvas-wrap">
       <canvas id="mm-canvas"></canvas>
       <div id="mm-fertig-overlay" class="pg-fertig-overlay" hidden></div>
     </div>
     <div class="mm-steuerung">
-      <div class="mm-kreuz" id="mm-kreuz">
-        <button type="button" class="mm-pfeil mm-pfeil-u" data-richtung="u" aria-label="Hoch">▲</button>
-        <button type="button" class="mm-pfeil mm-pfeil-l" data-richtung="l" aria-label="Links">◀</button>
-        <button type="button" class="mm-pfeil mm-pfeil-r" data-richtung="r" aria-label="Rechts">▶</button>
-        <button type="button" class="mm-pfeil mm-pfeil-d" data-richtung="d" aria-label="Runter">▼</button>
+      <div class="mm-joy" id="mm-kreuz" aria-label="Joystick">
+        <div class="mm-joy-knopf" id="mm-joy-knopf"></div>
       </div>
       <button type="button" id="mm-aktion" class="mm-aktion" disabled>Aufdecken</button>
     </div>
@@ -203,9 +194,9 @@ let tickId = null;
 let status = null;
 let rundenIndex = -1;
 let anzahlRunden = 0;
-let entwurf = { runden: STANDARD_RUNDEN, paare: STANDARD_PAARE, zeit: STANDARD_ZEIT };
+let entwurf = { runden: STANDARD_RUNDEN, paare: STANDARD_PAARE };
 let anzahlEntwurfTimer = null;
-let einstellungen = { paare: STANDARD_PAARE, zeit: STANDARD_ZEIT };
+let einstellungen = { paare: STANDARD_PAARE };
 let layoutJson = "";
 let layoutListe = [];
 let vorbereitungSeit = 0;
@@ -233,8 +224,8 @@ export async function starten(uebergebeneApi) {
   if (api.istLeiter && !api.raum?.mmStatus) {
     await updateDoc(api.raumRef(), {
       mmStatus: "setup", mmRundenIndex: 0, mmAnzahlRunden: 0, mmAnzahlEntwurf: STANDARD_RUNDEN,
-      mmPaareEntwurf: STANDARD_PAARE, mmZeitEntwurf: STANDARD_ZEIT,
-      mmPaare: STANDARD_PAARE, mmZeit: STANDARD_ZEIT, mmLayouts: "", mmVorbereitungSeit: 0,
+      mmPaareEntwurf: STANDARD_PAARE,
+      mmPaare: STANDARD_PAARE, mmLayouts: "", mmVorbereitungSeit: 0,
       mmTeammodus: false, mmTeams: {}
     });
   }
@@ -277,18 +268,17 @@ function verdrahteBedienelemente() {
         entwurf[feldName] = w;
         zeichneOptionen();
         updateDoc(api.raumRef(), {
-          mmPaareEntwurf: entwurf.paare, mmZeitEntwurf: entwurf.zeit
+          mmPaareEntwurf: entwurf.paare
         }).catch(() => {});
       });
       box.appendChild(b);
     });
   };
   baueOpt("mm-paare-opt", PAARE_OPTIONEN, (w) => `${w} Paare`, "paare");
-  baueOpt("mm-zeit-opt", ZEIT_OPTIONEN, (w) => `${w} s`, "zeit");
 }
 
 function zeichneOptionen() {
-  [["mm-paare-opt", entwurf.paare], ["mm-zeit-opt", entwurf.zeit]].forEach(([id, wert]) => {
+  [["mm-paare-opt", entwurf.paare]].forEach(([id, wert]) => {
     $(id).querySelectorAll("button").forEach((b) => {
       b.classList.toggle("aktiv", Number(b.dataset.wert) === wert);
       b.disabled = !api.istLeiter;
@@ -375,10 +365,9 @@ export function raumDaten(daten) {
   teams = daten.mmTeams ?? {};
   entwurf = {
     runden: daten.mmAnzahlEntwurf ?? STANDARD_RUNDEN,
-    paare: daten.mmPaareEntwurf ?? STANDARD_PAARE,
-    zeit: daten.mmZeitEntwurf ?? STANDARD_ZEIT
+    paare: daten.mmPaareEntwurf ?? STANDARD_PAARE
   };
-  einstellungen = { paare: daten.mmPaare ?? STANDARD_PAARE, zeit: daten.mmZeit ?? STANDARD_ZEIT };
+  einstellungen = { paare: daten.mmPaare ?? STANDARD_PAARE };
   if ($("mm-teammodus").checked !== teammodus) $("mm-teammodus").checked = teammodus;
 
   const json = daten.mmLayouts ?? "";
@@ -398,7 +387,6 @@ export function raumDaten(daten) {
       auswertungLaeuft = false;
       if (spielfeld) { spielfeld.abbauen(); spielfeld = null; }
       $("mm-fertig-overlay").hidden = true;
-      $("mm-fertig-overlay").classList.remove("pg-zeit-aus");
     }
   } else if (status === "ausgewertet") {
     rundenIndex = neuerIndex;
@@ -452,8 +440,14 @@ function zeigeSetup() {
   // In der Olympiade gibt es keinen Teammodus - alle spielen für sich.
   $("mm-teammodus-zeile").hidden = inOlympiade;
   const schalter = $("mm-teammodus");
+  const ungerade = spielerListe.length % 2 === 1;
   schalter.checked = teammodus;
-  schalter.disabled = !api.istLeiter;
+  schalter.disabled = !api.istLeiter || (ungerade && !teammodus);
+  if (api.istLeiter && teammodus && ungerade) {
+    // Spielerzahl ist ungerade geworden: Teammodus wieder ausschalten
+    updateDoc(api.raumRef(), { mmTeammodus: false, mmTeams: {} }).catch(() => {});
+  }
+  $("mm-teammodus-hinweis").hidden = !ungerade || inOlympiade;
   $("mm-teams").hidden = !teammodus;
   $("mm-teams-zufall").hidden = !api.istLeiter;
   if (teammodus) {
@@ -530,6 +524,10 @@ async function spielStarten() {
 
   const teamAktiv = teammodus && !api.olympiadeAnzahl;
   let endgueltigeTeams = {};
+  if (teamAktiv && spielerListe.length % 2 === 1) {
+    $("mm-setup-fehler").textContent = "Der Teammodus geht nur bei einer geraden Spielerzahl.";
+    return;
+  }
   if (teamAktiv) {
     endgueltigeTeams = ergaenzeFehlendeTeams(teams, spielerListe.map((s) => s.id));
     const anzahlTeam = { blau: 0, rot: 0 };
@@ -552,7 +550,6 @@ async function spielStarten() {
       mmRundenIndex: 0,
       mmAnzahlRunden: anzahl,
       mmPaare: entwurf.paare,
-      mmZeit: entwurf.zeit,
       mmLayouts: JSON.stringify(layouts),
       mmTeammodus: teamAktiv,
       mmTeams: endgueltigeTeams,
@@ -620,20 +617,9 @@ function rundenTick() {
     $("mm-vorbereitung-screen").hidden = true;
     $("mm-spiel-screen").hidden = false;
     if (!spielfeld) starteSpielfeld();
-    const spielMs = elapsedGesamt - COUNTDOWN_MS;
-    const limit = einstellungen.zeit * 1000;
-    const rest = Math.max(0, limit - spielMs);
-    $("mm-zeit-text").textContent = `⏱ ${Math.ceil(rest / 1000)} s`;
-    $("mm-zeitbalken-fuell").style.width = `${(rest / limit) * 100}%`;
-    $("mm-zeitbalken-fuell").classList.toggle("knapp", rest < 20000);
-    if (rest <= 0 && spielfeld && !eigenFertig() && !spielfeld.zeitAus) {
-      spielfeld.zeitAbgelaufen();
-      const o = $("mm-fertig-overlay");
-      o.hidden = false;
-      o.classList.add("pg-zeit-aus");
-      o.textContent = "⏰ Zeit abgelaufen";
-      $("mm-hinweis").textContent = "Gleich geht's weiter …";
-    }
+    const fertigIch = fertigeDieserRunde(rundenIndex).find((f) => f.spielerId === api.spielerId);
+    const spielMs = fertigIch ? fertigIch.ms : elapsedGesamt - COUNTDOWN_MS;
+    $("mm-zeit-text").textContent = `⏱ ${Math.floor(Math.max(0, spielMs) / 1000)} s`;
   }
   if (api.istLeiter) pruefeAuswertung(elapsedGesamt);
 }
@@ -650,10 +636,9 @@ function aktualisiereStatus() {
   if (ich) {
     if (spielfeld) spielfeld.sperren();
     $("mm-fertig-overlay").hidden = false;
-    $("mm-fertig-overlay").classList.remove("pg-zeit-aus");
     $("mm-fertig-overlay").textContent = `✅ Geschafft in ${formatZeit(ich.ms)}`;
     $("mm-hinweis").textContent = "Warte auf die anderen …";
-  } else if (!(spielfeld && spielfeld.zeitAus)) {
+  } else {
     $("mm-fertig-overlay").hidden = true;
   }
   renderWarteAvatare($("mm-status"), spielerListe.filter((sp) => !fertigIds.has(sp.id) && sp.id !== api.spielerId));
@@ -663,7 +648,6 @@ function aktualisiereStatus() {
 async function meldeFertig() {
   if (status !== "runde_aktiv" || eigenFertig()) return;
   const ms = Math.max(0, Date.now() - vorbereitungSeit - COUNTDOWN_MS);
-  if (ms > einstellungen.zeit * 1000 + 500) return;
   alleFertig.push({ spielerId: api.spielerId, spielerName: api.spielerName, rundenIndex, ms });
   aktualisiereStatus();
   try {
@@ -706,6 +690,9 @@ async function teamAktion(art, idx, anordnung) {
           ms = Math.max(0, Date.now() - vorbereitungSeit - COUNTDOWN_MS);
         }
       }
+    } else if (art === "zu-alle") {
+      if (Object.keys(offen).length < 2) throw new Error("ueberholt");
+      Object.keys(offen).forEach((k) => delete offen[k]);
     } else {
       if (offen[ich] !== idx) throw new Error("ueberholt");
       delete offen[ich];
@@ -735,8 +722,7 @@ async function pruefeAuswertung(elapsedGesamt) {
   if (elapsedGesamt < COUNTDOWN_MS || spielerListe.length === 0) return;
   const fertig = fertigeDieserRunde(rundenIndex);
   const alleDa = spielerListe.every((sp) => fertig.some((f) => f.spielerId === sp.id));
-  const zeitUm = elapsedGesamt - COUNTDOWN_MS >= einstellungen.zeit * 1000 + AUSWERTUNG_PUFFER_MS;
-  if (!alleDa && !zeitUm) return;
+  if (!alleDa) return;
   auswertungLaeuft = true;
   try {
     const punkte = berechnePunkte(fertig, spielerListe.map((s) => s.id));
@@ -765,7 +751,7 @@ function zeigeErgebnisListe(pos) {
     const f = fertig.find((x) => x.spielerId === s.id) ?? null;
     const p = punkte[s.id] ?? 0;
     return spielerKarte(s.name, s.farbe, s.icon, p > 0 ? `+${p}` : "0", {
-      extra: f ? `Zeit: ${formatZeit(f.ms)}` : "Nicht geschafft",
+      extra: f ? `Zeit: ${formatZeit(f.ms)}` : "Nicht fertig",
       punkteRechts: s.punkte ?? 0
     });
   };
@@ -874,7 +860,10 @@ function baueSpielfeld(anordnung) {
   const halten = { l: false, r: false, u: false, d: false };
   let ausstehend = false;         // Teammodus: Transaktion läuft
   let gesperrt = zuschauer;
-  let zeitAus = false;
+  let schliessTimer = null;       // Einzelspiel: Fehlpaar wieder umdrehen
+  let zweiOffenSeit = 0;          // Teammodus: seit wann sind 2 Karten offen
+  let schliessend = false;
+  const joy = { x: 0, y: 0 };
   let gezeichnetKey = "";
   let rafId = 0, letzteZeit = performance.now();
   let c = 60, W = 300, H = 400, ox = 0, oy = 0;
@@ -939,6 +928,7 @@ function baueSpielfeld(anordnung) {
     }
     if (z.gefunden.has(idx)) return { modus: null, idx, grund: "gefunden" };
     if (z.offen.has(idx)) {
+      if (z.offen.size >= 2) return { modus: null, idx, grund: "voll" };
       return z.offen.get(idx) === api.spielerId
         ? { modus: "zu", idx, grund: "" }
         : { modus: null, idx, grund: "fremd" };
@@ -953,7 +943,7 @@ function baueSpielfeld(anordnung) {
   }
 
   function aktion() {
-    if (gesperrt || zeitAus) return;
+    if (gesperrt) return;
     const z = zustand();
     const lage = aktionsLage(z);
     if (!lage.modus) return;
@@ -970,6 +960,9 @@ function baueSpielfeld(anordnung) {
               gesperrt = true;
               meldeFertig();
             }
+          } else {
+            clearTimeout(schliessTimer);
+            schliessTimer = setTimeout(() => { lokOffen = new Set(); gezeichnetKey = ""; letzterKnopfKey = ""; }, FLIP_MS);
           }
         }
       } else {
@@ -987,7 +980,10 @@ function baueSpielfeld(anordnung) {
       .finally(() => { ausstehend = false; gezeichnetKey = ""; });
   }
 
-  function stoppeHalten() { Object.keys(halten).forEach((k) => { halten[k] = false; }); }
+  function stoppeHalten() {
+    Object.keys(halten).forEach((k) => { halten[k] = false; });
+    if (typeof joyLos === "function") joyLos();
+  }
 
   // ---- Eingabe
   const TASTEN = {
@@ -1010,19 +1006,35 @@ function baueSpielfeld(anordnung) {
     if (r) halten[r] = false;
   }, sig);
   window.addEventListener("blur", stoppeHalten, sig);
-  kreuz.querySelectorAll(".mm-pfeil").forEach((b) => {
-    const r = b.dataset.richtung;
-    b.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      if (b.disabled || blockiert()) return;
-      halten[r] = true;
-      try { b.setPointerCapture(e.pointerId); } catch { /* ok */ }
-    }, sig);
-    ["pointerup", "pointercancel", "lostpointercapture", "pointerleave"].forEach((ev) => {
-      b.addEventListener(ev, () => { halten[r] = false; }, sig);
-    });
-    b.addEventListener("contextmenu", (e) => e.preventDefault(), sig);
+  // Joystick: Ziehen aus der Mitte; je weiter, desto schneller.
+  const joyKnopf = $("mm-joy-knopf");
+  let joyId = null;
+  function joySetze(e) {
+    const r = kreuz.getBoundingClientRect();
+    const radius = r.width / 2 - joyKnopf.offsetWidth / 2;
+    let vx = (e.clientX - (r.left + r.width / 2)) / radius;
+    let vy = (e.clientY - (r.top + r.height / 2)) / radius;
+    const l = Math.hypot(vx, vy);
+    if (l > 1) { vx /= l; vy /= l; }
+    joy.x = vx; joy.y = vy;
+    joyKnopf.style.transform = `translate(${vx * radius}px, ${vy * radius}px)`;
+  }
+  function joyLos() {
+    joyId = null; joy.x = 0; joy.y = 0;
+    joyKnopf.style.transform = "translate(0, 0)";
+  }
+  kreuz.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    if (blockiert() || gesperrt || joyId !== null) return;
+    joyId = e.pointerId;
+    try { kreuz.setPointerCapture(e.pointerId); } catch { /* ok */ }
+    joySetze(e);
+  }, sig);
+  kreuz.addEventListener("pointermove", (e) => { if (e.pointerId === joyId) joySetze(e); }, sig);
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((ev) => {
+    kreuz.addEventListener(ev, (e) => { if (e.pointerId === joyId) joyLos(); }, sig);
   });
+  kreuz.addEventListener("contextmenu", (e) => e.preventDefault(), sig);
   knopf.addEventListener("click", aktion, sig);
 
   // ---- Positions-Sync (nur Teammodus)
@@ -1202,30 +1214,22 @@ function baueSpielfeld(anordnung) {
     knopf.classList.toggle("zu", lage.modus === "zu");
     knopf.textContent = lage.modus === "zu" ? "Umdrehen" : "Aufdecken";
     kreuz.classList.toggle("gesperrt", geblockt || gesperrt);
-    kreuz.querySelectorAll(".mm-pfeil").forEach((b) => { b.disabled = geblockt || gesperrt; });
     if (geblockt) stoppeHalten();
     const paare = z.gefunden.size / 2;
     $("mm-paare-text").textContent = `🃏 ${paare} / ${anzahl / 2} Paare`;
-    if (gesperrt || zeitAus) return;
+    if (gesperrt) return;
     let text = "Lauf auf eine Karte und deck sie auf.";
     if (zuschauer) text = "Du bist in keinem Team - du schaust zu.";
     else if (lage.grund === "halten" || geblockt) {
       text = z.offen.size >= 2 && teammodus
-        ? "Kein Paar! Dreh deine Karte wieder um - dann kann sich dein Team bewegen."
-        : "Du hältst eine Karte und kannst dich nicht bewegen. Dein Team deckt die zweite auf - oder dreh sie zurück.";
+        ? "Kein Paar! Die Karten drehen sich gleich wieder um."
+        : "Du hältst eine Karte und kannst dich nicht bewegen. Dein Team deckt die zweite auf - oder dreh sie mit „Umdrehen“ zurück.";
     } else if (lage.modus === "auf") text = "Tipp auf „Aufdecken“.";
-    else if (lage.modus === "zu") {
-      text = !teammodus && z.offen.size >= 2
-        ? "Kein Paar! Dreh beide Karten selbst wieder um: auf die Karte stellen und „Umdrehen“ drücken."
-        : "Du stehst auf einer offenen Karte - „Umdrehen“ dreht sie um.";
-    }
-    else if (lage.grund === "voll") {
-      text = teammodus
-        ? "Schon zwei Karten offen - wartet, bis eine umgedreht ist."
-        : "Zwei Karten sind offen. Kein Paar? Lauf zu einer offenen Karte und dreh sie zurück.";
-    } else if (lage.grund === "gefunden") text = "Dieses Paar habt ihr schon.";
+    else if (lage.modus === "zu") text = "Du stehst auf deiner offenen Karte - „Umdrehen“ dreht sie wieder um.";
+    else if (lage.grund === "voll") text = "Kein Paar! Die Karten drehen sich gleich wieder um.";
+    else if (lage.grund === "gefunden") text = "Dieses Paar habt ihr schon.";
     else if (lage.grund === "fremd") text = "Diese Karte hält gerade jemand aus deinem Team.";
-    else if (!teammodus && z.offen.size >= 2) text = "Zwei Karten offen. Kein Paar? Lauf zu einer und dreh sie zurück.";
+    else if (z.offen.size >= 2) text = "Kein Paar! Die Karten drehen sich gleich wieder um.";
     hinweis.textContent = text;
   }
 
@@ -1234,17 +1238,31 @@ function baueSpielfeld(anordnung) {
     rafId = requestAnimationFrame(schleife);
     const dt = Math.min(0.05, (jetzt - letzteZeit) / 1000);
     letzteZeit = jetzt;
-    if (!gesperrt && !zeitAus && !zuschauer && !blockiert()) {
-      const dx = (halten.r ? 1 : 0) - (halten.l ? 1 : 0);
-      const dy = (halten.d ? 1 : 0) - (halten.u ? 1 : 0);
-      if (dx || dy) {
-        const len = Math.hypot(dx, dy);
-        x += (dx / len) * TEMPO * dt;
-        y += (dy / len) * TEMPO * dt;
+    if (!gesperrt && !zuschauer && !blockiert()) {
+      let dx = (halten.r ? 1 : 0) - (halten.l ? 1 : 0) + joy.x;
+      let dy = (halten.d ? 1 : 0) - (halten.u ? 1 : 0) + joy.y;
+      const len = Math.hypot(dx, dy);
+      if (len > 0.15) {
+        const tempo = TEMPO * Math.min(1, len);
+        x += (dx / len) * tempo * dt;
+        y += (dy / len) * tempo * dt;
         x = Math.max(0.2, Math.min(SPALTEN - 0.2, x));
         y = Math.max(0.2, Math.min(zeilen - 0.2, y));
-        sendePosition(false);
-      } else sendePosition(false);
+      }
+      sendePosition(false);
+    }
+    // Teammodus: ein Fehlpaar drehen alle im Team nach kurzer Zeit wieder um
+    // (die Transaktion ist idempotent - es schadet nicht, wenn mehrere es auslösen).
+    if (teammodus && !gesperrt) {
+      if (teamDoc().offen && Object.keys(teamDoc().offen).length >= 2) {
+        if (!zweiOffenSeit) zweiOffenSeit = jetzt;
+        else if (jetzt - zweiOffenSeit > FLIP_MS && !schliessend) {
+          schliessend = true;
+          teamAktion("zu-alle", null, anordnung)
+            .catch((e) => { if (e.message !== "ueberholt") zeigeDebug("Aktion fehlgeschlagen: " + e.message); })
+            .finally(() => { schliessend = false; zweiOffenSeit = 0; });
+        }
+      } else zweiOffenSeit = 0;
     }
     zeichne();
   }
@@ -1254,13 +1272,12 @@ function baueSpielfeld(anordnung) {
 
   return {
     layout,
-    get zeitAus() { return zeitAus; },
-    zeitAbgelaufen() { zeitAus = true; gesperrt = true; stoppeHalten(); letzterKnopfKey = ""; },
     sperren() { gesperrt = true; stoppeHalten(); letzterKnopfKey = ""; },
     teamZustandGeaendert() { letzterKnopfKey = ""; },
     abbauen() {
       cancelAnimationFrame(rafId);
       clearTimeout(posTimer);
+      clearTimeout(schliessTimer);
       ac.abort();
       if (teammodus && meinTeam) deleteDoc(doc(api.db, "raeume", api.code, "mmPos", api.spielerId)).catch(() => {});
     }
