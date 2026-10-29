@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=396";
+import { kartenSvg } from "./doppelkopf/karten.js?v=397";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -790,6 +790,32 @@ ANLEITUNGEN["kartentausch"] = [
     t: "Punkte",
     x: ["Wer **richtig** gewählt hat, steht vor allen, die falsch lagen - und unter den Richtigen zählt, **wer schneller gewählt hat**. Wer nichts wählt, ist Letzter. " + PL, RUNDEN + " Kartentausch braucht **mindestens 2 Spieler**."],
     s: () => unifiedRang([["Luca", "richtig · 5", 1], ["Du", "richtig · 3", 0], ["Kevin", "falsch · 2", 2], ["Sinan", "nichts · 1", 3]])
+  }
+];
+ANLEITUNGEN["schnellschuss"] = [
+  {
+    ohneFoto: true,
+    t: "Worum geht's?",
+    x: ["Auf deinem Handy ist ein **großer Knopf**. Nacheinander poppen **Emojis** auf - bei allen Spielern **gleichzeitig**.", "Ist es etwas **Gutes** (⚽ 🏀 🏆), tippst du so **schnell wie möglich**."],
+    s: () => E(160, 70, "⚽", 44) + knopf(100, 120, 120, 40, "TIPPEN", "#22c55e", "#052e16", 15) + T(160, 30, "Schnell sein!", 14, "#fde68a", 800)
+  },
+  {
+    ohneFoto: true,
+    t: "Finger weg!",
+    x: ["Ist es etwas **Schlechtes** (💣 🍅 💩 🧨), darfst du **nicht** tippen. Wer es trotzdem tut, bekommt **einen Minuspunkt**.", "Das Bild verschwindet nach kurzer Zeit wieder, dann kommt das nächste - es wird **immer schneller**."],
+    s: () => E(160, 70, "💣", 44) + T(160, 120, "Nicht tippen!", 15, "#fca5a5", 800) + T(160, 150, "Sonst: −1 Punkt", 12, "#fff", 600)
+  },
+  {
+    ohneFoto: true,
+    t: "Punkte",
+    x: ["Bei jedem guten Bild bekommt der **Schnellste so viele Punkte wie Spieler mitspielen**, der Zweite einen weniger usw. Der Letzte, der getippt hat, bekommt 1 Punkt. **Bei 4 Spielern: 4 · 3 · 2 · 1.** Wer nicht tippt, bekommt 0.", "Gemessen wird die Reaktionszeit **auf deinem eigenen Handy** - ein schlechtes Netz ist also kein Nachteil. Rechts siehst du immer den **aktuellen Punktestand**."],
+    s: () => unifiedRang([["Luca", "0,31 s · +4", 1], ["Du", "0,38 s · +3", 0], ["Kevin", "0,52 s · +2", 2], ["Sinan", "Bombe · −1", 3]])
+  },
+  {
+    ohneFoto: true,
+    t: "Wertung",
+    x: ["Nach dem letzten Bild gibt es den **Endstand**. Die Platzierung geht in die **Gesamtwertung**.", RUNDEN + " Schnellschuss braucht **mindestens 2 Spieler**."],
+    s: () => unifiedRang([["Luca", "12", 1], ["Du", "9", 0], ["Kevin", "4", 2], ["Sinan", "−1", 3]])
   }
 ];
 ANLEITUNGEN["run"] = [

@@ -3591,3 +3591,36 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
   .mm-joy-knopf { width: 48px; height: 48px; margin: -24px 0 0 -24px; }
   .mm-aktion { min-height: 70px; }
 }
+
+/* Schnellschuss */
+.sk-spiel { display: flex; gap: 10px; align-items: stretch; }
+.sk-haupt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.sk-buehne {
+  position: relative; display: flex; align-items: center; justify-content: center; height: 190px;
+  border-radius: 16px; background: rgba(0, 0, 0, 0.22); border: 2px solid rgba(255, 255, 255, 0.12); overflow: hidden;
+}
+.sk-emoji { font-size: 5.6rem; line-height: 1; user-select: none; -webkit-user-select: none; }
+.sk-emoji.an { animation: sk-pop 0.16s ease-out; }
+@keyframes sk-pop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.18); opacity: 1; } 100% { transform: scale(1); } }
+.sk-rueck {
+  position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-weight: 900; font-size: 1.15rem;
+}
+.sk-rueck.gut { color: #86efac; }
+.sk-rueck.schlecht { color: #fca5a5; }
+.sk-knopf {
+  margin: 0; width: 100%; min-height: 128px; border-radius: 24px; font-size: 1.7rem; font-weight: 900; letter-spacing: 0.04em;
+  background: #22c55e; color: #052e16; border: 3px solid #22c55e; box-shadow: 0 8px 22px rgba(34, 197, 94, 0.45);
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  transition: transform 0.08s, background 0.08s;
+}
+.sk-knopf.gedrueckt { transform: scale(0.95); background: #16a34a; }
+.sk-liste { flex: none; width: 112px; display: flex; flex-direction: column; gap: 5px; }
+.sk-zeile {
+  display: flex; align-items: center; gap: 5px; padding: 5px 6px; border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+  background: rgba(255, 255, 255, 0.07); border-left: 4px solid var(--chip, #7c3aed);
+}
+.sk-zeile.ich { background: rgba(255, 255, 255, 0.18); }
+.sk-platz { opacity: 0.6; width: 0.9em; flex: none; }
+.sk-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-pkt { flex: none; font-variant-numeric: tabular-nums; }
+@media (max-height: 720px) { .sk-buehne { height: 150px; } .sk-emoji { font-size: 4.4rem; } .sk-knopf { min-height: 100px; } }

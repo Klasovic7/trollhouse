@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "396";
+const SPIEL_VERSION = "397";
 
 export const SPIELE = [
   {
@@ -227,6 +227,16 @@ export const SPIELE = [
     beschreibung: "Merkt euch den Fußballer, verfolgt die Tauschaktion und findet ihn wieder - jeder wählt eine Karte",
     minSpieler: 2,
     laden: () => import(`./kartentausch/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "schnellschuss",
+    name: "Schnellschuss",
+    emoji: "⚡",
+    bild: "bilder/schnellschuss-ball.webp",
+    farbe: "#f59e0b",
+    beschreibung: "Bälle poppen auf - tippt blitzschnell! Bei Bombe und Tomate heißt es: Finger weg",
+    minSpieler: 2,
+    laden: () => import(`./schnellschuss/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "run",
