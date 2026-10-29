@@ -3613,7 +3613,14 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   transition: transform 0.08s, background 0.08s;
 }
-.sk-knopf.gedrueckt { transform: scale(0.95); background: #16a34a; }
+.sk-knopf, .sk-knopf:hover, .sk-knopf:focus, .sk-knopf:active, .sk-knopf:focus-visible {
+  background: #22c55e !important; border-color: #22c55e !important; color: #052e16 !important; outline: none;
+  box-shadow: 0 8px 22px rgba(34, 197, 94, 0.45) !important; transform: none; -webkit-tap-highlight-color: transparent;
+}
+/* kurzes Aufblitzen beim Tippen, danach sofort wieder der Ausgangszustand */
+.sk-knopf.gedrueckt, .sk-knopf.gedrueckt:hover, .sk-knopf.gedrueckt:active {
+  transform: scale(0.95); background: #15803d !important; border-color: #4ade80 !important;
+}
 .sk-liste { flex: none; width: 112px; display: flex; flex-direction: column; gap: 5px; }
 .sk-zeile {
   display: flex; align-items: center; gap: 5px; padding: 5px 6px; border-radius: 10px; font-size: 0.8rem; font-weight: 700;

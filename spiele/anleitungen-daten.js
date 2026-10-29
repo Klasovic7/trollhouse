@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=397";
+import { kartenSvg } from "./doppelkopf/karten.js?v=398";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -796,7 +796,7 @@ ANLEITUNGEN["schnellschuss"] = [
   {
     ohneFoto: true,
     t: "Worum geht's?",
-    x: ["Auf deinem Handy ist ein **großer Knopf**. Nacheinander poppen **Emojis** auf - bei allen Spielern **gleichzeitig**.", "Ist es etwas **Gutes** (⚽ 🏀 🏆), tippst du so **schnell wie möglich**."],
+    x: ["Auf deinem Handy ist ein **großer Knopf**. Nacheinander poppen **Emojis** auf - bei allen Spielern **gleichzeitig**.", "Ist es etwas **Gutes** (⚽ 🏀 🏈), tippst du so **schnell wie möglich**."],
     s: () => E(160, 70, "⚽", 44) + knopf(100, 120, 120, 40, "TIPPEN", "#22c55e", "#052e16", 15) + T(160, 30, "Schnell sein!", 14, "#fde68a", 800)
   },
   {

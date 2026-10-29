@@ -24,8 +24,8 @@ const MAX_BILDER = 40;
 const STANDARD_BILDER = 15;
 const NACHLAUF_MS = 1800;        // so lange warten wir nach dem letzten Bild auf Tipps
 const ABRECHNUNG_MS = 1500;      // ein Bild gilt erst nach dieser Zeit als abgerechnet
-const GUT = ["⚽", "🏀", "🎾", "🏈", "⚾", "🏐", "🏉", "🎱", "🏓", "🥎", "🏆", "⭐"];
-const SCHLECHT = ["💣", "🍅", "💩", "🧨", "🦂", "🐍", "☠️", "🕷️", "💥", "🤢"];
+const GUT = ["⚽", "🏀", "🎾", "🏈", "🏐", "🏉", "🎱"];
+const SCHLECHT = ["💣", "🍅", "💩", "🧨", "☠️", "💥", "🤢"];
 
 function zufall(n) { return Math.floor(Math.random() * n); }
 function waehle(liste) { return liste[zufall(liste.length)]; }
@@ -61,7 +61,7 @@ function zeitplan(folge) {
 
 const VORLAGE = `
   <div id="sk-setup" class="bildschirm-karte" hidden>
-    <p class="hinweis-text">Schnellschuss: Es poppen nacheinander Emojis auf. Bei etwas Gutem (⚽ 🏀 🏆)
+    <p class="hinweis-text">Schnellschuss: Es poppen nacheinander Emojis auf. Bei etwas Gutem (⚽ 🏀 🏈)
       tippt ihr so schnell wie möglich - der Schnellste bekommt die meisten Punkte. Bei etwas Schlechtem
       (💣 🍅 💩) darf niemand tippen, sonst gibt es einen Minuspunkt.</p>
     <div id="sk-einstellungen" hidden>
@@ -468,7 +468,7 @@ async function tippe() {
   rueck.className = "sk-rueck " + (b.gut ? "gut" : "schlecht");
   rueck.textContent = b.gut ? `${(ms / 1000).toFixed(2).replace(".", ",")} s` : "−1";
   $("sk-knopf").classList.add("gedrueckt");
-  setTimeout(() => $("sk-knopf")?.classList.remove("gedrueckt"), 120);
+  setTimeout(() => { const kn = $("sk-knopf"); kn?.classList.remove("gedrueckt"); kn?.blur(); }, 140);
   if (navigator.vibrate) navigator.vibrate(b.gut ? 15 : [40, 30, 40]);
   try {
     await setDoc(doc(api.db, "raeume", api.code, "skTipp", `${k}_${api.spielerId}`),
