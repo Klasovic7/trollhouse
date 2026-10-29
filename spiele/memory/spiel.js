@@ -41,7 +41,7 @@ const STANDARD_DRILLINGE = 6;
 // Spalten je nach Kartenzahl: 4 bei Paaren, bei Drillingen 5/6/6 (15/18/21 Karten)
 function spaltenFuer(anzahl) { return anzahl === 15 ? 5 : anzahl === 18 || anzahl === 21 ? 6 : SPALTEN; }
 const MOTIVE = 22;            // bilder/memory/f01.webp ... f22.webp
-const BILD_VERSION = "385";
+const BILD_VERSION = "386";
 const TEMPO = 2.7;            // Zellen pro Sekunde
 const KARTE = 0.8;            // Kartenkantenlänge in Zellen
 const FIGUR_R = 0.3;          // Figurenradius in Zellen
@@ -906,7 +906,10 @@ function baueSpielfeld(anordnung) {
   const knopf = $("mm-aktion");
   const hinweis = $("mm-hinweis");
   const kreuz = $("mm-kreuz");
-  const ctx = canvas.getContext("2d");
+  let ctx = canvas.getContext("2d");
+  const hauptCtx = ctx;
+  let rueckSprite = null;       // einmal vorgezeichnete Kartenrückseite (schneller als jedes Bild neu zu malen)
+  const SPR_RAND = 6;
   const ac = new AbortController();
   const sig = { signal: ac.signal };
 
@@ -951,6 +954,7 @@ function baueSpielfeld(anordnung) {
     canvas.style.width = W + "px";
     canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    baueRueckSprite();
     gezeichnetKey = "";
   }
 
@@ -1130,6 +1134,39 @@ function baueSpielfeld(anordnung) {
     ctx.arcTo(px, py, px + w, py, r);
     ctx.closePath();
   }
+  function zeichneRueckseite(px, py, s, r) {
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    rundRechteck(px + 2, py + 3, s, s, r);
+    ctx.fill();
+    const g = ctx.createLinearGradient(px, py, px + s, py + s);
+    g.addColorStop(0, "#4f46e5");
+    g.addColorStop(1, "#7c3aed");
+    ctx.fillStyle = g;
+    rundRechteck(px, py, s, s, r);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = Math.max(1.5, s * 0.03);
+    rundRechteck(px + s * 0.07, py + s * 0.07, s * 0.86, s * 0.86, r * 0.7);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.font = `${Math.round(s * 0.42)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("⚽", px + s / 2, py + s / 2 + s * 0.02);
+  }
+  function baueRueckSprite() {
+    const dpr = window.devicePixelRatio || 1;
+    const sz = KARTE * c;
+    const sc = document.createElement("canvas");
+    sc.width = Math.ceil((sz + 2 * SPR_RAND) * dpr);
+    sc.height = sc.width;
+    const sctx = sc.getContext("2d");
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx = sctx;
+    zeichneRueckseite(SPR_RAND, SPR_RAND, sz, sz * 0.13);
+    ctx = hauptCtx;
+    rueckSprite = sc;
+  }
   function zeichneKarte(idx, z, lage) {
     const sp = idx % SPALTEN, ze = Math.floor(idx / SPALTEN);
     const s = KARTE * c;
@@ -1139,27 +1176,13 @@ function baueSpielfeld(anordnung) {
     const besitzer = z.offen.get(idx);
     const offen = gefunden || besitzer !== undefined;
     ctx.save();
-    // Schatten
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
-    rundRechteck(px + 2, py + 3, s, s, r);
-    ctx.fill();
     if (!offen) {
-      const g = ctx.createLinearGradient(px, py, px + s, py + s);
-      g.addColorStop(0, "#4f46e5");
-      g.addColorStop(1, "#7c3aed");
-      ctx.fillStyle = g;
-      rundRechteck(px, py, s, s, r);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      ctx.lineWidth = Math.max(1.5, s * 0.03);
-      rundRechteck(px + s * 0.07, py + s * 0.07, s * 0.86, s * 0.86, r * 0.7);
-      ctx.stroke();
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.font = `${Math.round(s * 0.42)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("⚽", px + s / 2, py + s / 2 + s * 0.02);
+      if (rueckSprite) ctx.drawImage(rueckSprite, px - SPR_RAND, py - SPR_RAND, s + 2 * SPR_RAND, s + 2 * SPR_RAND);
+      else zeichneRueckseite(px, py, s, r);
     } else {
+      ctx.fillStyle = "rgba(0,0,0,0.28)";
+      rundRechteck(px + 2, py + 3, s, s, r);
+      ctx.fill();
       if (gefunden) ctx.globalAlpha = 0.62;
       ctx.fillStyle = "#fffdf5";
       rundRechteck(px, py, s, s, r);
@@ -1308,8 +1331,9 @@ function baueSpielfeld(anordnung) {
       let dx = (halten.r ? 1 : 0) - (halten.l ? 1 : 0) + joy.x;
       let dy = (halten.d ? 1 : 0) - (halten.u ? 1 : 0) + joy.y;
       const len = Math.hypot(dx, dy);
-      if (len > 0.15) {
-        const tempo = TEMPO * Math.min(1, len);
+      if (len > 0.08) {
+        // schnell auf volles Tempo: schon ab ca. 40 % Auslenkung
+        const tempo = TEMPO * Math.min(1, 0.35 + len * 1.6);
         x += (dx / len) * tempo * dt;
         y += (dy / len) * tempo * dt;
         x = Math.max(0.2, Math.min(SPALTEN - 0.2, x));
