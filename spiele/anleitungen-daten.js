@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=381";
+import { kartenSvg } from "./doppelkopf/karten.js?v=382";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -739,8 +739,13 @@ ANLEITUNGEN["turbo"] = [
     s: () => R(30, 110, 260, 36, "#475569", 8) + R(30, 126, 260, 4, "#fde68a", 2) + E(110, 100, "🏎️", 44) + T(160, 40, "Schnellste Runde gewinnt", 14, "#fde68a", 800)
   },
   {
-    t: "Strecke, Zeit und Bereit",
-    x: ["Der **Spielleiter** wählt die **Strecke** (Asphalt, Eis, Sand oder Offroad - mit Länge in km) und die **Dauer** (3, 4 oder 5 Minuten). Bei allen anderen stellt sich das automatisch ein.", "Alle anderen drücken **Bereit** - ihre Profilbilder zeigen, wer schon so weit ist. Erst wenn **alle bereit** sind, kann der Spielleiter **starten**."],
+    t: "Strecke wählen",
+    x: ["Oben stehen die **4 Streckenarten**: **Asphalt, Eis, Sand und Offroad**. Tippe eine Art an, dann erscheinen darunter **4 Strecken** mit Vorschaubild und **Länge in km**.", "Der **Spielleiter** tippt die Strecke an, die gefahren wird. Bei allen anderen stellt sie sich automatisch ein. Jede Strecke ist so gebaut, dass eine Runde etwa **25 bis 40 Sekunden** dauert."],
+    s: () => E(70, 45, "🛣️", 26) + E(130, 45, "❄️", 26) + E(190, 45, "🏜️", 26) + E(250, 45, "🌲", 26) + R(40, 80, 110, 42, "#ffffff22", 8) + R(170, 80, 110, 42, "#ffffff22", 8) + R(40, 130, 110, 42, "#ffffff22", 8) + R(170, 130, 110, 42, "#ffffff22", 8) + T(95, 105, "0,68 km", 10) + T(225, 105, "0,75 km", 10) + T(95, 155, "0,88 km", 10) + T(225, 155, "1,01 km", 10)
+  },
+  {
+    t: "Zeit und Bereit",
+    x: ["Der **Spielleiter** stellt die **Dauer** ein (3, 4 oder 5 Minuten). Bei allen anderen stellt sich das automatisch ein.", "Alle anderen drücken **Bereit** - ihre Profilbilder zeigen, wer schon so weit ist. Erst wenn **alle bereit** sind, kann der Spielleiter **starten**."],
     s: () => avatar(70, 70, 0, "Kevin") + avatar(160, 70, 1, "Luca") + avatar(250, 70, 2, "Nader") + T(70, 112, "✅", 14) + T(160, 112, "✅", 14) + T(250, 112, "⏳", 14) + knopf(90, 135, 140, 28, "Starten", "#ff5b36")
   },
   {
@@ -855,20 +860,20 @@ fix("run", 3, { x: [
   "**Niedrige Hürden** überspringst du, **hohe Tore** unterrutschst du, **Blöcke** umläufst du. Bei einem Treffer verlierst du ein Leben, wirst kurz langsamer und bist einen Moment **unverwundbar**.",
   "Der Spielleiter stellt **1 oder 3 Leben** ein. Hast du keins mehr, bist du **gestürzt**. Eine Runde endet, wenn **alle gestürzt** sind."
 ] });
-fix("turbo", 2, { x: [
-  "Oben wählst du die **Streckenart** (Asphalt, Eis, Sand oder Offroad), darunter liegen **4 Strecken** mit Vorschaubild und **Länge in km**. Der **Spielleiter** tippt die Strecke an und stellt die **Dauer** (3, 4 oder 5 Minuten) ein. Bei allen anderen stellt sich das automatisch ein.",
+fix("turbo", 3, { x: [
+  "Der **Spielleiter** stellt die **Dauer** ein (3, 4 oder 5 Minuten). Bei allen anderen stellt sich das automatisch ein.",
   "Halte das Handy **quer**. Alle anderen drücken **Bereit** - ihre Profilbilder zeigen, wer schon so weit ist. Erst wenn **alle bereit** sind, kann der Spielleiter **starten**."
 ] });
-fix("turbo", 3, { x: [
+fix("turbo", 4, { x: [
   "**Lenken** mit den Tasten links, **Gas** und **Bremse** rechts. **Bremse + Lenken** = Drift.",
   "**Boost-Felder** geben Extra-Tempo, der **blaue Geist** zeigt ab deiner ersten Zielfahrt deinen Bestlauf. Mit **↻** oben startest du neu - im Ziel geht es automatisch neu los."
 ] });
-fix("turbo", 4, { x: [
+fix("turbo", 5, { x: [
   "Du kannst **so lange neue Fahrten starten, bis die Zeit abgelaufen ist**. Die laufende Fahrt darfst du danach noch **zu Ende fahren**.",
   "Nach Ablauf der Zeit erscheint oben **Beenden**: Damit beendest du das Zeitfahren (oder es endet im Ziel automatisch) - du verlässt **nicht den Raum**. Dann siehst du eine **Rangliste**: wer noch fährt und wer schon fertig ist."
 ] });
-fix("turbo", 5, { x: [
-  ANLEITUNGEN["turbo"][4].x[0],
-  ANLEITUNGEN["turbo"][4].x[1],
+fix("turbo", 6, { x: [
+  ANLEITUNGEN["turbo"][5].x[0],
+  ANLEITUNGEN["turbo"][5].x[1],
   "Wer keine gültige Runde schafft, bekommt 0 Punkte. Die Punkte gibt es, sobald alle Fahrer **Beenden** gedrückt haben oder ihre Zeit abgelaufen ist."
 ] });
