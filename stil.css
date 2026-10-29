@@ -3575,4 +3575,6 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 .rv-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); font-size: 0.85rem; }
 .rv-chip i { width: 12px; height: 12px; border-radius: 3px; background: var(--chip, #888); display: inline-block; }
 .rv-chip b { font-variant-numeric: tabular-nums; min-width: 1.4em; text-align: right; }
-.rv-chip.aus { opacity: 0.4; }
+
+.rv-chip.fertig { opacity: 1; background: rgba(255,255,255,0.14); }
+.rv-chip .rv-platz { min-width: 0; margin-right: -2px; }

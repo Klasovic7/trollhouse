@@ -963,16 +963,26 @@ function baueSpielfeld(layout) {
 
   function aktualisiereChips(bm, st) {
     chips.hidden = false;
-    const rest = new Map();
-    bm.forEach((id, g) => { rest.set(id, Math.max(0, ord[g].length - st.schritt)); });
-    const key = [...rest.entries()].join("|") + st.phase;
+    const gr = new Map(), rest = new Map();
+    bm.forEach((id, g) => { gr.set(id, ord[g].length); rest.set(id, Math.max(0, ord[g].length - st.schritt)); });
+    // Platz nach Gebietsgroesse (Gleichstand teilt sich den Platz)
+    const sortiert = spielerListe.filter((s) => gr.has(s.id)).sort((a, b) => gr.get(b.id) - gr.get(a.id));
+    const platz = new Map();
+    sortiert.forEach((s, i) => {
+      platz.set(s.id, i > 0 && gr.get(s.id) === gr.get(sortiert[i - 1].id) ? platz.get(sortiert[i - 1].id) : i + 1);
+    });
+    // Wer keine Quadrate mehr hat (oder am Ende uebrig ist), bekommt seinen Platz
+    const fertig = (id) => rest.get(id) === 0 || st.phase === 3;
+    const key = sortiert.map((s) => s.id + ":" + rest.get(s.id) + ":" + fertig(s.id)).join("|");
     if (key === letzteChipsKey) return;
     letzteChipsKey = key;
-    const zeilen = spielerListe.filter((s) => rest.has(s.id)).sort((a, b) => rest.get(b.id) - rest.get(a.id));
-    chips.innerHTML = zeilen.map((s) => {
+    chips.innerHTML = sortiert.map((s) => {
       const farbe = s.farbe || "#7c3aed";
-      const aus = rest.get(s.id) === 0;
-      return `<span class="rv-chip${aus ? " aus" : ""}" style="--chip:${farbe}"><i></i>${escapeHtml(s.name)} <b>${rest.get(s.id)}</b></span>`;
+      const f = fertig(s.id);
+      const inhalt = f
+        ? `<b class="rv-platz">${platz.get(s.id)}.</b> ${escapeHtml(s.name)} <b>${gr.get(s.id)}</b>`
+        : `${escapeHtml(s.name)} <b>${rest.get(s.id)}</b>`;
+      return `<span class="rv-chip${f ? " fertig" : ""}" style="--chip:${farbe}"><i></i>${inhalt}</span>`;
     }).join("");
   }
   function escapeHtml(t) {
@@ -993,11 +1003,8 @@ function baueSpielfeld(layout) {
     let text;
     if (st.phase === 1) text = "Alle haben gewählt - jetzt werden die Quadrate sichtbar!";
     else if (st.phase === 2) text = "Aus jeder Farbe verschwindet ein Quadrat nach dem anderen …";
-    else if (st.phase === 3) {
-      const sieger = [...bm.entries()].sort((a, b) => ord[b[0]].length - ord[a[0]].length)[0];
-      const name = sieger ? spielerListe.find((s) => s.id === sieger[1])?.name : "";
-      text = name ? `👑 ${name} hatte das größte Gebiet (${ord[sieger[0]].length} Quadrate)!` : "";
-    } else if (meldung) text = meldung;
+    else if (st.phase === 3) text = "Das war's - gleich kommt die Wertung.";
+    else if (meldung) text = meldung;
     else if (meinGebiet(bm) !== null) text = "Du hast dein Gebiet. Warte auf die anderen …";
     else if (l.grund === "belegt") text = "Dieses Gebiet ist schon vergeben - such dir ein anderes.";
     else text = "Lauf in ein Gebiet und sichere es dir. Welches ist wohl am größten?";
