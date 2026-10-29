@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "388";
+const SPIEL_VERSION = "389";
 
 export const SPIELE = [
   {
@@ -207,6 +207,16 @@ export const SPIELE = [
     beschreibung: "Memory von oben: Lauft über die Karten, deckt Fußballer-Paare auf - allein oder im Team",
     minSpieler: 2,
     laden: () => import(`./memory/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "revier",
+    name: "Revierkampf",
+    emoji: "🗺️",
+    bild: "bilder/revier-gebiete.webp",
+    farbe: "#06b6d4",
+    beschreibung: "Sichert euch ein Gebiet - am Ende gewinnt, wer die meisten Quadrate übrig hat",
+    minSpieler: 2,
+    laden: () => import(`./revier/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "run",

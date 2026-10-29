@@ -23,7 +23,7 @@ import {
 import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import * as R from "./regeln.js";
-import { kartenSvg, rueckSvg } from "./karten.js?v=388";
+import { kartenSvg, rueckSvg } from "./karten.js?v=389";
 
 const VORBEHALT_ZEIT_MS = 30000;
 const BOT_VB_MS = 1400;

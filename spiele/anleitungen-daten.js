@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=388";
+import { kartenSvg } from "./doppelkopf/karten.js?v=389";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -746,6 +746,28 @@ ANLEITUNGEN["memory"] = [
     t: "Punkte nach Tempo",
     x: ["Wer **zuerst alle Paare** hat, ist Platz 1. " + PL, "Im Teammodus zählt die **Zeit des Teams** - alle im Team bekommen gleich viele Punkte. " + RUNDEN + " Memory braucht **mindestens 2 Spieler** (im Teammodus 4)."],
     s: () => unifiedRang([["Luca", "22 s · 5", 1], ["Du", "30 s · 3", 0], ["Kevin", "46 s · 2", 2], ["Sinan", "52 s · 1", 3]])
+  }
+];
+ANLEITUNGEN["revier"] = [
+  {
+    t: "Worum geht's?",
+    x: ["Das Feld besteht aus **kleinen Quadraten**, die zu **Gebieten** zusammengefasst sind - ein Gebiet pro Spieler. Die Gebiete sind **fast gleich groß, aber nie exakt**.", "Ziel: Sichere dir das **größte** Gebiet. Alle **starten in der Mitte**."],
+    s: () => [0, 1, 2, 3].map((i) => R(90 + (i % 2) * 70, 30 + Math.floor(i / 2) * 55, 66, 51, ["#22c55e", "#06b6d4", "#ef4444", "#f59e0b"][i], 6)).join("") + avatar(160, 85, 1, "Du", 12)
+  },
+  {
+    t: "Gebiet sichern",
+    x: ["Lauf mit dem **Joystick** (am Computer: Pfeiltasten oder W, A, S, D) in ein Gebiet. Steht du in einem **freien** Gebiet, leuchtet der Knopf **Gebiet sichern**.", "Das Gebiet färbt sich in **deiner Farbe** und ist für alle anderen **gesperrt**. Wer zuerst drückt, bekommt es. Du hast **25 Sekunden** - wer nichts wählt, bekommt ein zufälliges freies Gebiet."],
+    s: () => R(60, 40, 90, 70, "#cbd5e1", 6) + R(150, 40, 90, 70, "#ef4444", 6) + avatar(105, 75, 1, "Du", 12) + knopf(160, 140, 130, 34, "Gebiet sichern", "#22c55e", "#052e16", 13)
+  },
+  {
+    t: "Wer hat mehr?",
+    x: ["Haben **alle gewählt**, werden die **kleinen Quadrate** sichtbar. Dann verschwindet **aus jeder Farbe nach und nach ein Quadrat**.", "Wessen Farbe **am längsten übrig bleibt**, hatte das größte Gebiet. Unten siehst du, wie viele Quadrate jede Farbe noch hat."],
+    s: () => [0, 1, 2, 3, 4, 5].map((i) => R(70 + i * 30, 50, 26, 26, "#06b6d4", 4)).join("") + [0, 1, 2, 3].map((i) => R(70 + i * 30, 90, 26, 26, "#ef4444", 4)).join("") + T(160, 145, "Rot ist zuerst leer", 12, "#fde68a", 700)
+  },
+  {
+    t: "Punkte nach Größe",
+    x: ["Das **größte** Gebiet ist Platz 1. " + PL, RUNDEN + " Revierkampf braucht **mindestens 2 Spieler**."],
+    s: () => unifiedRang([["Luca", "26 Quadrate · 5", 1], ["Du", "25 · 3", 0], ["Kevin", "23 · 2", 2], ["Sinan", "22 · 1", 3]])
   }
 ];
 ANLEITUNGEN["run"] = [
