@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=384";
+import { kartenSvg } from "./doppelkopf/karten.js?v=385";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -724,13 +724,18 @@ ANLEITUNGEN["memory"] = [
   },
   {
     t: "Kein Paar?",
-    x: ["Es sind **höchstens 2 Karten** gleichzeitig offen. Passen sie zusammen, bleiben beide **als Paar** liegen.", "Passen sie nicht, **drehen sie sich nach kurzer Zeit automatisch wieder um**. Merk dir also, wo welcher Spieler liegt - dann geht es mit der nächsten Karte weiter."],
+    x: ["Es sind **höchstens 2 Karten** gleichzeitig offen. Passen sie zusammen, bleiben beide **als Paar** liegen.", "Passen sie nicht, **drehen sie sich nach etwa 1,5 Sekunden automatisch wieder um**. Merk dir also, wo welcher Spieler liegt - dann geht es mit der nächsten Karte weiter."],
     s: () => mmKarte(60, 40, "#6d4ee6", true) + mmKarte(104, 40, "#6d4ee6", true) + T(100, 100, "Kein Paar!", 13, "#fca5a5", 800) + T(230, 85, "↻", 34, "#fde68a", 800) + T(160, 150, "Drehen sich von allein wieder um", 11, "#fff", 600)
   },
   {
     t: "Teammodus",
     x: ["Der Spielleiter kann den **Teammodus** einschalten. Jedes Team spielt dann auf **einem gemeinsamen Feld** - ihr seht die Figuren eures Teams.", "Jede*r deckt nur **eine Karte** auf, das Paar entsteht aus den Karten **zweier Teammitglieder**. Solange deine Karte offen ist, kannst du dich **nicht bewegen** - der Joystick ist dann grau. Den Teammodus gibt es nur bei einer **geraden Spielerzahl** (mindestens 4), jedes Team braucht mindestens 2 Personen."],
     s: () => mmKarte(70, 45, "#6d4ee6", true) + mmKarte(116, 45, "#6d4ee6", true) + avatar(87, 62, 0, "", 11) + avatar(133, 62, 2, "", 11) + T(160, 120, "Zwei Karten, ein Paar", 13, "#fde68a", 800) + T(160, 145, "Wer eine Karte hält, steht still", 11, "#fff", 600)
+  },
+  {
+    t: "Dreierteams",
+    x: ["Bei **genau 6 Spielern** gibt es im Teammodus die Option **Dreierteams**: zwei Teams mit je **3 Personen**. Statt Paaren liegen dann **Drillinge** auf dem Feld - immer **drei gleiche Karten** (5, 6 oder 7 Drillinge).", "Es läuft wie sonst: Jede*r im Team deckt **eine Karte** auf und bleibt dabei stehen. Sind **alle drei gleich**, bleiben sie liegen - sonst drehen sie sich nach etwa 1,5 Sekunden wieder um."],
+    s: () => mmKarte(60, 50, "#6d4ee6", true) + mmKarte(104, 50, "#6d4ee6", true) + mmKarte(148, 50, "#6d4ee6", true) + T(160, 120, "3 gleiche Karten = Drilling", 13, "#fde68a", 800) + T(160, 145, "Nur bei 6 Spielern", 11, "#fff", 600)
   },
   {
     t: "Zeit und Runden",

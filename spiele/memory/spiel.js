@@ -34,10 +34,14 @@ const MAX_RUNDEN = 15;
 const STANDARD_RUNDEN = 3;
 const PAARE_OPTIONEN = [6, 8, 10, 12];
 const STANDARD_PAARE = 8;
-const FLIP_MS = 1100;         // so lange bleibt ein Fehlpaar sichtbar
+const FLIP_MS = 1500;         // so lange bleibt ein Fehlpaar sichtbar
 const SPALTEN = 4;
+const DRILLING_OPTIONEN = [5, 6, 7];
+const STANDARD_DRILLINGE = 6;
+// Spalten je nach Kartenzahl: 4 bei Paaren, bei Drillingen 5/6/6 (15/18/21 Karten)
+function spaltenFuer(anzahl) { return anzahl === 15 ? 5 : anzahl === 18 || anzahl === 21 ? 6 : SPALTEN; }
 const MOTIVE = 22;            // bilder/memory/f01.webp ... f22.webp
-const BILD_VERSION = "384";
+const BILD_VERSION = "385";
 const TEMPO = 2.7;            // Zellen pro Sekunde
 const KARTE = 0.8;            // Kartenkantenlänge in Zellen
 const FIGUR_R = 0.3;          // Figurenradius in Zellen
@@ -76,9 +80,11 @@ function mische(liste) {
   return a;
 }
 // Anordnung einer Runde: Liste der Motiv-Nummern, jedes Motiv genau zweimal.
-function erzeugeAnordnung(paare) {
-  const auswahl = mische([...Array(MOTIVE).keys()]).slice(0, paare);
-  return mische([...auswahl, ...auswahl]);
+function erzeugeAnordnung(gruppen, g = 2) {
+  const auswahl = mische([...Array(MOTIVE).keys()]).slice(0, gruppen);
+  const karten = [];
+  auswahl.forEach((m) => { for (let k = 0; k < g; k++) karten.push(m); });
+  return mische(karten);
 }
 
 const VORLAGE = `
@@ -95,9 +101,13 @@ const VORLAGE = `
       </div>
       <p id="mm-anzahl-max" class="hinweis-text"></p>
 
-      <div class="pg-opt-block">
+      <div class="pg-opt-block" id="mm-paare-block">
         <span class="pg-opt-titel">Paare pro Feld</span>
         <div id="mm-paare-opt" class="pg-opt"></div>
+      </div>
+      <div class="pg-opt-block" id="mm-dr-block" hidden>
+        <span class="pg-opt-titel">Drillinge pro Feld</span>
+        <div id="mm-dr-opt" class="pg-opt"></div>
       </div>
     </div>
 
@@ -121,6 +131,25 @@ const VORLAGE = `
 
     <p id="mm-teammodus-hinweis" class="hinweis-text" hidden>Der Teammodus geht nur bei einer geraden Spielerzahl.</p>
 
+    <div id="mm-dr-zeile" class="setup-modusblock" hidden>
+      <div class="setup-moduszeile">
+        <span class="modus-text-zeile">
+          <span class="schalter-text">Dreierteams</span>
+          <details class="modus-info">
+            <summary aria-label="Erklärung zu Dreierteams">i</summary>
+            <div>Zwei Teams mit je 3 Personen - das geht nur bei genau 6 Spielern. Statt Paaren gibt es Drillinge: drei gleiche Karten. Jede*r im Team deckt eine davon auf.</div>
+          </details>
+        </span>
+        <label class="schalter-zeile">
+          <span class="schalter">
+            <input type="checkbox" id="mm-dr">
+            <span class="schalter-regler"></span>
+          </span>
+        </label>
+      </div>
+    </div>
+    <p id="mm-dr-hinweis" class="hinweis-text" hidden>Dreierteams gehen nur bei genau 6 Spielern.</p>
+
     <div id="mm-teams" hidden>
       <div class="zt-team-grid">
         <button type="button" id="mm-team-wahl-blau" class="zt-team zt-team-blau zt-team-waehlbar">
@@ -143,7 +172,7 @@ const VORLAGE = `
 
   <div id="mm-vorbereitung-screen" class="bildschirm-karte pg-mitte" hidden>
     <p class="kategorie">Memory</p>
-    <p class="pg-vorb-text">Gleich geht's los: <strong id="mm-vorb-paare"></strong> Paare</p>
+    <p class="pg-vorb-text">Gleich geht's los: <strong id="mm-vorb-paare"></strong></p>
     <p class="zg-countdown-ziffer" id="mm-countdown-ziffer"></p>
   </div>
 
@@ -194,9 +223,10 @@ let tickId = null;
 let status = null;
 let rundenIndex = -1;
 let anzahlRunden = 0;
-let entwurf = { runden: STANDARD_RUNDEN, paare: STANDARD_PAARE };
+let entwurf = { runden: STANDARD_RUNDEN, paare: STANDARD_PAARE, drillinge: STANDARD_DRILLINGE };
+let drillingModus = false;   // Dreierteams: Drillinge statt Paare
 let anzahlEntwurfTimer = null;
-let einstellungen = { paare: STANDARD_PAARE };
+let einstellungen = { paare: STANDARD_PAARE, gruppe: 2 };
 let layoutJson = "";
 let layoutListe = [];
 let vorbereitungSeit = 0;
@@ -224,7 +254,7 @@ export async function starten(uebergebeneApi) {
   if (api.istLeiter && !api.raum?.mmStatus) {
     await updateDoc(api.raumRef(), {
       mmStatus: "setup", mmRundenIndex: 0, mmAnzahlRunden: 0, mmAnzahlEntwurf: STANDARD_RUNDEN,
-      mmPaareEntwurf: STANDARD_PAARE,
+      mmPaareEntwurf: STANDARD_PAARE, mmDrillingeEntwurf: STANDARD_DRILLINGE, mmDrillinge: false, mmGruppe: 2,
       mmPaare: STANDARD_PAARE, mmLayouts: "", mmVorbereitungSeit: 0,
       mmTeammodus: false, mmTeams: {}
     });
@@ -268,17 +298,19 @@ function verdrahteBedienelemente() {
         entwurf[feldName] = w;
         zeichneOptionen();
         updateDoc(api.raumRef(), {
-          mmPaareEntwurf: entwurf.paare
+          mmPaareEntwurf: entwurf.paare, mmDrillingeEntwurf: entwurf.drillinge
         }).catch(() => {});
       });
       box.appendChild(b);
     });
   };
   baueOpt("mm-paare-opt", PAARE_OPTIONEN, (w) => `${w} Paare`, "paare");
+  baueOpt("mm-dr-opt", DRILLING_OPTIONEN, (w) => `${w} Drillinge`, "drillinge");
+  $("mm-dr").addEventListener("change", drillingUmschalten);
 }
 
 function zeichneOptionen() {
-  [["mm-paare-opt", entwurf.paare]].forEach(([id, wert]) => {
+  [["mm-paare-opt", entwurf.paare], ["mm-dr-opt", entwurf.drillinge]].forEach(([id, wert]) => {
     $(id).querySelectorAll("button").forEach((b) => {
       b.classList.toggle("aktiv", Number(b.dataset.wert) === wert);
       b.disabled = !api.istLeiter;
@@ -365,9 +397,12 @@ export function raumDaten(daten) {
   teams = daten.mmTeams ?? {};
   entwurf = {
     runden: daten.mmAnzahlEntwurf ?? STANDARD_RUNDEN,
-    paare: daten.mmPaareEntwurf ?? STANDARD_PAARE
+    paare: daten.mmPaareEntwurf ?? STANDARD_PAARE,
+    drillinge: daten.mmDrillingeEntwurf ?? STANDARD_DRILLINGE
   };
-  einstellungen = { paare: daten.mmPaare ?? STANDARD_PAARE };
+  einstellungen = { paare: daten.mmPaare ?? STANDARD_PAARE, gruppe: daten.mmGruppe ?? 2 };
+  drillingModus = teammodus && !!daten.mmDrillinge && einstellungen.gruppe !== undefined;
+  if ($("mm-dr").checked !== (teammodus && !!daten.mmDrillinge)) $("mm-dr").checked = teammodus && !!daten.mmDrillinge;
   if ($("mm-teammodus").checked !== teammodus) $("mm-teammodus").checked = teammodus;
 
   const json = daten.mmLayouts ?? "";
@@ -448,6 +483,16 @@ function zeigeSetup() {
     updateDoc(api.raumRef(), { mmTeammodus: false, mmTeams: {} }).catch(() => {});
   }
   $("mm-teammodus-hinweis").hidden = !ungerade || inOlympiade;
+  // Dreierteams: nur im Teammodus und nur bei genau 6 Spielern
+  const sechs = spielerListe.length === 6;
+  $("mm-dr-zeile").hidden = !teammodus || inOlympiade;
+  $("mm-dr").disabled = !api.istLeiter || (!sechs && !drillingModus);
+  $("mm-dr-hinweis").hidden = !teammodus || inOlympiade || sechs;
+  if (api.istLeiter && drillingModus && !sechs) {
+    updateDoc(api.raumRef(), { mmDrillinge: false }).catch(() => {});
+  }
+  $("mm-paare-block").hidden = drillingModus;
+  $("mm-dr-block").hidden = !drillingModus;
   $("mm-teams").hidden = !teammodus;
   $("mm-teams-zufall").hidden = !api.istLeiter;
   if (teammodus) {
@@ -465,11 +510,22 @@ function zeigeSetup() {
   }
 }
 
+async function drillingUmschalten() {
+  if (!api.istLeiter) return;
+  const aktiviert = $("mm-dr").checked;
+  try {
+    await updateDoc(api.raumRef(), { mmDrillinge: aktiviert });
+  } catch (e) {
+    $("mm-dr").checked = drillingModus;
+    zeigeDebug("Dreierteams konnten nicht geändert werden: " + e.message);
+  }
+}
+
 async function teammodusUmschalten() {
   if (!api.istLeiter) return;
   const aktiviert = $("mm-teammodus").checked;
   try {
-    await updateDoc(api.raumRef(), { mmTeammodus: aktiviert, mmTeams: aktiviert ? teams : {} });
+    await updateDoc(api.raumRef(), { mmTeammodus: aktiviert, mmTeams: aktiviert ? teams : {}, ...(aktiviert ? {} : { mmDrillinge: false }) });
   } catch (e) {
     $("mm-teammodus").checked = teammodus;
     zeigeDebug("Teammodus konnte nicht geändert werden: " + e.message);
@@ -532,6 +588,11 @@ async function spielStarten() {
     endgueltigeTeams = ergaenzeFehlendeTeams(teams, spielerListe.map((s) => s.id));
     const anzahlTeam = { blau: 0, rot: 0 };
     spielerListe.forEach((s) => { anzahlTeam[endgueltigeTeams[s.id]] += 1; });
+    if (drillingModus && (spielerListe.length !== 6 || anzahlTeam.blau !== 3 || anzahlTeam.rot !== 3)) {
+      $("mm-setup-fehler").textContent =
+        "Bei Dreierteams braucht jedes Team genau 3 Personen (6 Spieler insgesamt).";
+      return;
+    }
     if (anzahlTeam.blau < 2 || anzahlTeam.rot < 2) {
       $("mm-setup-fehler").textContent =
         "Im Teammodus braucht jedes Team mindestens 2 Personen - sonst kann niemand ein Paar bilden.";
@@ -540,7 +601,9 @@ async function spielStarten() {
   }
 
   const layouts = [];
-  for (let i = 0; i < anzahl; i++) layouts.push(erzeugeAnordnung(entwurf.paare));
+  const gruppeStart = teamAktiv && drillingModus ? 3 : 2;
+  const gruppenAnzahl = gruppeStart === 3 ? entwurf.drillinge : entwurf.paare;
+  for (let i = 0; i < anzahl; i++) layouts.push(erzeugeAnordnung(gruppenAnzahl, gruppeStart));
 
   $("mm-starten").disabled = true;
   try {
@@ -549,7 +612,9 @@ async function spielStarten() {
       mmStatus: "runde_aktiv",
       mmRundenIndex: 0,
       mmAnzahlRunden: anzahl,
-      mmPaare: entwurf.paare,
+      mmPaare: gruppenAnzahl,
+      mmGruppe: gruppeStart,
+      mmDrillinge: gruppeStart === 3,
       mmLayouts: JSON.stringify(layouts),
       mmTeammodus: teamAktiv,
       mmTeams: endgueltigeTeams,
@@ -610,7 +675,7 @@ function rundenTick() {
   if (elapsedGesamt < COUNTDOWN_MS) {
     $("mm-spiel-screen").hidden = true;
     $("mm-vorbereitung-screen").hidden = false;
-    $("mm-vorb-paare").textContent = String(einstellungen.paare);
+    $("mm-vorb-paare").textContent = `${einstellungen.paare} ${einstellungen.gruppe === 3 ? "Drillinge" : "Paare"}`;
     const schritt = Math.min(2, Math.floor(elapsedGesamt / (COUNTDOWN_MS / 3)));
     $("mm-countdown-ziffer").textContent = ["3", "2", "1"][schritt];
   } else {
@@ -665,6 +730,7 @@ async function meldeFertig() {
 // Transaktion, damit zwei Teammitglieder nicht gleichzeitig Unterschiedliches
 // schreiben. Wirft "ueberholt", wenn der Zustand inzwischen ein anderer ist.
 async function teamAktion(art, idx, anordnung) {
+  const gruppeGroesse = einstellungen.gruppe;
   const team = teams[api.spielerId];
   if (!team) return;
   const pos = rundenIndex;
@@ -679,19 +745,17 @@ async function teamAktion(art, idx, anordnung) {
     let ms = null;
     if (art === "auf") {
       if (gefunden.includes(idx) || Object.values(offen).includes(idx) ||
-          offen[ich] !== undefined || Object.keys(offen).length >= 2) throw new Error("ueberholt");
+          offen[ich] !== undefined || Object.keys(offen).length >= gruppeGroesse) throw new Error("ueberholt");
       offen[ich] = idx;
       const ids = Object.keys(offen);
-      if (ids.length === 2 && anordnung[offen[ids[0]]] === anordnung[offen[ids[1]]]) {
-        gefunden.push(offen[ids[0]], offen[ids[1]]);
-        delete offen[ids[0]];
-        delete offen[ids[1]];
+      if (ids.length === gruppeGroesse && ids.every((k) => anordnung[offen[k]] === anordnung[offen[ids[0]]])) {
+        ids.forEach((k) => { gefunden.push(offen[k]); delete offen[k]; });
         if (gefunden.length >= anordnung.length) {
           ms = Math.max(0, Date.now() - vorbereitungSeit - COUNTDOWN_MS);
         }
       }
     } else if (art === "zu-alle") {
-      if (Object.keys(offen).length < 2) throw new Error("ueberholt");
+      if (Object.keys(offen).length < gruppeGroesse) throw new Error("ueberholt");
       Object.keys(offen).forEach((k) => delete offen[k]);
     } else {
       if (offen[ich] !== idx) throw new Error("ueberholt");
@@ -847,6 +911,8 @@ function baueSpielfeld(anordnung) {
   const sig = { signal: ac.signal };
 
   const anzahl = anordnung.length;
+  const SPALTEN = spaltenFuer(anzahl);   // lokal: Spalten dieses Felds
+  const G = teammodus ? einstellungen.gruppe : 2;   // so viele gleiche Karten gehören zusammen
   const zeilen = Math.ceil(anzahl / SPALTEN);
   const ich = spielerListe.find((s) => s.id === api.spielerId) || { id: api.spielerId, farbe: "#7c3aed", icon: "" };
   const meinTeam = teammodus ? teams[api.spielerId] : null;
@@ -928,17 +994,17 @@ function baueSpielfeld(anordnung) {
     }
     if (z.gefunden.has(idx)) return { modus: null, idx, grund: "gefunden" };
     if (z.offen.has(idx)) {
-      if (z.offen.size >= 2) return { modus: null, idx, grund: "voll" };
+      if (z.offen.size >= G) return { modus: null, idx, grund: "voll" };
       return z.offen.get(idx) === api.spielerId
         ? { modus: "zu", idx, grund: "" }
         : { modus: null, idx, grund: "fremd" };
     }
     if (teammodus) {
       if (eigene !== null) return { modus: null, idx, grund: "halten" };
-      if (z.offen.size >= 2) return { modus: null, idx, grund: "voll" };
+      if (z.offen.size >= G) return { modus: null, idx, grund: "voll" };
       return { modus: "auf", idx, grund: "" };
     }
-    if (z.offen.size >= 2) return { modus: null, idx, grund: "voll" };
+    if (z.offen.size >= G) return { modus: null, idx, grund: "voll" };
     return { modus: "auf", idx, grund: "" };
   }
 
@@ -1216,20 +1282,20 @@ function baueSpielfeld(anordnung) {
     kreuz.classList.toggle("gesperrt", geblockt || gesperrt);
     if (geblockt) stoppeHalten();
     const paare = z.gefunden.size / 2;
-    $("mm-paare-text").textContent = `🃏 ${paare} / ${anzahl / 2} Paare`;
+    $("mm-paare-text").textContent = `🃏 ${z.gefunden.size / G} / ${anzahl / G} ${G === 3 ? "Drillinge" : "Paare"}`;
     if (gesperrt) return;
     let text = "Lauf auf eine Karte und deck sie auf.";
     if (zuschauer) text = "Du bist in keinem Team - du schaust zu.";
     else if (lage.grund === "halten" || geblockt) {
-      text = z.offen.size >= 2 && teammodus
-        ? "Kein Paar! Die Karten drehen sich gleich wieder um."
+      text = z.offen.size >= G && teammodus
+        ? `Kein ${G === 3 ? "Drilling" : "Paar"}! Die Karten drehen sich gleich wieder um.`
         : "Du hältst eine Karte und kannst dich nicht bewegen. Dein Team deckt die zweite auf - oder dreh sie mit „Umdrehen“ zurück.";
     } else if (lage.modus === "auf") text = "Tipp auf „Aufdecken“.";
     else if (lage.modus === "zu") text = "Du stehst auf deiner offenen Karte - „Umdrehen“ dreht sie wieder um.";
-    else if (lage.grund === "voll") text = "Kein Paar! Die Karten drehen sich gleich wieder um.";
-    else if (lage.grund === "gefunden") text = "Dieses Paar habt ihr schon.";
+    else if (lage.grund === "voll") text = `Kein ${G === 3 ? "Drilling" : "Paar"}! Die Karten drehen sich gleich wieder um.`;
+    else if (lage.grund === "gefunden") text = `Diese${G === 3 ? "n Drilling" : "s Paar"} habt ihr schon.`;
     else if (lage.grund === "fremd") text = "Diese Karte hält gerade jemand aus deinem Team.";
-    else if (z.offen.size >= 2) text = "Kein Paar! Die Karten drehen sich gleich wieder um.";
+    else if (z.offen.size >= G) text = `Kein ${G === 3 ? "Drilling" : "Paar"}! Die Karten drehen sich gleich wieder um.`;
     hinweis.textContent = text;
   }
 
@@ -1254,7 +1320,7 @@ function baueSpielfeld(anordnung) {
     // Teammodus: ein Fehlpaar drehen alle im Team nach kurzer Zeit wieder um
     // (die Transaktion ist idempotent - es schadet nicht, wenn mehrere es auslösen).
     if (teammodus && !gesperrt) {
-      if (teamDoc().offen && Object.keys(teamDoc().offen).length >= 2) {
+      if (teamDoc().offen && Object.keys(teamDoc().offen).length >= G) {
         if (!zweiOffenSeit) zweiOffenSeit = jetzt;
         else if (jetzt - zweiOffenSeit > FLIP_MS && !schliessend) {
           schliessend = true;
