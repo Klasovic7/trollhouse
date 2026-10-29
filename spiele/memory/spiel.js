@@ -41,7 +41,7 @@ const STANDARD_DRILLINGE = 6;
 // Spalten je nach Kartenzahl: 4 bei Paaren, bei Drillingen 5/6/6 (15/18/21 Karten)
 function spaltenFuer(anzahl) { return anzahl === 15 ? 5 : anzahl === 18 || anzahl === 21 ? 6 : SPALTEN; }
 const MOTIVE = 22;            // bilder/memory/f01.webp ... f22.webp
-const BILD_VERSION = "394";
+const BILD_VERSION = "395";
 const TEMPO = 2.7;            // Zellen pro Sekunde
 const KARTE = 0.8;            // Kartenkantenlänge in Zellen
 const FIGUR_R = 0.3;          // Figurenradius in Zellen

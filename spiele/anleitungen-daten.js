@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=394";
+import { kartenSvg } from "./doppelkopf/karten.js?v=395";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -773,7 +773,7 @@ ANLEITUNGEN["revier"] = [
 ANLEITUNGEN["kartentausch"] = [
   {
     t: "Worum geht's?",
-    x: ["Auf dem Tisch liegen **20 Karten** mit Fußballern. Oben siehst du **einen Fußballer** - er steckt **so oft im Feld, wie Spieler mitspielen**.", "Merk dir, wo er liegt: Die Karten werden **umgedreht** und dann **dreimal vier Karten vertauscht** (je zwei Paare gleichzeitig)."],
+    x: ["Auf dem Tisch liegen **20 Karten** mit Fußballern. Oben siehst du **einen Fußballer** - er steckt **so oft im Feld, wie Spieler mitspielen**.", "Merk dir, wo er liegt: Die Karten werden **umgedreht** und dann **viermal vier Karten vertauscht** (je zwei Paare gleichzeitig)."],
     s: () => mmKarte(80, 40, "#6d4ee6", true) + mmKarte(124, 40, "#6d4ee6", true) + mmKarte(168, 40, "#6d4ee6", true) + T(160, 120, "⇄ Karten tauschen", 14, "#fde68a", 800) + T(160, 150, "Immer im Blick behalten!", 11, "#fff", 600)
   },
   {
@@ -783,7 +783,7 @@ ANLEITUNGEN["kartentausch"] = [
   },
   {
     t: "Aufdecken",
-    x: ["Haben alle gewählt (oder nach **20 Sekunden**), werden **alle Karten aufgedeckt**. Richtige Karten leuchten **grün**, falsche Wahlen **rot**."],
+    x: ["Haben alle gewählt (oder nach **20 Sekunden**), werden **alle Karten aufgedeckt**. Nur die **gesuchten Karten** bleiben hell, alle anderen werden abgedunkelt. Gewählte Karten haben einen Rahmen in **der Farbe des Spielers**."],
     s: () => mmKarte(80, 40) + mmKarte(124, 40) + mmKarte(168, 40) + T(160, 130, "✅ richtig   ❌ falsch", 14, "#fff", 800)
   },
   {

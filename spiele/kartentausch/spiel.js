@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 //  20 Karten mit Fußballer-Bildern liegen offen auf dem Tisch. Ein Bild wird
 //  vorgeschlagen - es steckt so oft im Feld, wie Spieler mitspielen. Die Karten
-//  werden umgedreht, dann tauschen dreimal vier Karten die Plätze. Nach einem
+//  werden umgedreht, dann tauschen viermal vier Karten die Plätze. Nach einem
 //  3-2-1-Countdown läuft jede*r mit dem Joystick (alle starten oben in der
 //  Mitte) auf eine Karte und wählt sie aus. Eine gewählte Karte ist für alle
 //  anderen gesperrt. Zum Schluss werden alle Karten aufgedeckt.
@@ -25,13 +25,13 @@ const MAX_RUNDEN = 15;
 const STANDARD_RUNDEN = 3;
 const SPALTEN = 5, ZEILEN = 4, ANZAHL = SPALTEN * ZEILEN;   // 20 Karten
 const TISCH_ZEILEN = ZEILEN + 1;                            // eine Reihe Platz oben fuer den Start
-const ANZAHL_TAUSCH = 3;       // Tauschrunden
+const ANZAHL_TAUSCH = 4;       // Tauschrunden
 const PAARE_JE_TAUSCH = 2;     // je Runde tauschen 4 Karten (2 Paare) gleichzeitig
 const ZEIGEN_MS = 4500;         // Karten offen, Ziel wird gezeigt
 const UMDREHEN_MS = 600;
 const PAUSE_MS = 500;
-const TAUSCH_MS = 1500;         // je Tausch (davon 1100 ms Bewegung)
-const BEWEGUNG_MS = 1100;
+const TAUSCH_MS = 1000;         // je Tausch (davon 700 ms Bewegung)
+const BEWEGUNG_MS = 700;
 const ZAEHLEN_MS = 3000;        // 3-2-1
 const WAHL_MS = 20000;          // so lange darf man waehlen
 const AUFDECKEN_MS = 4500;      // so lange bleibt das Ergebnis sichtbar
@@ -39,7 +39,7 @@ const T_TAUSCH_START = ZEIGEN_MS + UMDREHEN_MS + PAUSE_MS;
 const T_ZAEHLEN = T_TAUSCH_START + ANZAHL_TAUSCH * TAUSCH_MS;
 const T_WAHL = T_ZAEHLEN + ZAEHLEN_MS;
 const MOTIVE = 22;
-const BILD_VERSION = "394";
+const BILD_VERSION = "395";
 const TEMPO = 3.2;              // Zellen pro Sekunde
 const KARTE = 0.82;
 const FIGUR_R = 0.3;
@@ -880,6 +880,11 @@ function baueSpielfeld(layout) {
       else { ctx.fillStyle = "#e5e7eb"; ctx.fillRect(-s / 2, -s / 2, s, s); }
       ctx.restore();
     }
+    if (opt.dunkel) {
+      ctx.fillStyle = `rgba(8,24,14,${opt.dunkel})`;
+      rundRechteck(ctx, -s / 2, -s / 2, s, s, r);
+      ctx.fill();
+    }
     if (opt.rahmen) {
       ctx.lineWidth = Math.max(3, s * 0.07);
       ctx.strokeStyle = opt.rahmen;
@@ -961,13 +966,18 @@ function baueSpielfeld(layout) {
     for (let i = 0; i < ANZAHL; i++) {
       if (bewegt.has(i)) continue;
       const m = kartePlatz(i);
-      let flip = 0, motiv = layout.karten[i], rahmen = null, leuchten = false;
-      if (ph.name === "zeigen") flip = 1;
+      let flip = 0, motiv = layout.karten[i], rahmen = null, leuchten = false, dunkel = 0;
+      if (ph.name === "zeigen") {
+        flip = 1;
+        // Gesuchte Karten zu Beginn hervorheben
+        if (layout.karten[i] === layout.ziel) { rahmen = "#fde047"; leuchten = true; }
+      }
       else if (ph.name === "umdrehen") flip = 1 - Math.min(1, ph.t / UMDREHEN_MS);
       else if (ph.name === "aufdecken") {
         flip = Math.min(1, ph.t / UMDREHEN_MS);
         motiv = layout.ende[i];
-        if (flip >= 1 && layout.ende[i] === layout.ziel) { rahmen = "#22c55e"; leuchten = true; }
+        // alle anderen Karten abdunkeln, nur die gesuchten bleiben hell
+        if (layout.ende[i] !== layout.ziel) dunkel = 0.68 * flip;
       }
       if (ph.name !== "aufdecken") {
         const bes = bm.get(i);
@@ -979,7 +989,7 @@ function baueSpielfeld(layout) {
         leuchten = true;
       }
       const f2 = ph.name === "aufdecken" || ph.name === "zeigen" || ph.name === "umdrehen" ? flip : 0;
-      zeichneKarte(m.px, m.py, motiv, f2, { rahmen, leuchten });
+      zeichneKarte(m.px, m.py, motiv, f2, { rahmen, leuchten, dunkel });
     }
     // gerade tauschende Karten (Rueckseiten) bewegen sich ueber Kreuz
     if (tauschPaare.length) {
@@ -1037,7 +1047,7 @@ function baueSpielfeld(layout) {
       if (ph.name === "aufdecken") $("kt-status").innerHTML = "";
       $("kt-ziel-info").textContent = ph.name === "aufdecken" ? "" : `${bm.size} / ${N} gewählt`;
       let text;
-      if (ph.name === "zeigen") text = "Merk dir, wo dieser Fußballer liegt!";
+      if (ph.name === "zeigen") text = "Merk dir die markierten Karten - dieser Fußballer ist gesucht!";
       else if (ph.name === "umdrehen" || ph.name === "pause") text = "Die Karten werden umgedreht …";
       else if (ph.name === "tausch") text = "Aufpassen: Vier Karten tauschen die Plätze!";
       else if (ph.name === "zaehlen") text = "Gleich darfst du laufen …";
