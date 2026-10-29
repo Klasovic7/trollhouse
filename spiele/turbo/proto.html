@@ -155,12 +155,11 @@
   @keyframes dreh { 0%, 20% { transform: rotate(0); } 65%, 100% { transform: rotate(-90deg); } }
   @media (orientation: portrait) and (pointer: coarse) { #quer { display: grid; } }
 
-  #menue .karte { width: min(880px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-areas: "kopf kopf" "links rechts"; gap: 12px 22px; padding: 14px 20px 16px; text-align: left; }
+  #menue .karte { width: min(880px, 100%); display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); grid-template-areas: "kopf kopf" "links rechts"; gap: 12px 22px; padding: 14px 20px 16px; text-align: left; }
   #menue .mkopf { grid-area: kopf; text-align: center; } #menue .mkopf p { margin: 6px 0 0; font-size: 12.5px; }
   #menue .logo { font-size: clamp(26px, 5vw, 40px); } #menue .logo small { margin-top: 5px; letter-spacing: .4em; }
   #menue .mlinks { grid-area: links; min-width: 0; } #menue .mrechts { grid-area: rechts; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
   #menue h4 { margin: 0 0 5px; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #7be9ff; opacity: .9; font-weight: 800; }
-  #strecken { display: flex; flex-direction: column; gap: 3px; margin: 0; }
   #menue .sw { text-align: left; background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.14); color: #fff; border-radius: 9px; padding: 0 10px; height: 27px; font: inherit; cursor: pointer; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
   #menue .sw b { font-size: 12.5px; white-space: nowrap; } #menue .sw small { font-size: 10px; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #menue .reihe { display: flex; gap: 5px; } #menue .reihe .sw { flex: 1; justify-content: center; height: 30px; }
@@ -168,7 +167,28 @@
   #menue .regeln { margin: 0; gap: 3px; font-size: 11px; grid-template-columns: 1fr; } #menue .regeln li { padding: 4px 9px; }
   #menue .mfuss { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: auto; }
   #menue .rek { font-size: 11px; opacity: .85; display: flex; flex-direction: column; } #menue .rek b { font-size: 16px; }
-  #strecken.fix .sw:not(.an) { opacity: .5; cursor: default; }
+  /* Streckenwahl (Mario-Kart-Stil) */
+  #arten { display: flex; gap: 14px; justify-content: center; margin: 0 0 8px; }
+  #menue .art { font: inherit; color: #fff; background: none; border: 0; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 64px; opacity: .62; transition: transform .12s, opacity .12s; }
+  #menue .art svg { width: 44px; height: 48px; overflow: visible; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+  #menue .art .sk { stroke: rgba(255,255,255,.9); stroke-width: 2.5; }
+  #menue .art span { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  #menue .art.an { opacity: 1; transform: translateY(-1px) scale(1.08); }
+  #menue .art.an .sk { stroke: #ffd24a; stroke-width: 3.5; }
+  #menue .art.an svg { filter: drop-shadow(0 0 7px rgba(255,210,74,.8)); }
+  #menue .art.an span { color: #ffd24a; }
+  #strecken { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin: 0; }
+  #menue .st { font: inherit; color: #fff; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  #menue .st .bild { display: block; aspect-ratio: 2.35 / 1; border-radius: 12px; overflow: hidden; border: 2.5px solid rgba(255,255,255,.55); background: #0b1220; box-shadow: 0 3px 8px rgba(0,0,0,.4); transition: transform .12s, border-color .12s; }
+  #menue .st .bild img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #menue .st .tx { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 0 3px; }
+  #menue .st b { font-size: clamp(10px, 1.6vw, 12.5px); font-style: italic; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  #menue .st small { font-size: 10.5px; font-weight: 700; color: #7be9ff; white-space: nowrap; }
+  #menue .st:active .bild { transform: scale(.97); }
+  #menue .st.an .bild { border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34,211,238,.35), 0 0 14px rgba(34,211,238,.6); }
+  #menue .st.an b { color: #7be9ff; }
+  #strecken.fix .st:not(.an) { opacity: .55; cursor: default; }
+  @media (max-height: 420px) { #menue .art svg { width: 38px; height: 41px; } #menue .art { width: 58px; } #arten { margin-bottom: 5px; gap: 6px; } #strecken { gap: 5px 8px; } #menue .st b { font-size: 11.5px; } #menue .st small { font-size: 10px; } }
   #b-beenden { font: inherit; font-weight: 900; font-size: 13px; letter-spacing: .04em; color: #fff; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer; background: linear-gradient(180deg, #ff5a76, #e0264f); box-shadow: 0 3px 0 #8f1330, 0 6px 14px rgba(0,0,0,.35); }
   #b-beenden:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f1330; }
   #e-stand { text-align: left; margin-top: 12px; } #e-stand h4 { margin: 0 0 5px; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #7be9ff; font-weight: 800; }
@@ -238,7 +258,7 @@
   <button type="button" id="b-menue-exit">Zurück</button>
   <div class="mkopf"><div class="logo">TROLLHOUSE<small>TURBO · ZEITJAGD</small></div>
     <p>Gleiche Strecke für alle, von <b>A nach B</b> · <b id="dauertext">5 Minuten</b> Zeit · schnellste Zeit zählt</p></div>
-  <div class="mlinks"><h4 id="h-strecke">Strecke</h4><div id="strecken"></div></div>
+  <div class="mlinks"><h4 id="h-strecke">Strecke wählen</h4><div id="arten"></div><div id="strecken"></div></div>
   <div class="mrechts">
     <div class="mgruppe"><h4>Zeit</h4><div id="dauerwahl" class="reihe"></div></div>
     <div class="mgruppe"><h4>Anleitung</h4><ul class="regeln">

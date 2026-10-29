@@ -104,6 +104,17 @@ const THEMEN = {
   },
 };
 
+// Wald: gruene Landschaft wie "tag", aber mit Erdpiste (Offroad-Strecken)
+THEMEN.wald = {
+  ...THEMEN.tag,
+  hemi: [0xcfe6c0, 0x4f6a36, 1.0],
+  boden: { basis: "#5f9a3c", hue: [90, 120], sat: 50, tint: 0x8fc06a },
+  gelaende: { r: 0.40, g: 0.66, b: 0.30, fels: [0.52, 0.46, 0.38], hill: 100, schnee: false },
+  strasse: THEMEN.herbst.strasse,
+  kerb: ["#7a4a24", "#e9dcc3"], bande: ["#6b4423", "#e9dcc3"], banner: ["#3f9b4a", "#a6d65a", "#ffd166"],
+  deko: "wald",
+};
+
 // ---------- Themen-Texturen
 function texAsphalt(t) {
   // u quer ueber die Fahrbahn, v laengs (eine Kachel = 24 m)

@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=380";
+import { kartenSvg } from "./doppelkopf/karten.js?v=381";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -856,7 +856,7 @@ fix("run", 3, { x: [
   "Der Spielleiter stellt **1 oder 3 Leben** ein. Hast du keins mehr, bist du **gestürzt**. Eine Runde endet, wenn **alle gestürzt** sind."
 ] });
 fix("turbo", 2, { x: [
-  "Der **Spielleiter** wählt die **Strecke** (10 Stück mit Länge in km, Untergrund Asphalt, Eis, Sand oder Offroad) und die **Dauer** (3, 4 oder 5 Minuten). Bei allen anderen stellt sich das automatisch ein.",
+  "Oben wählst du die **Streckenart** (Asphalt, Eis, Sand oder Offroad), darunter liegen **4 Strecken** mit Vorschaubild und **Länge in km**. Der **Spielleiter** tippt die Strecke an und stellt die **Dauer** (3, 4 oder 5 Minuten) ein. Bei allen anderen stellt sich das automatisch ein.",
   "Halte das Handy **quer**. Alle anderen drücken **Bereit** - ihre Profilbilder zeigen, wer schon so weit ist. Erst wenn **alle bereit** sind, kann der Spielleiter **starten**."
 ] });
 fix("turbo", 3, { x: [

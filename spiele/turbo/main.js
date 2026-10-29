@@ -4,7 +4,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { baueStrecke, startPose, WAND_ABSTAND, STRECKEN, UNTERGRUND, streckeNachId } from "./strecke.js";
+import { baueStrecke, startPose, WAND_ABSTAND, STRECKEN, STRECKEN_ARTEN, UNTERGRUND, streckeNachId } from "./strecke.js";
 import { neuesAuto, schritt, P } from "./physik.js";
 import { botEingabe } from "./bot.js";
 import { baueWelt, baueHimmel } from "./welt.js";
@@ -162,7 +162,7 @@ function wechsleStrecke(id) { const u = new URL(location.href); u.searchParams.s
 function sperreStrecke() {
   const fix = EINGEBETTET && !dauerDarfWaehlen;
   const w = document.getElementById("strecken"); if (w) w.classList.toggle("fix", fix);
-  const h = document.getElementById("h-strecke"); if (h) h.textContent = fix ? "Strecke · wählt die Spielleitung" : "Strecke";
+  const h = document.getElementById("h-strecke"); if (h) h.textContent = fix ? "Strecke · wählt die Spielleitung" : "Strecke wählen";
 }
 function setzeDauer(min) {
   sperreStrecke();
@@ -193,19 +193,41 @@ function zeigeGegner() {
 const meldeBestzeit = (z) => { if (window.parent !== window) window.parent.postMessage({ typ: "bestzeit", zeit: z, strecke: S.id, laeufe: runden }, "*"); };
 const meldeLaeufe = () => { if (window.parent !== window) window.parent.postMessage({ typ: "laeufe", n: runden, strecke: S.id }, "*"); };
 {
-  const wahl = $("strecken");
-  STRECKEN.forEach((t) => {
-    const b = document.createElement("button"); b.type = "button"; b.className = "sw" + (t.id === S.id ? " an" : "");
-    const ug = UNTERGRUND[t.untergrund || "asphalt"]; b.title = ug.name;
-    b.innerHTML = "<b>" + ug.icon + " " + t.name + "</b><small>" + (t.km != null ? t.km.toFixed(1).replace(".", ",") + " km" : "") + "</small>";
-    b.addEventListener("click", () => {
-      if (t.id === S.id) return;
-      if (EINGEBETTET) { if (dauerDarfWaehlen) window.parent.postMessage({ typ: "strecke-wahl", id: t.id }, "*"); return; }   // im Raum waehlt nur die Spielleitung
-      try { localStorage.setItem("tt_strecke", t.id); } catch (_) {}
-      wechsleStrecke(t.id);
+  // Streckenwahl im Mario-Kart-Stil: oben die 4 Streckenarten (wie die Cups), darunter die 4 Strecken der gewählten Art mit Bild und Länge
+  const wahl = $("strecken"), arten = $("arten");
+  const ARTEN_FARBE = { asphalt: ["#9ca3af", "#4b5563"], eis: ["#7dd3fc", "#0284c7"], sand: ["#fcd34d", "#d97706"], offroad: ["#86efac", "#15803d"] };
+  const schild = (art) => {
+    const [c1, c2] = ARTEN_FARBE[art], ug = UNTERGRUND[art];
+    return `<svg viewBox="0 0 60 66" aria-hidden="true"><defs><linearGradient id="sg-${art}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>` +
+      `<path class="sk" d="M6 6 Q30 0 54 6 L54 38 Q54 54 30 63 Q6 54 6 38 Z" fill="url(#sg-${art})"/>` +
+      `<text x="30" y="37" font-size="30" text-anchor="middle" dominant-baseline="central">${ug.icon}</text></svg>`;
+  };
+  const kmText = (t) => (t.km != null ? t.km.toFixed(2).replace(".", ",") + " km" : "");
+  let sichtArt = STRECKEN.find((t) => t.id === S.id)?.untergrund || "asphalt";
+  const zeichneStrecken = () => {
+    arten.querySelectorAll(".art").forEach((b) => { b.classList.toggle("an", b.dataset.art === sichtArt); });
+    wahl.innerHTML = "";
+    STRECKEN.filter((t) => (t.untergrund || "asphalt") === sichtArt).forEach((t) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "st" + (t.id === S.id ? " an" : ""); b.dataset.id = t.id;
+      b.innerHTML = `<span class="bild"><img src="../../bilder/turbo/${t.id}.webp?v=1" alt="" loading="eager" draggable="false"></span>` +
+        `<span class="tx"><b>${t.name}</b><small>${kmText(t)}</small></span>`;
+      b.addEventListener("click", () => {
+        if (t.id === S.id) return;
+        if (EINGEBETTET) { if (dauerDarfWaehlen) window.parent.postMessage({ typ: "strecke-wahl", id: t.id }, "*"); return; }   // im Raum waehlt nur die Spielleitung
+        try { localStorage.setItem("tt_strecke", t.id); } catch (_) {}
+        wechsleStrecke(t.id);
+      });
+      wahl.appendChild(b);
     });
-    wahl.appendChild(b);
+  };
+  STRECKEN_ARTEN.forEach((art) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "art"; b.dataset.art = art;
+    b.innerHTML = schild(art) + "<span>" + UNTERGRUND[art].name + "</span>";
+    b.title = UNTERGRUND[art].name;
+    b.addEventListener("click", () => { sichtArt = art; zeichneStrecken(); });
+    arten.appendChild(b);
   });
+  zeichneStrecken();
   // Auto wählen (wirkt sofort, ohne Neuladen)
   const autos = $("autos") || document.createElement("div");
   MODELLE.forEach((m) => {
