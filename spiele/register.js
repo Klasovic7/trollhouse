@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "392";
+const SPIEL_VERSION = "393";
 
 export const SPIELE = [
   {
@@ -217,6 +217,16 @@ export const SPIELE = [
     beschreibung: "Sichert euch ein Gebiet - am Ende gewinnt, wer die meisten Quadrate übrig hat",
     minSpieler: 2,
     laden: () => import(`./revier/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "kartentrick",
+    name: "Kartentrick",
+    emoji: "🎴",
+    bild: "bilder/kartentrick-karten.webp",
+    farbe: "#a855f7",
+    beschreibung: "Merkt euch den Fußballer, verfolgt die Tauschaktion und findet ihn wieder - jeder wählt eine Karte",
+    minSpieler: 2,
+    laden: () => import(`./kartentrick/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "run",
