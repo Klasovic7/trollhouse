@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=382";
+import { kartenSvg } from "./doppelkopf/karten.js?v=383";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -708,6 +708,39 @@ ANLEITUNGEN["passgenau"] = [
     t: "Punkte nach Tempo",
     x: ["Wer **zuerst fertig** ist, ist Platz 1. " + PL, "Wer es im **Zeitlimit nicht schafft**, bekommt 0 Punkte. Wer gleichzeitig fertig wird, teilt sich den Platz. " + RUNDEN + " Passgenau braucht **mindestens 2 Spieler**."],
     s: () => unifiedRang([["Nader", "42 s · 5", 1], ["Du", "55 s · 3", 0], ["Kevin", "71 s · 2", 2], ["Niklas", "⏰ 0", 3]])
+  }
+];
+const mmKarte = (x, y, f = "#6d4ee6", o = false) => (o ? R(x, y, 34, 34, "#fffdf5", 6, 'stroke="#22c55e" stroke-width="2"') + E(x + 17, y + 17, "🧑", 20) : R(x, y, 34, 34, f, 6, 'stroke="#ffffff88" stroke-width="1.5"') + E(x + 17, y + 17, "⚽", 16));
+ANLEITUNGEN["memory"] = [
+  {
+    t: "Worum geht's?",
+    x: ["Memory **von oben**: Du siehst das Feld von oben und steuerst **deine Figur** über die Karten. Jede*r hat ein **eigenes Feld** - die Karten liegen aber bei allen **an derselben Stelle**.", "Wer zuerst **alle Paare** gefunden hat, gewinnt die Runde. Auf den Karten sind **Fußballer**."],
+    s: () => [0, 1, 2, 3].map((i) => mmKarte(90 + (i % 2) * 42, 40 + Math.floor(i / 2) * 42)).join("") + avatar(150, 100, 1, "Du", 12) + T(240, 80, "Eigenes Feld,", 12, "#fde68a", 700) + T(240, 96, "gleiche Karten", 12, "#fde68a", 700)
+  },
+  {
+    t: "Steuern und aufdecken",
+    x: ["Am Handy steuerst du mit dem **Steuerkreuz**, am Computer mit den **Pfeiltasten** (oder W, A, S, D). Solange du die Taste **hältst**, läuft deine Figur.", "Aufdecken geht nur, wenn du **auf einer Karte stehst**: Dann leuchtet der **Aufdecken-Knopf** (am Computer geht auch die Leertaste). Steht du auf keiner Karte, bleibt er grau."],
+    s: () => mmKarte(60, 40) + mmKarte(104, 40, "#6d4ee6", true) + avatar(77, 57, 1, "", 11) + knopf(190, 60, 90, 40, "Aufdecken", "#22c55e", "#052e16", 13) + T(160, 150, "Knopf leuchtet = Karte unter dir", 11, "#fff", 600)
+  },
+  {
+    t: "Kein Paar?",
+    x: ["Es sind **höchstens 2 Karten** gleichzeitig offen. Passen sie zusammen, bleiben beide **als Paar** liegen.", "Passen sie nicht, bleiben beide offen: Du musst **selbst zu den Karten zurücklaufen** und sie mit dem Knopf wieder **umdrehen**. Erst dann kannst du neue Karten aufdecken."],
+    s: () => mmKarte(60, 40, "#6d4ee6", true) + mmKarte(104, 40, "#6d4ee6", true) + T(100, 100, "Kein Paar!", 13, "#fca5a5", 800) + knopf(190, 60, 90, 40, "Umdrehen", "#f59e0b", "#052e16", 13) + T(160, 150, "Selbst zurücklaufen und umdrehen", 11, "#fff", 600)
+  },
+  {
+    t: "Teammodus",
+    x: ["Der Spielleiter kann den **Teammodus** einschalten. Jedes Team spielt dann auf **einem gemeinsamen Feld** - ihr seht die Figuren eures Teams.", "Jede*r deckt nur **eine Karte** auf, das Paar entsteht aus den Karten **zweier Teammitglieder**. Solange deine Karte offen ist, kannst du dich **nicht bewegen** - die Pfeile sind dann grau. Jedes Team braucht **mindestens 2 Personen**."],
+    s: () => mmKarte(70, 45, "#6d4ee6", true) + mmKarte(116, 45, "#6d4ee6", true) + avatar(87, 62, 0, "", 11) + avatar(133, 62, 2, "", 11) + T(160, 120, "Zwei Karten, ein Paar", 13, "#fde68a", 800) + T(160, 145, "Wer eine Karte hält, steht still", 11, "#fff", 600)
+  },
+  {
+    t: "Zeit und Runden",
+    x: ["Der Spielleiter stellt **Runden** (bis 15), **Paare pro Feld** (6, 8, 10 oder 12) und das **Zeitlimit** (120, 180 oder 300 Sekunden) ein.", "Nach einem **3-2-1-Countdown** geht es für alle gleichzeitig los."],
+    s: () => uhr(160, 80, 40) + T(160, 90, "180 s", 16, "#ff5b36", 800) + T(160, 155, "3 · 2 · 1 · Los", 13, "#fff", 700)
+  },
+  {
+    t: "Punkte nach Tempo",
+    x: ["Wer **zuerst alle Paare** hat, ist Platz 1. " + PL, "Wer es im **Zeitlimit nicht schafft**, bekommt 0 Punkte. Im Teammodus zählt die **Zeit des Teams** - alle im Team bekommen gleich viele Punkte. " + RUNDEN + " Memory braucht **mindestens 2 Spieler** (im Teammodus 4)."],
+    s: () => unifiedRang([["Luca", "22 s · 5", 1], ["Du", "30 s · 3", 0], ["Kevin", "46 s · 2", 2], ["Sinan", "⏰ 0", 3]])
   }
 ];
 ANLEITUNGEN["run"] = [

@@ -3505,6 +3505,45 @@ body.tt-aktiv:has(#tt-spiel-screen:not([hidden])) #spiel-kopf-titel { display: n
 @media (max-width: 420px) { .spiel-kopf-icon img.spiel-kopf-bild { height: 54px; max-width: 66px; } }
 .pg-fertig-overlay.pg-zeit-aus { background: rgba(185, 28, 28, 0.93); }
 
+/* Memory von oben: Steuerkreuz und Aufdecken-Knopf */
+.mm-paare-text { font-weight: 700; font-size: 0.95rem; }
+.mm-steuerung {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 10px;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.mm-kreuz {
+  display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 4px;
+  touch-action: none;
+}
+.mm-pfeil {
+  margin: 0; padding: 0; width: 56px; height: 56px; border-radius: 14px; font-size: 1.35rem; line-height: 1;
+  border: 2px solid rgba(255, 255, 255, 0.35); background: rgba(124, 58, 237, 0.55); color: #fff;
+  touch-action: none; -webkit-tap-highlight-color: transparent;
+}
+.mm-pfeil:active { background: rgba(124, 58, 237, 0.95); transform: scale(0.95); }
+.mm-pfeil-u { grid-column: 2; grid-row: 1; }
+.mm-pfeil-l { grid-column: 1; grid-row: 2; }
+.mm-pfeil-r { grid-column: 3; grid-row: 2; }
+.mm-pfeil-d { grid-column: 2; grid-row: 3; }
+.mm-kreuz.gesperrt .mm-pfeil,
+.mm-pfeil:disabled {
+  background: rgba(120, 120, 130, 0.35); border-color: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.35);
+  transform: none;
+}
+.mm-aktion {
+  margin: 0; flex: 1; min-width: 0; min-height: 92px; max-width: 190px; padding: 0 6px; border-radius: 22px; font-size: 1rem; font-weight: 800; white-space: normal; overflow-wrap: anywhere;
+  border: 3px solid rgba(255, 255, 255, 0.15); background: rgba(120, 120, 130, 0.35); color: rgba(255, 255, 255, 0.4);
+  box-shadow: none; transition: background 0.12s, box-shadow 0.12s, color 0.12s;
+}
+.mm-aktion.bereit {
+  background: #22c55e; color: #052e16; border-color: #fde047;
+  box-shadow: 0 0 0 4px rgba(253, 224, 71, 0.35), 0 8px 22px rgba(34, 197, 94, 0.55);
+  animation: mm-puls 1.1s ease-in-out infinite;
+}
+.mm-aktion.bereit.zu { background: #f59e0b; box-shadow: 0 0 0 4px rgba(253, 224, 71, 0.35), 0 8px 22px rgba(245, 158, 11, 0.55); }
+@keyframes mm-puls { 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .mm-aktion.bereit { animation: none; } }
+
 /* Doppelkopf: gemalte Karten */
 img.dk-karte-bild { -webkit-user-drag: none; user-select: none; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
 

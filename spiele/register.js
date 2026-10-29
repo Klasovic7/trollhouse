@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "382";
+const SPIEL_VERSION = "383";
 
 export const SPIELE = [
   {
@@ -197,6 +197,16 @@ export const SPIELE = [
     beschreibung: "Legt alle Teile passgenau ins Feld - wer zuerst fertig ist, gewinnt",
     minSpieler: 2,
     laden: () => import(`./passgenau/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "memory",
+    name: "Memory",
+    emoji: "🃏",
+    bild: "bilder/memory-karten.webp",
+    farbe: "#22c55e",
+    beschreibung: "Memory von oben: Lauft über die Karten, deckt Fußballer-Paare auf - allein oder im Team",
+    minSpieler: 2,
+    laden: () => import(`./memory/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "run",
