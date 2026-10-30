@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "425";
+const SPIEL_VERSION = "426";
 
 export const SPIELE = [
   {
@@ -65,7 +65,7 @@ export const SPIELE = [
     id: "wer-ist-es",
     name: "Wer ist es?",
     emoji: "🕵️",
-    bild: "bilder/wer-ist-es-kachel.webp",
+    bild: "bilder/wer-ist-es-kachel2.webp",
     farbe: "#4ade80",
     beschreibung: "Rate als Erster den Fußballer - je früher, desto mehr Punkte",
     minSpieler: 2,
