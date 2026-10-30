@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v417";
+export const APP_VERSION = "v418";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -34,6 +34,20 @@ document.getElementById("btn-spiel-anleitung")?.addEventListener("click", async 
     m.oeffneAnleitungen(document.body.dataset.spiel || null);
   } catch (e) { console.error("Anleitungen:", e); }
 });
+
+// Der Anleitungs-Button erscheint nur im Menue (Setup) eines Spiels, nicht waehrend des Spielens.
+// Jedes Spiel hat einen Setup-Bildschirm mit einer ID auf "-setup"; Turbo hat sein Menue im eigenen Rahmen.
+(() => {
+  const wurzel = document.getElementById("spiel-wurzel");
+  if (!wurzel) return;
+  const pruefe = () => {
+    const imMenue = Boolean(wurzel.querySelector('[id$="-setup"]:not([hidden])')) || document.body.dataset.spiel === "turbo";
+    document.body.classList.toggle("anl-menue", imMenue);
+  };
+  new MutationObserver(pruefe).observe(wurzel, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
+  new MutationObserver(pruefe).observe(document.body, { attributes: true, attributeFilter: ["data-spiel"] });
+  pruefe();
+})();
 
 // Kachelbilder im Hintergrund vorladen (Spieleauswahl und Anleitungen erscheinen dann sofort vollständig)
 (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => {
