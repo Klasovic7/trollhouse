@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "418";
+const SPIEL_VERSION = "419";
 
 export const SPIELE = [
   {
@@ -127,7 +127,7 @@ export const SPIELE = [
     id: "laenderumrisse",
     name: "Länderumrisse",
     emoji: "🗺️",
-    bild: "bilder/laenderumrisse-kachel.webp",
+    bild: "bilder/laenderumrisse-kachel2.webp",
     farbe: "#0ea5e9",
     beschreibung: "Nur der Umriss ist zu sehen - welches Land ist das?",
     minSpieler: 2,
