@@ -3637,16 +3637,17 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 
 /* Schnellschuss: Ergebnis nach jedem Bild */
 .sk-ergebnis {
-  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px;
-  padding: 8px 10px; background: rgba(12, 8, 20, 0.94); font-weight: 800; font-size: 0.92rem;
+  position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, max-content) max-content 1fr;
+  align-content: start; column-gap: 9px; row-gap: 8px; padding: 12px 10px; background: rgba(12, 8, 20, 0.94);
+  font-weight: 800; font-size: 1.1rem;
 }
 .sk-ergebnis[hidden] { display: none; }
-.sk-erg-kopf { text-align: center; font-size: 1.7rem; line-height: 1; margin-bottom: 2px; }
-.sk-erg-zeile { display: flex; align-items: baseline; gap: 5px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
-.sk-erg-zeile .n { flex: 1; min-width: 2.2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sk-erg-zeile .p { flex: none; min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
-.sk-erg-zeile .z { flex: none; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.85em; white-space: nowrap; }
+.sk-erg-zeile { display: contents; }
+.sk-erg-zeile > span { align-self: baseline; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.sk-erg-zeile .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-erg-zeile .p { font-size: 1.2em; font-variant-numeric: tabular-nums; }
+.sk-erg-zeile .z { justify-self: end; font-size: 0.6em; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sk-erg-zeile.leer { opacity: 0.85; }
-.sk-erg-leer { text-align: center; opacity: 0.85; }
-.sk-ergebnis.klein { font-size: 0.78rem; gap: 2px; padding: 4px 10px; }
-.sk-ergebnis.klein .sk-erg-kopf { display: none; }
+.sk-erg-leer { grid-column: 1 / -1; text-align: center; font-size: 0.9em; opacity: 0.85; padding-top: 40px; }
+.sk-ergebnis.mittel { font-size: 0.95rem; row-gap: 4px; padding: 8px 10px; }
+.sk-ergebnis.klein { font-size: 0.8rem; row-gap: 2px; padding: 6px 10px; column-gap: 6px; }

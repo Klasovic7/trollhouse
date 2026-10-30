@@ -492,7 +492,7 @@ function zeichneErgebnis(kr) {
   letzteErgebnisKey = key;
   box.hidden = false;
   $("sk-rueck").textContent = "";
-  const klein = reihe.length > 6 ? " klein" : "";
+  const klein = reihe.length > 7 ? " klein" : reihe.length > 5 ? " mittel" : "";
   const zeilen = reihe.map((e) => {
     const sp = spielerListe.find((x) => x.id === e.id);
     if (!sp) return "";
@@ -502,7 +502,7 @@ function zeichneErgebnis(kr) {
   }).join("");
   const leer = !reihe.length ? `<div class="sk-erg-leer">Keiner hat getippt – gut so! 👏</div>` : "";
   box.className = "sk-ergebnis" + klein;
-  box.innerHTML = `<div class="sk-erg-kopf">${folge[kr].e}</div>${zeilen}${leer}`;
+  box.innerHTML = `${zeilen}${leer}`;
 }
 
 async function tippe() {
