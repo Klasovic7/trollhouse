@@ -4,7 +4,7 @@
 //  Auf jedem Handy gibt es einen großen Knopf. Nach und nach poppt ein Emoji
 //  auf. Ist es etwas Gutes (Fußball, Basketball, Pokal ...), tippt man so schnell
 //  wie möglich. Ist es etwas Schlechtes (Bombe, Tomate ...), darf man NICHT tippen:
-//  wer trotzdem tippt, bekommt einen Minuspunkt.
+//  wer trotzdem tippt, bekommt 3 Minuspunkte.
 //  Wertung je gutem Bild: Wer zuerst tippt, bekommt so viele Punkte wie Spieler
 //  mitspielen, der Zweite einen weniger usw. Der Letzte bekommt 1 Punkt, wer gar
 //  nicht tippt 0.
@@ -26,6 +26,7 @@ const NACHLAUF_MS = 1800;        // so lange warten wir nach dem letzten Bild au
 const ERGEBNIS_WARTE_MS = 500;   // so lange nach dem Verschwinden des Bildes warten, bis die Tipps aller da sind
 const ERGEBNIS_MS = 2000;        // so lange ist das Ergebnis nach jedem Bild sichtbar
 const GUT = ["⚽", "🏀", "🎾", "🏈", "🏐", "🏉", "🎱"];
+const STRAFE = 3;             // Minuspunkte fuer einen Tipp auf ein schlechtes Bild
 const SCHLECHT = ["💣", "🍅", "💩", "🧨", "☠️", "💥", "🤢"];
 
 function zufall(n) { return Math.floor(Math.random() * n); }
@@ -66,7 +67,7 @@ const VORLAGE = `
   <div id="sk-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Schnellschuss: Es poppen nacheinander Emojis auf. Bei etwas Gutem (⚽ 🏀 🏈)
       tippt ihr so schnell wie möglich - der Schnellste bekommt die meisten Punkte. Bei etwas Schlechtem
-      (💣 🍅 💩) darf niemand tippen, sonst gibt es einen Minuspunkt.</p>
+      (💣 🍅 💩) darf niemand tippen, sonst gibt es 3 Minuspunkte.</p>
     <div id="sk-einstellungen" hidden>
       <div class="setup-anzahl-zeile">
         <span>Anzahl Bilder</span>
@@ -367,8 +368,8 @@ export async function vorZurueck() {
 }
 
 // ------------------------------------------------------------------ Wertung
-// Punkte je Bild: gut -> Rang nach Reaktionszeit (N, N-1, ... 1); schlecht -> -1 je Tipp.
-// Ergebnis eines Bildes: [{ id, pkt, ms }] - bei Gutem nach Reaktionszeit, bei Schlechtem nur die Tipper (-1).
+// Punkte je Bild: gut -> Rang nach Reaktionszeit (N, N-1, ... 1); schlecht -> -3 je Tipp.
+// Ergebnis eines Bildes: [{ id, pkt, ms }] - bei Gutem nach Reaktionszeit, bei Schlechtem nur die Tipper (-3).
 function bildErgebnis(k) {
   const b = folge[k];
   if (!b) return [];
@@ -381,7 +382,7 @@ function bildErgebnis(k) {
     spielerListe.forEach((sp) => { if (!sortiert.some((t) => t.spielerId === sp.id)) liste.push({ id: sp.id, pkt: 0, ms: null }); });
     return liste;
   }
-  return [...tipps].sort((a, c) => a.ms - c.ms).map((t) => ({ id: t.spielerId, pkt: -1, ms: t.ms }));
+  return [...tipps].sort((a, c) => a.ms - c.ms).map((t) => ({ id: t.spielerId, pkt: -STRAFE, ms: t.ms }));
 }
 
 function punkteBerechnen(nurAbgerechnete, jetztRel) {
@@ -514,7 +515,7 @@ async function tippe() {
   const b = folge[k];
   const rueck = $("sk-rueck");
   rueck.className = "sk-rueck " + (b.gut ? "gut" : "schlecht");
-  rueck.textContent = b.gut ? `${(ms / 1000).toFixed(2).replace(".", ",")} s` : "−1";
+  rueck.textContent = b.gut ? `${(ms / 1000).toFixed(2).replace(".", ",")} s` : `−${STRAFE}`;
   $("sk-knopf").classList.add("gedrueckt");
   setTimeout(() => { const kn = $("sk-knopf"); kn?.classList.remove("gedrueckt"); kn?.blur(); }, 140);
   if (navigator.vibrate) navigator.vibrate(b.gut ? 15 : [40, 30, 40]);

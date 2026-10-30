@@ -1222,7 +1222,16 @@ function baueSpielfeld(anordnung) {
     }
     ctx.restore();
   }
-  function zeichneFigur(fx, fy, id, eigene) {
+  function zeichneFigur(fx, fy, id, eigene, z) {
+    // Steht die Figur auf einer aufgedeckten oder gefundenen Karte, wird sie ausgeblendet,
+    // damit man die Karte sieht (bei Karten ohne Treffer bleibt die Markierung).
+    if (z) {
+      const sp = Math.floor(fx), ze = Math.floor(fy);
+      if (sp >= 0 && sp < SPALTEN && ze >= 0) {
+        const k = ze * SPALTEN + sp;
+        if (k < anzahl && (z.offen.has(k) || z.gefunden.has(k))) return;
+      }
+    }
     const px = ox + fx * c, py = oy + fy * c, r = FIGUR_R * c;
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.3)";
@@ -1286,10 +1295,10 @@ function baueSpielfeld(anordnung) {
         if (!a) { a = { x: p.x, y: p.y }; mitspielerAnzeige.set(id, a); }
         a.x += (p.x - a.x) * 0.35;
         a.y += (p.y - a.y) * 0.35;
-        zeichneFigur(a.x, a.y, id, false);
+        zeichneFigur(a.x, a.y, id, false, z);
       });
     }
-    if (!zuschauer) zeichneFigur(x, y, api.spielerId, true);
+    if (!zuschauer) zeichneFigur(x, y, api.spielerId, true, z);
     aktualisiereKnopf(z, lage);
   }
 

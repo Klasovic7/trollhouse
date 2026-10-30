@@ -18,7 +18,7 @@ import {
 import {
   spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild
 } from "../../kern/ui.js";
-import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
+import { speichereWertung } from "../../kern/wertung.js";
 
 const COUNTDOWN_MS = 3000;      // "Gleich geht's los" (wie bei den anderen Spielen)
 const MAX_RUNDEN = 15;
@@ -113,7 +113,7 @@ const VORLAGE = `
   <div id="kt-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Kartentausch: Ein Fußballer wird gezeigt - er steckt so oft im Feld, wie Spieler
       mitspielen. Die Karten werden umgedreht und vertauscht. Danach wählt jeder eine Karte aus:
-      Wer eine richtige erwischt, punktet - und wer schneller war, bekommt mehr.</p>
+      Wer eine richtige erwischt, bekommt 1 Punkt.</p>
     <div id="kt-einstellungen" hidden>
       <div class="setup-anzahl-zeile">
         <span>Anzahl Runden</span>
@@ -452,9 +452,9 @@ function rangListe(layout, wahl, spielerIds) {
     gruppe(a) - gruppe(b) || (wahl[a]?.ms ?? 0) - (wahl[b]?.ms ?? 0));
 }
 function berechnePunkte(layout, wahl, spielerIds) {
-  const n = spielerIds.length;
+  // Zeit ist egal: Jeder, der eine richtige Karte gewaehlt hat, bekommt 1 Punkt.
   const ergebnis = {};
-  rangListe(layout, wahl, spielerIds).forEach((id, i) => { ergebnis[id] = punkteFuerRang(i + 1, n); });
+  spielerIds.forEach((id) => { ergebnis[id] = wahl[id] !== undefined && istRichtig(layout, wahl[id].slot) ? 1 : 0; });
   return ergebnis;
 }
 
@@ -549,7 +549,7 @@ function zeigeErgebnisListe(pos) {
     const p = punkte[id] ?? 0;
     const w = wahl[id];
     const extra = w === undefined ? "Nichts gewählt"
-      : istRichtig(layout, w.slot) ? `Richtig - nach ${formatZeit(w.ms)}` : "";
+      : istRichtig(layout, w.slot) ? "Richtig" : "";
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, p > 0 ? `+${p}` : "0", {
       extra, punkteRechts: s.punkte ?? 0

@@ -31,7 +31,7 @@ const ENDE_MS = 2600;         // Pause nach dem letzten Verschwinden
 const TEMPO = 3.4;            // Zellen pro Sekunde
 const FIGUR_R = 0.34;         // Figurenradius in Zellen
 const POS_INTERVALL_MS = 200;
-const LEER = "#cbd5e1";       // Farbe eines noch freien Gebiets
+const LEER = "#475569";       // Farbe eines noch freien Gebiets
 
 const avatarBilder = new Map();
 function avatarImg(iconId, beiGeladen) {
@@ -976,14 +976,16 @@ function baueSpielfeld(layout) {
     const gr = new Map(), rest = new Map();
     bm.forEach((id, g) => { gr.set(id, ord[g].length); rest.set(id, Math.max(0, ord[g].length - st.schritt)); });
     // Platz nach Gebietsgroesse (Gleichstand teilt sich den Platz)
-    const sortiert = spielerListe.filter((s) => gr.has(s.id)).sort((a, b) => gr.get(b.id) - gr.get(a.id));
+    // Reihenfolge = Spielerreihenfolge (nicht nach Groesse sortiert, sonst waere das Ergebnis vorab erkennbar)
+    const sortiert = spielerListe.filter((s) => gr.has(s.id));
+    const rang = [...sortiert].sort((a, b) => gr.get(b.id) - gr.get(a.id));
     const platz = new Map();
-    sortiert.forEach((s, i) => {
-      platz.set(s.id, i > 0 && gr.get(s.id) === gr.get(sortiert[i - 1].id) ? platz.get(sortiert[i - 1].id) : i + 1);
+    rang.forEach((s, i) => {
+      platz.set(s.id, i > 0 && gr.get(s.id) === gr.get(rang[i - 1].id) ? platz.get(rang[i - 1].id) : i + 1);
     });
     // Wer keine Quadrate mehr hat (oder am Ende uebrig ist), bekommt seinen Platz
     const fertig = (id) => rest.get(id) === 0 || st.phase === 3;
-    const key = sortiert.map((s) => s.id + ":" + rest.get(s.id) + ":" + fertig(s.id)).join("|");
+    const key = sortiert.map((s) => s.id + ":" + fertig(s.id)).join("|");
     if (key === letzteChipsKey) return;
     letzteChipsKey = key;
     chips.innerHTML = sortiert.map((s) => {
@@ -991,7 +993,7 @@ function baueSpielfeld(layout) {
       const f = fertig(s.id);
       const inhalt = f
         ? `<b class="rv-platz">${platz.get(s.id)}.</b> ${escapeHtml(s.name)} <b>${gr.get(s.id)}</b>`
-        : `${escapeHtml(s.name)} <b>${rest.get(s.id)}</b>`;
+        : `${escapeHtml(s.name)}`;
       return `<span class="rv-chip${f ? " fertig" : ""}" style="--chip:${farbe}"><i></i>${inhalt}</span>`;
     }).join("");
   }

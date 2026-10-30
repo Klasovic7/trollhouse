@@ -788,8 +788,8 @@ ANLEITUNGEN["kartentausch"] = [
   },
   {
     t: "Punkte",
-    x: ["Wer **richtig** gewählt hat, steht vor allen, die falsch lagen - und unter den Richtigen zählt, **wer schneller gewählt hat**. Wer nichts wählt, ist Letzter. " + PL, RUNDEN + " Kartentausch braucht **mindestens 2 Spieler**."],
-    s: () => unifiedRang([["Luca", "richtig · 5", 1], ["Du", "richtig · 3", 0], ["Kevin", "falsch · 2", 2], ["Sinan", "nichts · 1", 3]])
+    x: ["Wer eine **richtige Karte** gewählt hat, bekommt **1 Punkt**. Die **Zeit ist egal**, wer falsch liegt oder nichts wählt, bekommt keinen Punkt.", RUNDEN + " Kartentausch braucht **mindestens 2 Spieler**."],
+    s: () => unifiedRang([["Luca", "richtig · +1", 1], ["Du", "richtig · +1", 0], ["Kevin", "falsch · 0", 2], ["Sinan", "nichts · 0", 3]])
   }
 ];
 ANLEITUNGEN["schnellschuss"] = [
@@ -802,14 +802,14 @@ ANLEITUNGEN["schnellschuss"] = [
   {
     ohneFoto: true,
     t: "Finger weg!",
-    x: ["Ist es etwas **Schlechtes** (💣 🍅 💩 🧨), darfst du **nicht** tippen. Wer es trotzdem tut, bekommt **einen Minuspunkt**.", "Das Bild verschwindet nach kurzer Zeit wieder. Danach siehst du **2 Sekunden lang für jeden Spieler Punkte und Reaktionszeit** (in seiner Farbe), dann kommt das nächste Bild. Mit der Zeit wird es **immer schneller**."],
-    s: () => E(160, 70, "💣", 44) + T(160, 120, "Nicht tippen!", 15, "#fca5a5", 800) + T(160, 150, "Sonst: −1 Punkt", 12, "#fff", 600)
+    x: ["Ist es etwas **Schlechtes** (💣 🍅 💩 🧨), darfst du **nicht** tippen. Wer es trotzdem tut, bekommt **3 Minuspunkte**.", "Das Bild verschwindet nach kurzer Zeit wieder. Danach siehst du **2 Sekunden lang für jeden Spieler Punkte und Reaktionszeit** (in seiner Farbe), dann kommt das nächste Bild. Mit der Zeit wird es **immer schneller**."],
+    s: () => E(160, 70, "💣", 44) + T(160, 120, "Nicht tippen!", 15, "#fca5a5", 800) + T(160, 150, "Sonst: −3 Punkte", 12, "#fff", 600)
   },
   {
     ohneFoto: true,
     t: "Punkte",
     x: ["Bei jedem guten Bild bekommt der **Schnellste so viele Punkte wie Spieler mitspielen**, der Zweite einen weniger usw. Der Letzte, der getippt hat, bekommt 1 Punkt. **Bei 4 Spielern: 4 · 3 · 2 · 1.** Wer nicht tippt, bekommt 0.", "Gemessen wird die Reaktionszeit **auf deinem eigenen Handy** - ein schlechtes Netz ist also kein Nachteil. Rechts siehst du immer den **aktuellen Punktestand**."],
-    s: () => unifiedRang([["Luca", "0,31 s · +4", 1], ["Du", "0,38 s · +3", 0], ["Kevin", "0,52 s · +2", 2], ["Sinan", "Bombe · −1", 3]])
+    s: () => unifiedRang([["Luca", "0,31 s · +4", 1], ["Du", "0,38 s · +3", 0], ["Kevin", "0,52 s · +2", 2], ["Sinan", "Bombe · −3", 3]])
   },
   {
     ohneFoto: true,
