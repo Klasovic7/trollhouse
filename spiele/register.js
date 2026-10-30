@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "406";
+const SPIEL_VERSION = "407";
 
 export const SPIELE = [
   {
@@ -192,7 +192,7 @@ export const SPIELE = [
     id: "passgenau",
     name: "Passgenau",
     emoji: "🧩",
-    bild: "bilder/passgenau-bloecke.webp",
+    bild: "bilder/passgenau-bloecke2.webp",
     farbe: "#f59e0b",
     beschreibung: "Legt alle Teile passgenau ins Feld - wer zuerst fertig ist, gewinnt",
     minSpieler: 2,
@@ -212,7 +212,7 @@ export const SPIELE = [
     id: "revier",
     name: "Revierkampf",
     emoji: "🗺️",
-    bild: "bilder/revier-gebiete.webp",
+    bild: "bilder/revier-gebiete2.webp",
     farbe: "#06b6d4",
     beschreibung: "Sichert euch ein Gebiet - am Ende gewinnt, wer die meisten Quadrate übrig hat",
     minSpieler: 2,

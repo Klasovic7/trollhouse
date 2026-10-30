@@ -3,7 +3,7 @@
 //  Wird erst beim Klick auf "Spiele" (Startseite) geladen.
 // ============================================================================
 import { SPIELE } from "./register.js?v=335";
-import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=406";
+import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=407";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fett = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -18,7 +18,7 @@ function vorladen(pfad) {
   img.decoding = "async";
   img.src = pfad;
 }
-const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=406`;
+const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=407`;
 function alleKachelnVorladen() { SPIELE.forEach((s) => vorladen(s.bild)); }
 function seitenVorladen(id) { (ANLEITUNGEN[id] || []).forEach((f, i) => { if (!f.ohneFoto) vorladen(fotoPfad(id, i)); }); }
 
