@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "429";
+const SPIEL_VERSION = "430";
 
 export const SPIELE = [
   {
@@ -86,6 +86,7 @@ export const SPIELE = [
     name: "Blitzquiz",
     emoji: "⚡",
     farbe: "#fbbf24",
+    bild: "bilder/blitzquiz-kachel.webp",
     beschreibung: "Drei Frage-Typen auf Zeit: Schnelligkeit, Wortrate, Bild-Reveal",
     minSpieler: 2,
     laden: () => import(`./blitzquiz/spiel.js?v=${SPIEL_VERSION}`)
