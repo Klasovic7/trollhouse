@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v419";
+export const APP_VERSION = "v420";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -35,17 +35,45 @@ document.getElementById("btn-spiel-anleitung")?.addEventListener("click", async 
   } catch (e) { console.error("Anleitungen:", e); }
 });
 
-// Der Anleitungs-Button erscheint nur im Menue (Setup) eines Spiels, nicht waehrend des Spielens.
+// Der Anleitungs-Button erscheint nur im Menue (Setup) eines Spiels, nicht waehrend des Spielens,
+// und zwar unten rechts in der Menuekarte (auf Hoehe der wartenden Spieler).
 // Jedes Spiel hat einen Setup-Bildschirm mit einer ID auf "-setup"; Turbo hat sein Menue im eigenen Rahmen.
 (() => {
   const wurzel = document.getElementById("spiel-wurzel");
-  if (!wurzel) return;
-  const pruefe = () => {
-    const imMenue = Boolean(wurzel.querySelector('[id$="-setup"]:not([hidden])')) || document.body.dataset.spiel === "turbo";
+  const knopf = document.getElementById("btn-spiel-anleitung");
+  if (!wurzel || !knopf) return;
+  let letzteKarte = null;
+  const platziere = () => {
+    const karte = wurzel.querySelector('[id$="-setup"]:not([hidden])');
+    const imMenue = Boolean(karte) || document.body.dataset.spiel === "turbo";
     document.body.classList.toggle("anl-menue", imMenue);
+    if (!karte) return;
+    const k = karte.getBoundingClientRect();
+    if (!k.width) return;
+    const bereich = karte.querySelector('[id$="-bereit-bereich"]');
+    const br = bereich && !bereich.hidden ? bereich.getBoundingClientRect() : null;
+    const hoehe = knopf.offsetHeight || 36, breite = knopf.offsetWidth || 120;
+    // Mitte der Spielerzeile, sonst unterer Kartenrand (innen)
+    let mitteY = br && br.height > 8 ? br.top + br.height / 2 : k.bottom - 16 - hoehe / 2;
+    const links = k.right - 18 - breite;
+    // Wuerden die Profilbilder (mittig angeordnet) den Button beruehren, rutscht er in eine Zeile darunter
+    const letztes = bereich && bereich.lastElementChild ? bereich.lastElementChild.getBoundingClientRect() : null;
+    const darunter = Boolean(br && br.height > 8 && letztes && letztes.right + 10 > links);
+    if (darunter) mitteY = br.bottom + 12 + hoehe / 2;
+    // Zeile unter den Profilbildern braucht Platz in der Karte
+    const wunsch = darunter ? "64px" : "";
+    if (karte.dataset.anlPlatz !== wunsch) { karte.dataset.anlPlatz = wunsch; karte.style.paddingBottom = wunsch; }
+    knopf.style.top = Math.round(mitteY + window.scrollY - hoehe / 2) + "px";
+    knopf.style.left = Math.round(links + window.scrollX) + "px";
+    if (karte !== letzteKarte) {
+      letzteKarte = karte;
+      if (window.ResizeObserver) new ResizeObserver(platziere).observe(karte);
+    }
   };
+  const pruefe = () => requestAnimationFrame(platziere);
   new MutationObserver(pruefe).observe(wurzel, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
   new MutationObserver(pruefe).observe(document.body, { attributes: true, attributeFilter: ["data-spiel"] });
+  window.addEventListener("resize", pruefe);
   pruefe();
 })();
 

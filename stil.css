@@ -1462,14 +1462,14 @@
     .spiel-logo-badge img { width: 50px; height: 50px; object-fit: contain; object-position: center; border-radius: 50%; }
     /* Zeile oben rechts: Anleitung (nur im Spiel sichtbar) + Verlassen/Spielauswahl */
     .top-zeile { display: flex; justify-content: flex-end; align-items: center; gap: 8px; width: 100%; }
-    .spiel-kopf-anl { display: none; }
-    body.anl-menue #top-bar.im-spiel button.spiel-kopf-anl {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px; align-self: auto;
-      min-width: 38px; height: 34px; margin: 0; padding: 0 12px; border-radius: 999px; cursor: pointer;
+    #btn-spiel-anleitung.spiel-kopf-anl {
+      position: absolute; z-index: 20; display: none; align-items: center; justify-content: center; gap: 6px;
+      min-width: 38px; height: 36px; margin: 0; padding: 0 14px; border-radius: 999px; cursor: pointer;
       background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3); color: #fff;
-      font: 700 .8rem/1 "Inter", system-ui, sans-serif; box-shadow: none;
+      font: 700 .85rem/1 "Inter", system-ui, sans-serif; box-shadow: none; text-transform: none; letter-spacing: 0;
     }
-    #top-bar.im-spiel button.spiel-kopf-anl:hover, #top-bar.im-spiel button.spiel-kopf-anl:active, #top-bar.im-spiel button.spiel-kopf-anl:focus { background: rgba(255,255,255,.26); color: #fff; }
+    body.anl-menue #btn-spiel-anleitung.spiel-kopf-anl { display: inline-flex; }
+    #btn-spiel-anleitung.spiel-kopf-anl:hover, #btn-spiel-anleitung.spiel-kopf-anl:active, #btn-spiel-anleitung.spiel-kopf-anl:focus { background: rgba(255,255,255,.26); color: #fff; }
     .spiel-kopf-titel strong {
       color: #fff; font-family: "Barlow Condensed", sans-serif; font-style: italic;
       font-size: clamp(2.35rem, 11vw, 3.2rem); line-height: .9; letter-spacing: -.025em;
