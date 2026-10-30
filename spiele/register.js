@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "427";
+const SPIEL_VERSION = "428";
 
 export const SPIELE = [
   {
@@ -95,6 +95,7 @@ export const SPIELE = [
     name: "Doppelblick!",
     emoji: "🔍",
     farbe: "#f472b6",
+    bild: "bilder/doppelblick-kachel.webp",
     beschreibung: "Zwei Karten, ein gemeinsames Symbol - wer tippt es zuerst?",
     minSpieler: 2,
     laden: () => import(`./doppelblick/spiel.js?v=${SPIEL_VERSION}`)
@@ -151,6 +152,7 @@ export const SPIELE = [
     name: "Länderspiel",
     emoji: "⚽",
     farbe: "#22c55e",
+    bild: "bilder/laenderspiel-kachel.webp",
     beschreibung: "Ersteigere Spielerkarten und gewinne mit der besten Kombination",
     minSpieler: 2,
     laden: () => import(`./fussball-auktion/spiel.js?v=${SPIEL_VERSION}`)
