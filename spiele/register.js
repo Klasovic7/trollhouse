@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "432";
+const SPIEL_VERSION = "433";
 
 export const SPIELE = [
   {
@@ -155,7 +155,7 @@ export const SPIELE = [
     name: "Länderspiel",
     emoji: "⚽",
     farbe: "#22c55e",
-    bild: "bilder/laenderspiel-kachel.webp",
+    bild: "bilder/laenderspiel-kachel2.webp",
     beschreibung: "Ersteigere Spielerkarten und gewinne mit der besten Kombination",
     minSpieler: 2,
     laden: () => import(`./fussball-auktion/spiel.js?v=${SPIEL_VERSION}`)
