@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "408";
+const SPIEL_VERSION = "409";
 
 export const SPIELE = [
   {
@@ -242,6 +242,7 @@ export const SPIELE = [
     id: "run",
     name: "Run",
     emoji: "🏃",
+    bild: "bilder/run-kachel.webp",
     farbe: "#f43f5e",
     beschreibung: "Rennt gleichzeitig durch die Stadt - weicht aus, springt und rutscht. Wer am weitesten kommt, gewinnt",
     minSpieler: 2,
