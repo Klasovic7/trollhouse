@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v416";
+export const APP_VERSION = "v417";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -24,6 +24,14 @@ document.getElementById("btn-spiele-anleitung")?.addEventListener("click", async
   try {
     const m = await import("./spiele/anleitungen.js?v=" + APP_VERSION.slice(1));
     m.oeffneAnleitungen();
+  } catch (e) { console.error("Anleitungen:", e); }
+});
+
+// Im Spiel: Button "Anleitung" im Spielkopf oeffnet direkt die Anleitung des laufenden Spiels
+document.getElementById("btn-spiel-anleitung")?.addEventListener("click", async () => {
+  try {
+    const m = await import("./spiele/anleitungen.js?v=" + APP_VERSION.slice(1));
+    m.oeffneAnleitungen(document.body.dataset.spiel || null);
   } catch (e) { console.error("Anleitungen:", e); }
 });
 

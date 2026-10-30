@@ -683,6 +683,11 @@ ANLEITUNGEN["wo-liegts"] = [
     s: () => unifiedRang([["Luca", "12 km · 5", 1], ["Du", "80 km · 3", 0], ["Niklas", "410 km · 2", 2], ["Nader", "keine · 0", 3]])
   },
   {
+    t: "Richtiges Land zählt zuerst",
+    x: ["Bei **Städten und Sehenswürdigkeiten** liegen immer die vorn, die das **richtige Land** getroffen haben - auch wenn jemand in einem anderen Land näher an der Stadt steckt. Erst **innerhalb** dieser Gruppe zählen die Kilometer.", "Bei **deutschen Städten** gilt das Gleiche mit dem **Bundesland**: Ist Frankfurt am Main gesucht, schlägt eine Nadel im Norden Hessens jede Nadel in Nordbayern, auch wenn die weniger Kilometer entfernt ist."],
+    s: () => unifiedRang([["Du", "300 km · Land richtig", 0], ["Luca", "40 km · Land falsch", 1], ["Niklas", "keine · 0", 2]])
+  },
+  {
     t: "Volltreffer",
     x: ["Liegt deine Nadel **unter 100 km** daneben (bei **deutschen Städten unter 50 km**), steht im Ergebnis **Volltreffer**.", "Der Extrapunkt gehört aber nur dem Sieger der Runde. Wo liegt's braucht **mindestens 2 Spieler**."],
     s: () => globus(110, 90, 54) + stecknadel(104, 84, "#4ade80") + stecknadel(112, 90) + T(235, 70, "Volltreffer!", 14, "#bbf7d0", 800) + T(235, 92, "unter 100 km", 11, "#fff", 600)

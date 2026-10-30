@@ -30,7 +30,10 @@
 <body>
 
   <div id="top-bar" hidden>
-    <button id="btn-verlassen">Raum verlassen</button>
+    <div class="top-zeile">
+      <button type="button" id="btn-spiel-anleitung" class="spiel-kopf-anl" aria-label="Anleitung zu diesem Spiel" title="Anleitung">📖<span>Anleitung</span></button>
+      <button id="btn-verlassen">Raum verlassen</button>
+    </div>
     <!-- v112: gemeinsame Fortschrittsanzeige (z. B. "2/8") oben rechts im
          Spielkopf - jedes Spielmodul befüllt sie über api.fortschritt(text). -->
     <span id="spiel-kopf-fortschritt" class="spiel-kopf-fortschritt" hidden></span>

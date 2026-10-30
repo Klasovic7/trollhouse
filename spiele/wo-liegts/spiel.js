@@ -50,8 +50,15 @@ async function ladeWelt() {
       // { land: Umriss Deutschlands, grenzen: alle Bundesland-Linien inkl. Außengrenze }
       deGrenzen = await (await fetch(new URL("./de-grenzen.json", import.meta.url))).json();
     } catch (_) { /* Bundeslandgrenzen sind optional */ }
+    let deLaender = null;
+    try {
+      // Bundesland-Flaechen (fuer "richtiges Bundesland"): { Name: Polygon/MultiPolygon }
+      deLaender = await (await fetch(new URL("./de-laender.json", import.meta.url))).json();
+    } catch (_) { /* ohne diese Daten zaehlt nur die Entfernung */ }
     welt = {
       deGrenzen,
+      deLaender,
+      laender: D3.feature(topo, topo.objects.countries).features,
       land: D3.feature(topo, topo.objects.land),
       grenzen: D3.mesh(topo, topo.objects.countries, (a, b) => a !== b),
       // Für den Deutschland-Modus: Karte ohne Deutschland (das kommt dann aus den
@@ -558,7 +565,7 @@ const VORLAGE = `
     <p class="hinweis-text">Ein Ort wird genannt - alle setzen gleichzeitig eine Stecknadel auf den Globus.
       Drehen: mit einem Finger ziehen. Zoomen: zwei Finger auseinander oder mit + / −. Nadel setzen: kurz tippen.
       Wer (Luftlinie) am nächsten dran ist, bekommt so viele Punkte wie Spieler im Raum plus einen Extrapunkt, der
-      Zweite so viele wie Spieler minus 1, der Dritte minus 2 usw. Ohne Nadel gibt es 0 Punkte. Pro Runde habt ihr 60 Sekunden.</p>
+      Zweite so viele wie Spieler minus 1, der Dritte minus 2 usw. Wer das richtige Land (bei deutschen Städten: das richtige Bundesland) getroffen hat, liegt immer vor allen, die in einem anderen gelandet sind - auch wenn deren Nadel näher an der Stadt steckt. Ohne Nadel gibt es 0 Punkte. Pro Runde habt ihr 60 Sekunden.</p>
 
     <div id="wl-modus-block" class="wl-modus-block">
       <span class="wl-modus-titel">Was wird gesucht? <small>(mehrere möglich)</small></span>
@@ -987,6 +994,55 @@ async function nadelAbschicken() {
 }
 
 // --- Auswertung -------------------------------------------------------------
+// ---- Land / Bundesland eines Punktes (einfacher Punkt-in-Polygon-Test auf Laenge/Breite)
+function inRing(lon, lat, ring) {
+  let innen = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) innen = !innen;
+  }
+  return innen;
+}
+function inGeometrie(lon, lat, g) {
+  if (!g) return false;
+  const polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+  return polys.some((ringe) => inRing(lon, lat, ringe[0]) && !ringe.slice(1).some((loch) => inRing(lon, lat, loch)));
+}
+function bereichExakt(lat, lon, katalog) {
+  if (!welt) return null;
+  if (katalog === "de") {
+    if (!welt.deLaender) return null;
+    for (const [name, g] of Object.entries(welt.deLaender)) if (inGeometrie(lon, lat, g)) return name;
+    // Inseln und Kuestenstreifen fehlen in den Flaechen: dann zaehlt das naechstgelegene Bundesland (bis ca. 25 km)
+    let beste = null, bestD = 0.25;
+    const k = Math.cos((lat * Math.PI) / 180);
+    for (const [name, g] of Object.entries(welt.deLaender)) {
+      const polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+      for (const ringe of polys) for (const [x, y] of ringe[0]) {
+        const dd = Math.hypot((x - lon) * k, y - lat);
+        if (dd < bestD) { bestD = dd; beste = name; }
+      }
+    }
+    return beste;
+  }
+  for (const f of welt.laender || []) if (inGeometrie(lon, lat, f.geometry)) return String(f.id);
+  return null;
+}
+// Fuer das Ziel: Kuestenorte liegen in den groben Daten manchmal knapp im Meer - dann naechstes Land in der Naehe.
+function zielBereich(s) {
+  const direkt = bereichExakt(s.lat, s.lon, s.katalog);
+  if (direkt) return direkt;
+  for (const r of [0.15, 0.3, 0.5, 0.8]) {
+    for (let a = 0; a < 8; a++) {
+      const w = (a * Math.PI) / 4;
+      const b = bereichExakt(s.lat + Math.sin(w) * r, s.lon + Math.cos(w) * r, s.katalog);
+      if (b) return b;
+    }
+  }
+  return null;
+}
+function bereichWort(katalog) { return katalog === "de" ? "Bundesland" : "Land"; }
+
 // Rang nach Entfernung (Gleichstand = gleicher Rang); Punkte: Sieger n + 1, dann n - 1, n - 2 ...
 // Wer nichts gesetzt hat: 0. "Volltreffer" (unter 100 km, deutsche Städte unter 50 km) wird nur angezeigt.
 function bewerte(tipps) {
@@ -994,15 +1050,22 @@ function bewerte(tipps) {
   const n = spielerListe.length;
   const mit = [];
   const ohne = [];
+  // Wer das richtige Land (bei deutschen Staedten: Bundesland) getroffen hat, liegt immer vor allen anderen -
+  // egal, wie viele Kilometer die anderen naeher dran waeren.
+  const ziel = s ? zielBereich(s) : null;
   for (const sp of spielerListe) {
     const t = tipps.find((x) => x.spielerId === sp.id);
-    if (t && s) mit.push({ id: sp.id, km: entfernungKm(t.lat, t.lon, s.lat, s.lon), lat: t.lat, lon: t.lon });
+    if (t && s) {
+      const richtig = ziel ? bereichExakt(t.lat, t.lon, s.katalog) === ziel : null;
+      mit.push({ id: sp.id, km: entfernungKm(t.lat, t.lon, s.lat, s.lon), lat: t.lat, lon: t.lon, richtigBereich: richtig });
+    }
     else ohne.push({ id: sp.id, km: null, punkte: 0, rang: null, volltreffer: false });
   }
-  mit.sort((a, b) => a.km - b.km);
+  const gruppe = (e) => (e.richtigBereich === false ? 1 : 0);
+  mit.sort((a, b) => gruppe(a) - gruppe(b) || a.km - b.km);
   let rang = 1;
   mit.forEach((e, i) => {
-    if (i > 0 && Math.round(e.km) > Math.round(mit[i - 1].km)) rang = i + 1;
+    if (i > 0 && (gruppe(e) !== gruppe(mit[i - 1]) || Math.round(e.km) > Math.round(mit[i - 1].km))) rang = i + 1;
     e.rang = rang;
     e.volltreffer = e.km <= (s && s.katalog === "de" ? VOLLTREFFER_KM_DE : VOLLTREFFER_KM);
     e.punkte = punkteFuerRang(rang, n);   // Sieger n + 1, dann n - 1, n - 2 ...; Volltreffer ist nur noch eine Anzeige
@@ -1074,7 +1137,7 @@ function rendereErgebnisListe(neuPassen = false) {
     if (!sp) return;
     const extra = e.km == null
       ? "Keine Nadel gesetzt"
-      : `${kmText(e.km)}${e.volltreffer ? " · Volltreffer" : ""}`;
+      : `${kmText(e.km)}${e.volltreffer ? " · Volltreffer" : ""}${e.richtigBereich === true ? ` · ✓ ${bereichWort(s.katalog)}` : e.richtigBereich === false ? ` · ✗ ${bereichWort(s.katalog)}` : ""}`;
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(sp.name, sp.farbe, sp.icon, `+${e.punkte}`, { extra, punkteRechts: sp.punkte ?? 0 });
     liste.appendChild(li);
