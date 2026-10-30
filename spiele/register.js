@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "409";
+const SPIEL_VERSION = "410";
 
 export const SPIELE = [
   {
@@ -152,6 +152,7 @@ export const SPIELE = [
     id: "groessenvergleich",
     name: "Größenvergleich",
     emoji: "📏",
+    bild: "bilder/groessenvergleich-kachel.webp",
     farbe: "#38bdf8",
     beschreibung: "Zieh die rote Silhouette auf die richtige Größe",
     minSpieler: 2,
