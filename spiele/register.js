@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "422";
+const SPIEL_VERSION = "423";
 
 export const SPIELE = [
   {
@@ -36,6 +36,7 @@ export const SPIELE = [
     name: "Denk gleich!",
     emoji: "🧠",
     farbe: "#818cf8",
+    bild: "bilder/denk-gleich-kachel.webp",
     beschreibung: "Gleiche Antwort, gleiche Punkte!",
     minSpieler: 2,
     laden: () => import(`./denk-gleich/spiel.js?v=${SPIEL_VERSION}`)
