@@ -18,13 +18,14 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "420";
+const SPIEL_VERSION = "421";
 
 export const SPIELE = [
   {
     id: "schaetzfragen",
     name: "Schätzfragen",
     emoji: "🎯",
+    bild: "bilder/schaetzfragen-kachel.webp",
     farbe: "#ff6b5c",
     beschreibung: "Wer tippt am nächsten dran?",
     minSpieler: 2,
