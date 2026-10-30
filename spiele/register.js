@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "430";
+const SPIEL_VERSION = "431";
 
 export const SPIELE = [
   {
@@ -116,6 +116,7 @@ export const SPIELE = [
     name: "Zeitgefühl!",
     emoji: "⏱️",
     farbe: "#ef4444",
+    bild: "bilder/zeitgefuehl-kachel.webp",
     beschreibung: "Blind mitzählen und zur richtigen Sekunde buzzern",
     minSpieler: 2,
     laden: () => import(`./zeitgefuehl/spiel.js?v=${SPIEL_VERSION}`)
