@@ -4,7 +4,7 @@
 // Nur dann wirft der Browser den alten Zwischenspeicher weg und alle Spieler
 // bekommen zuverlässig die neue Version. Das ist der einzige Handgriff, den man
 // nach dem Bearbeiten von Dateien nicht vergessen darf.
-const CACHE_NAME = "trollhouse-v426";
+const CACHE_NAME = "trollhouse-v427";
 
 const DATEIEN = [
   "./",
@@ -116,6 +116,7 @@ const DATEIEN = [
   "bilder/groessenvergleich-kachel2.webp",
   "bilder/denk-gleich-kachel.webp",
   "bilder/zehn-treffer-kachel.webp",
+  "bilder/wann-war-es-kachel.webp",
   "bilder/memory/f01.webp?v=411",
   "bilder/memory/f02.webp?v=411",
   "bilder/memory/f03.webp?v=411",
