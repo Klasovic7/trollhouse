@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "407";
+const SPIEL_VERSION = "408";
 
 export const SPIELE = [
   {
@@ -232,7 +232,7 @@ export const SPIELE = [
     id: "schnellschuss",
     name: "Schnellschuss",
     emoji: "⚡",
-    bild: "bilder/schnellschuss-kachel3.webp",
+    bild: "bilder/schnellschuss-kachel4.webp",
     farbe: "#f59e0b",
     beschreibung: "Bälle poppen auf - tippt blitzschnell! Bei Bombe und Tomate heißt es: Finger weg",
     minSpieler: 2,
@@ -251,6 +251,7 @@ export const SPIELE = [
     id: "turbo",
     name: "Turbo",
     emoji: "🏎️",
+    bild: "bilder/turbo-kachel.webp",
     farbe: "#06b6d4",
     beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke",
     minSpieler: 2,
