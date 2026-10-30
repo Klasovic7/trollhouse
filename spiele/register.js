@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "412";
+const SPIEL_VERSION = "413";
 
 export const SPIELE = [
   {
@@ -52,6 +52,7 @@ export const SPIELE = [
     id: "reih-dich-ein",
     name: "Reih dich ein!",
     emoji: "↕️",
+    bild: "bilder/reih-dich-ein-kachel.webp",
     farbe: "#2dd4bf",
     beschreibung: "Setz den Begriff an die richtige Stelle!",
     minSpieler: 2,
