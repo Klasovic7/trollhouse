@@ -17,6 +17,7 @@ import {
 import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml, avatarBild } from "../../kern/ui.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import * as D3 from "./geo.js";
+import { LAENDERNAMEN } from "./laendernamen.js";
 import { STAEDTE_WELT, STAEDTE_DE, SEHENSWUERDIGKEITEN, SEHENS_ART } from "./staedte.js";
 
 // Was gesucht wird (mehrere Kataloge gleichzeitig möglich): Städte weltweit
@@ -1025,7 +1026,7 @@ function bereichExakt(lat, lon, katalog) {
     }
     return beste;
   }
-  for (const f of welt.laender || []) if (inGeometrie(lon, lat, f.geometry)) return String(f.id);
+  for (const f of welt.laender || []) if (inGeometrie(lon, lat, f.geometry)) return f.id ? String(f.id) : "n:" + (f.properties && f.properties.name);
   return null;
 }
 // Fuer das Ziel: Kuestenorte liegen in den groben Daten manchmal knapp im Meer - dann naechstes Land in der Naehe.
@@ -1040,6 +1041,13 @@ function zielBereich(s) {
     }
   }
   return null;
+}
+// Name des getippten Ortes (Land bzw. Bundesland) fuer die Anzeige; ausserhalb von Land: "Meer"
+function bereichName(lat, lon, katalog) {
+  let b = bereichExakt(lat, lon, katalog);
+  if (!b && katalog === "de") b = bereichExakt(lat, lon, "welt");
+  if (!b) return "Meer";
+  return LAENDERNAMEN[b] || b;
 }
 function bereichWort(katalog) { return katalog === "de" ? "Bundesland" : "Land"; }
 
@@ -1057,7 +1065,7 @@ function bewerte(tipps) {
     const t = tipps.find((x) => x.spielerId === sp.id);
     if (t && s) {
       const richtig = ziel ? bereichExakt(t.lat, t.lon, s.katalog) === ziel : null;
-      mit.push({ id: sp.id, km: entfernungKm(t.lat, t.lon, s.lat, s.lon), lat: t.lat, lon: t.lon, richtigBereich: richtig });
+      mit.push({ id: sp.id, km: entfernungKm(t.lat, t.lon, s.lat, s.lon), lat: t.lat, lon: t.lon, richtigBereich: richtig, tippOrt: bereichName(t.lat, t.lon, s.katalog) });
     }
     else ohne.push({ id: sp.id, km: null, punkte: 0, rang: null, volltreffer: false });
   }
@@ -1137,7 +1145,7 @@ function rendereErgebnisListe(neuPassen = false) {
     if (!sp) return;
     const extra = e.km == null
       ? "Keine Nadel gesetzt"
-      : `${kmText(e.km)}${e.volltreffer ? " · Volltreffer" : ""}${e.richtigBereich === true ? ` · ✓ ${bereichWort(s.katalog)}` : e.richtigBereich === false ? ` · ✗ ${bereichWort(s.katalog)}` : ""}`;
+      : `${kmText(e.km)}${e.volltreffer ? " · Volltreffer" : ""}${e.richtigBereich === true ? ` · ✓ ${bereichWort(s.katalog)}` : e.richtigBereich === false ? ` · ✗ ${e.tippOrt || bereichWort(s.katalog)}` : ""}`;
     const li = document.createElement("li");
     li.innerHTML = spielerKarte(sp.name, sp.farbe, sp.icon, `+${e.punkte}`, { extra, punkteRechts: sp.punkte ?? 0 });
     liste.appendChild(li);
