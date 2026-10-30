@@ -3,11 +3,24 @@
 //  Wird erst beim Klick auf "Spiele" (Startseite) geladen.
 // ============================================================================
 import { SPIELE } from "./register.js?v=335";
-import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=403";
+import { ANLEITUNGEN, szene } from "./anleitungen-daten.js?v=404";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fett = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-const symbol = (sp) => sp.bild ? `<img class="spiel-bild" src="${sp.bild}" alt="">` : sp.emoji;
+const symbol = (sp) => sp.bild ? `<img class="spiel-bild" src="${sp.bild}" alt="" loading="eager" decoding="sync">` : sp.emoji;
+
+// Bilder vorab laden, damit nichts erst beim Antippen / Blättern nachlädt
+const vorgeladen = new Set();
+function vorladen(pfad) {
+  if (!pfad || vorgeladen.has(pfad)) return;
+  vorgeladen.add(pfad);
+  const img = new Image();
+  img.decoding = "async";
+  img.src = pfad;
+}
+const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=404`;
+function alleKachelnVorladen() { SPIELE.forEach((s) => vorladen(s.bild)); }
+function seitenVorladen(id) { (ANLEITUNGEN[id] || []).forEach((f, i) => { if (!f.ohneFoto) vorladen(fotoPfad(id, i)); }); }
 
 let dialog = null;
 let tasteFn = null;
@@ -22,6 +35,7 @@ function schliessen() {
 
 export function oeffneAnleitungen(startId = null) {
   if (dialog) return;
+  alleKachelnVorladen();
   dialog = document.createElement("div");
   dialog.className = "anl-overlay";
   dialog.setAttribute("role", "dialog");
@@ -35,7 +49,7 @@ export function oeffneAnleitungen(startId = null) {
   const liste = () => {
     spiel = null;
     dialog.innerHTML = `<div class="anl-panel">
-      <div class="anl-kopf"><h2>Spiele &amp; Anleitungen</h2><button class="anl-x" data-zu aria-label="Schließen">✕</button></div>
+      <div class="anl-kopf"><h2>Anleitungen</h2><button class="anl-x" data-zu aria-label="Schließen">✕</button></div>
       <p class="anl-sub">Tippe ein Spiel an und blättere durch die Anleitung.</p>
       <div class="anl-liste">${SPIELE.filter((s) => ANLEITUNGEN[s.id]).map((s) =>
         `<button class="anl-kachel" data-id="${s.id}" style="--farbe:${s.farbe}">
@@ -52,6 +66,7 @@ export function oeffneAnleitungen(startId = null) {
     const folien = ANLEITUNGEN[id];
     if (!sp || !folien) return liste();
     spiel = sp; seite = Math.max(0, Math.min(folien.length - 1, nr));
+    seitenVorladen(id);
     const f = folien[seite];
     const letzte = seite === folien.length - 1;
     dialog.innerHTML = `<div class="anl-panel" style="--farbe:${sp.farbe}">
@@ -61,7 +76,7 @@ export function oeffneAnleitungen(startId = null) {
       </div>
       <div class="anl-titel"><span class="anl-titel-sym">${symbol(sp)}</span><h2>${esc(sp.name)}</h2></div>
       <div class="anl-folie" id="anl-folie">
-        <div class="anl-bildrahmen">${f.ohneFoto ? szene(sp.farbe, f.s()) : `<img class="anl-foto" src="bilder/anleitung/${id}-${seite + 1}.webp?v=403" alt="Screenshot: ${esc(f.t)}" loading="eager">`}</div>
+        <div class="anl-bildrahmen">${f.ohneFoto ? szene(sp.farbe, f.s()) : `<img class="anl-foto" src="${fotoPfad(id, seite)}" alt="Screenshot: ${esc(f.t)}" loading="eager">`}</div>
         <h3>${esc(f.t)}</h3>
         ${f.x.map((a) => `<p>${fett(a)}</p>`).join("")}
       </div>

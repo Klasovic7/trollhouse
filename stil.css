@@ -3277,7 +3277,9 @@ body.anl-offen { overflow: hidden; }
 .anl-overlay {
   position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center;
   background: rgba(8,4,14,.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  padding: 12px;
+  /* iPhone: Kreuz und Titel nicht unter Uhr/WLAN/Akku und nicht unter die Home-Leiste */
+  padding: max(12px, calc(env(safe-area-inset-top) + 8px)) max(12px, env(safe-area-inset-right))
+           max(12px, calc(env(safe-area-inset-bottom) + 6px)) max(12px, env(safe-area-inset-left));
 }
 .anl-panel {
   width: 100%; max-width: 520px; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -3290,6 +3292,7 @@ body.anl-offen { overflow: hidden; }
   background: rgba(255,255,255,.1); color: #fff; border: 0; border-radius: 999px;
   padding: 7px 12px; font: inherit; font-size: .9rem; cursor: pointer;
 }
+.anl-x { min-width: 44px; min-height: 36px; }
 .anl-sub { margin: 4px 0 10px; opacity: .7; font-size: .9rem; }
 .anl-liste { display: grid; gap: 8px; }
 .anl-kachel {

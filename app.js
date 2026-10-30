@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v403";
+export const APP_VERSION = "v404";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -25,6 +25,11 @@ document.getElementById("btn-spiele-anleitung")?.addEventListener("click", async
     const m = await import("./spiele/anleitungen.js?v=" + APP_VERSION.slice(1));
     m.oeffneAnleitungen();
   } catch (e) { console.error("Anleitungen:", e); }
+});
+
+// Kachelbilder im Hintergrund vorladen (Spieleauswahl und Anleitungen erscheinen dann sofort vollständig)
+(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => {
+  SPIELE.forEach((s) => { if (s.bild) { const i = new Image(); i.src = s.bild; } });
 });
 
 // ---------- DOM ----------
