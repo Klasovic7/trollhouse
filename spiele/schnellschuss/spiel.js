@@ -23,7 +23,8 @@ const START_PAUSE_MS = 900;      // Pause nach dem Countdown bis zum ersten Bild
 const MAX_BILDER = 40;
 const STANDARD_BILDER = 15;
 const NACHLAUF_MS = 1800;        // so lange warten wir nach dem letzten Bild auf Tipps
-const ABRECHNUNG_MS = 1500;      // ein Bild gilt erst nach dieser Zeit als abgerechnet
+const ERGEBNIS_WARTE_MS = 500;   // so lange nach dem Verschwinden des Bildes warten, bis die Tipps aller da sind
+const ERGEBNIS_MS = 2000;        // so lange ist das Ergebnis nach jedem Bild sichtbar
 const GUT = ["⚽", "🏀", "🎾", "🏈", "🏐", "🏉", "🎱"];
 const SCHLECHT = ["💣", "🍅", "💩", "🧨", "☠️", "💥", "🤢"];
 
@@ -53,8 +54,10 @@ function zeitplan(folge) {
   let t = 0;
   folge.forEach((b) => {
     t += b.gap;
-    plan.push({ von: t, bis: t + b.dauer });
-    t += b.dauer;
+    const bis = t + b.dauer;
+    const eVon = bis + ERGEBNIS_WARTE_MS;
+    plan.push({ von: t, bis, eVon, eBis: eVon + ERGEBNIS_MS });
+    t = eVon + ERGEBNIS_MS;
   });
   return { plan, gesamt: t };
 }
@@ -90,6 +93,7 @@ const VORLAGE = `
       <div class="sk-buehne" id="sk-buehne">
         <div class="sk-emoji" id="sk-emoji" aria-hidden="true"></div>
         <div class="sk-rueck" id="sk-rueck"></div>
+        <div class="sk-ergebnis" id="sk-ergebnis" hidden></div>
       </div>
       <button type="button" id="sk-knopf" class="sk-knopf">TIPPEN</button>
     </div>
@@ -133,6 +137,8 @@ let meinTipp = {};            // k -> true (schon getippt)
 let rueckTimer = null;
 let letzteListeKey = "";
 let letzterFortschritt = "";
+let ergebnisIndex = -1;
+let letzteErgebnisKey = "";
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 function escapeHtml(t) {
@@ -224,6 +230,8 @@ export function beenden() {
   meinTipp = {};
   letzteListeKey = "";
   letzterFortschritt = "";
+  ergebnisIndex = -1;
+  letzteErgebnisKey = "";
 }
 
 export function spieler(liste) {
@@ -261,6 +269,8 @@ export function raumDaten(daten) {
       meinTipp = {};
       letzterFortschritt = "";
       letzteListeKey = "";
+      ergebnisIndex = -1;
+      letzteErgebnisKey = "";
     }
   }
 
@@ -358,26 +368,27 @@ export async function vorZurueck() {
 
 // ------------------------------------------------------------------ Wertung
 // Punkte je Bild: gut -> Rang nach Reaktionszeit (N, N-1, ... 1); schlecht -> -1 je Tipp.
+// Ergebnis eines Bildes: [{ id, pkt, ms }] - bei Gutem nach Reaktionszeit, bei Schlechtem nur die Tipper (-1).
+function bildErgebnis(k) {
+  const b = folge[k];
+  if (!b) return [];
+  const ids = new Set(spielerListe.map((s) => s.id));
+  const n = ids.size;
+  const tipps = tippDocs.filter((t) => t.k === k && ids.has(t.spielerId));
+  if (b.gut) {
+    const sortiert = [...tipps].sort((a, c) => a.ms - c.ms || (a.spielerId < c.spielerId ? -1 : 1));
+    const liste = sortiert.map((t, i) => ({ id: t.spielerId, pkt: Math.max(1, n - i), ms: t.ms }));
+    spielerListe.forEach((sp) => { if (!sortiert.some((t) => t.spielerId === sp.id)) liste.push({ id: sp.id, pkt: 0, ms: null }); });
+    return liste;
+  }
+  return [...tipps].sort((a, c) => a.ms - c.ms).map((t) => ({ id: t.spielerId, pkt: -1, ms: t.ms }));
+}
+
 function punkteBerechnen(nurAbgerechnete, jetztRel) {
-  const ids = spielerListe.map((s) => s.id);
-  const n = ids.length;
-  const summe = Object.fromEntries(ids.map((id) => [id, 0]));
-  const nachBild = new Map();
-  tippDocs.forEach((t) => {
-    if (!summe.hasOwnProperty(t.spielerId)) return;
-    if (!nachBild.has(t.k)) nachBild.set(t.k, []);
-    nachBild.get(t.k).push(t);
-  });
-  nachBild.forEach((tipps, k) => {
-    const b = folge[k];
-    if (!b) return;
-    if (nurAbgerechnete && !(plan[k] && jetztRel >= plan[k].bis + ABRECHNUNG_MS)) return;
-    if (b.gut) {
-      [...tipps].sort((a, c) => a.ms - c.ms || (a.spielerId < c.spielerId ? -1 : 1))
-        .forEach((t, i) => { summe[t.spielerId] += Math.max(1, n - i); });
-    } else {
-      tipps.forEach((t) => { summe[t.spielerId] -= 1; });
-    }
+  const summe = Object.fromEntries(spielerListe.map((s) => [s.id, 0]));
+  folge.forEach((_, k) => {
+    if (nurAbgerechnete && !(plan[k] && jetztRel >= plan[k].eVon)) return;
+    bildErgebnis(k).forEach((e) => { summe[e.id] += e.pkt; });
   });
   return summe;
 }
@@ -454,7 +465,44 @@ function schleife() {
       if (f !== letzterFortschritt) { letzterFortschritt = f; api.fortschritt(f); }
     }
   }
+  // Ergebnis nach dem Bild
+  let kr = -1;
+  if (t >= 0) {
+    for (let i = 0; i < plan.length; i++) {
+      if (t >= plan[i].eVon && t < plan[i].eBis) { kr = i; break; }
+      if (t < plan[i].eVon) break;
+    }
+  }
+  if (kr !== ergebnisIndex) { ergebnisIndex = kr; letzteErgebnisKey = ""; letzteListeKey = ""; }
+  zeichneErgebnis(kr);
   if (!letzteListeKey) zeichneListe();
+}
+
+function zeigeZeit(ms) { return `${(ms / 1000).toFixed(2).replace(".", ",")} Sek.`; }
+
+function zeichneErgebnis(kr) {
+  const box = $("sk-ergebnis");
+  if (kr < 0) {
+    if (!box.hidden) { box.hidden = true; box.innerHTML = ""; }
+    return;
+  }
+  const reihe = bildErgebnis(kr);
+  const key = kr + ":" + reihe.map((e) => `${e.id}${e.pkt}${e.ms}`).join("|");
+  if (key === letzteErgebnisKey) return;
+  letzteErgebnisKey = key;
+  box.hidden = false;
+  $("sk-rueck").textContent = "";
+  const klein = reihe.length > 6 ? " klein" : "";
+  const zeilen = reihe.map((e) => {
+    const sp = spielerListe.find((x) => x.id === e.id);
+    if (!sp) return "";
+    const pkt = e.pkt > 0 ? `+${e.pkt}` : e.pkt < 0 ? `−${-e.pkt}` : "0";
+    return `<div class="sk-erg-zeile${e.ms == null ? " leer" : ""}" style="color:color-mix(in srgb, ${sp.farbe || "#ffffff"} 72%, #ffffff)">
+      <span class="n">${escapeHtml(sp.name)}</span><span class="p">${pkt}</span><span class="z">${e.ms == null ? "" : zeigeZeit(e.ms)}</span></div>`;
+  }).join("");
+  const leer = !reihe.length ? `<div class="sk-erg-leer">Keiner hat getippt – gut so! 👏</div>` : "";
+  box.className = "sk-ergebnis" + klein;
+  box.innerHTML = `<div class="sk-erg-kopf">${folge[kr].e}</div>${zeilen}${leer}`;
 }
 
 async function tippe() {

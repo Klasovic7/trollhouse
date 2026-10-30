@@ -6,7 +6,7 @@
 //  Spiels kommt aus szene(). Texte: **fett** wird hervorgehoben.
 //  Alle Regeln stammen aus dem Code der jeweiligen Spiele.
 // ============================================================================
-import { kartenSvg } from "./doppelkopf/karten.js?v=404";
+import { kartenSvg } from "./doppelkopf/karten.js?v=405";
 
 let zaehler = 0;
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -802,7 +802,7 @@ ANLEITUNGEN["schnellschuss"] = [
   {
     ohneFoto: true,
     t: "Finger weg!",
-    x: ["Ist es etwas **Schlechtes** (💣 🍅 💩 🧨), darfst du **nicht** tippen. Wer es trotzdem tut, bekommt **einen Minuspunkt**.", "Das Bild verschwindet nach kurzer Zeit wieder, dann kommt das nächste - es wird **immer schneller**."],
+    x: ["Ist es etwas **Schlechtes** (💣 🍅 💩 🧨), darfst du **nicht** tippen. Wer es trotzdem tut, bekommt **einen Minuspunkt**.", "Das Bild verschwindet nach kurzer Zeit wieder. Danach siehst du **2 Sekunden lang für jeden Spieler Punkte und Reaktionszeit** (in seiner Farbe), dann kommt das nächste Bild. Mit der Zeit wird es **immer schneller**."],
     s: () => E(160, 70, "💣", 44) + T(160, 120, "Nicht tippen!", 15, "#fca5a5", 800) + T(160, 150, "Sonst: −1 Punkt", 12, "#fff", 600)
   },
   {
