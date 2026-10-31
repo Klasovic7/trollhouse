@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "434";
+const SPIEL_VERSION = "435";
 
 export const SPIELE = [
   {
@@ -286,6 +286,7 @@ export const SPIELE = [
     name: "Imposter",
     emoji: "🎭",
     farbe: "#fb7185",
+    bild: "bilder/imposter-kachel.webp",
     beschreibung: "Einer kennt das Geheimwort nicht - deckt eure Karte auf und findet ihn",
     minSpieler: 3,
     laden: () => import(`./imposter/spiel.js?v=${SPIEL_VERSION}`)
