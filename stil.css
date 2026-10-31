@@ -3661,3 +3661,17 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 .sk-erg-leer { grid-column: 1 / -1; text-align: center; font-size: 0.9em; opacity: 0.85; padding-top: 40px; }
 .sk-ergebnis.mittel { font-size: 0.95rem; row-gap: 4px; padding: 8px 10px; }
 .sk-ergebnis.klein { font-size: 0.8rem; row-gap: 2px; padding: 6px 10px; column-gap: 6px; }
+
+/* ---------------------------------------------------------------------------
+   Nachgezeichnet! - Zeichenfläche (quadratisch, Touch-Scrollen aus), Zeitbalken */
+.nz-karte { text-align: center; }
+.nz-karte h2 { margin: 2px 0 10px; }
+.nz-canvas {
+  display: block; width: 100%; max-width: 380px; aspect-ratio: 1 / 1; margin: 8px auto 12px;
+  background: #0d0a12; border: 1px solid rgba(255,255,255,.18); border-radius: 18px;
+  touch-action: none; -webkit-user-select: none; user-select: none; cursor: crosshair;
+}
+.nz-zeitbalken { height: 7px; max-width: 380px; margin: 0 auto 6px; border-radius: 4px; background: rgba(255,255,255,.14); overflow: hidden; }
+#nz-zeitbalken-fuell { height: 100%; width: 100%; border-radius: 4px; background: linear-gradient(90deg, #f87171, #fbbf24 45%, #4ade80); transition: width .2s linear; }
+.nz-knoepfe { display: flex; gap: 10px; justify-content: center; max-width: 380px; margin: 0 auto; }
+.nz-knoepfe button { flex: 1; }

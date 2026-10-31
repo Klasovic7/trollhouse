@@ -990,3 +990,27 @@ fix("turbo", 6, { x: [
   ANLEITUNGEN["turbo"][5].x[1],
   "Wer keine gültige Runde schafft, bekommt 0 Punkte. Die Punkte gibt es, sobald alle Fahrer **Beenden** gedrückt haben oder ihre Zeit abgelaufen ist."
 ] });
+
+// ---------------------------------------------------------------------------
+// v437: Nachmalen! (Formen mit dem Finger nachzeichnen) - Seiten mit echten Screenshots
+// ---------------------------------------------------------------------------
+ANLEITUNGEN.nachzeichnen = [
+  {
+    t: "Worum geht's?",
+    x: ["Alle sehen dieselbe **Form als gestrichelte Vorlage** - vom Haus über Stern und Herz bis zur Spirale und Blume. Die Formen sind **leicht, mittel oder schwer**.",
+      "Der Spielleiter stellt ein, **wie viele Formen** gespielt werden (bis zu 12, jede nur einmal)."],
+    s: () => T(160, 90, "Nachmalen!", 22, "#fff", 800)
+  },
+  {
+    t: "Nachzeichnen",
+    x: ["Zeichne die Form mit dem **Finger** möglichst genau auf der Vorlage nach. Du hast dafür **30 Sekunden** - der Balken oben zeigt die Restzeit.",
+      "Mit **Löschen** setzt du neu an, mit **Abgeben** zählt deine Zeichnung. Du darfst auch mehrmals absetzen. Läuft die Zeit ab, wird automatisch abgegeben."],
+    s: () => T(160, 90, "30 s", 40, "#fff", 800)
+  },
+  {
+    t: "Genauigkeit und Punkte",
+    x: ["Bewertet wird in **Prozent**: Wie dicht liegt deine Linie an der Vorlage - und hast du die **ganze Form** nachgezeichnet? Eine halbe Form oder ein Gekritzel bringt wenig.",
+      "Wer am **genauesten** ist, ist Platz 1. " + PL, "Wer nichts abgibt, bekommt 0 Punkte. Nach jeder Runde siehst du **alle Zeichnungen übereinander**.", RUNDEN, GW],
+    s: () => rang(70, 22, [["Du", "96 % · 5", 0], ["Luca", "81 % · 3", 1], ["Kevin", "65 % · 2", 2], ["Sinan", "37 % · 1", 3]], 180)
+  }
+];
