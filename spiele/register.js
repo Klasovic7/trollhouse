@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "433";
+const SPIEL_VERSION = "434";
 
 export const SPIELE = [
   {
@@ -126,6 +126,7 @@ export const SPIELE = [
     name: "Stimmt's?",
     emoji: "🤔",
     farbe: "#a78bfa",
+    bild: "bilder/stimmts-kachel.webp",
     beschreibung: "Wahr oder erfunden? Tippt so schnell wie möglich richtig",
     minSpieler: 2,
     laden: () => import(`./stimmts/spiel.js?v=${SPIEL_VERSION}`)
