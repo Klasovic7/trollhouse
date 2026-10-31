@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "435";
+const SPIEL_VERSION = "436";
 
 export const SPIELE = [
   {
@@ -277,6 +277,7 @@ export const SPIELE = [
     name: "Finto",
     emoji: "🦉",
     farbe: "#38bdf8",
+    bild: "bilder/finto-kachel.webp",
     beschreibung: "Bluffe mit einer erfundenen Antwort und errate die echte",
     minSpieler: 3,
     laden: () => import(`./finto/spiel.js?v=${SPIEL_VERSION}`)
