@@ -998,7 +998,7 @@ ANLEITUNGEN.nachzeichnen = [
   {
     t: "Worum geht's?",
     x: ["Alle sehen dieselbe **Form als gestrichelte Vorlage** - vom Haus über Stern und Herz bis zur Spirale und Blume. Die Formen sind **leicht, mittel oder schwer**.",
-      "Der Spielleiter stellt ein, **wie viele Formen** gespielt werden (bis zu 12, jede nur einmal)."],
+      "Der Spielleiter stellt ein, **wie viele Formen** gespielt werden (bis zu 20, jede nur einmal)."],
     s: () => T(160, 90, "Nachmalen!", 22, "#fff", 800)
   },
   {
@@ -1022,7 +1022,7 @@ ANLEITUNGEN.nachzeichnen = [
 ANLEITUNGEN.farbton = [
   {
     t: "Worum geht's?",
-    x: ["Eine **Farbe** wird gezeigt - und du musst sie dir merken. Der Spielleiter stellt ein, **wie viele Farben** gespielt werden (bis zu 12)."],
+    x: ["Eine **Farbe** wird gezeigt - und du musst sie dir merken. Der Spielleiter stellt ein, **wie viele Farben** gespielt werden (bis zu 100)."],
     s: () => T(160, 90, "Farbton!", 22, "#fff", 800)
   },
   {

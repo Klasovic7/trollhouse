@@ -37,11 +37,12 @@ export function genauigkeit(ziel, tipp) {
 // Zufallsfarben: nicht zu grau und nicht zu dunkel, damit sie sich merken lassen; Töne weit auseinander
 export function waehleFarben(n) {
   const out = [];
-  let versuche = 0;
   while (out.length < n) {
-    const c = [Math.floor(Math.random() * 360), 30 + Math.floor(Math.random() * 71), 40 + Math.floor(Math.random() * 61)];
-    versuche++;
-    if (versuche < 200 && out.some((o) => farbAbstand(o, c) < 25)) continue;
+    let c;
+    for (let versuch = 0; versuch < 40; versuch++) {
+      c = [Math.floor(Math.random() * 360), 30 + Math.floor(Math.random() * 71), 40 + Math.floor(Math.random() * 61)];
+      if (!out.slice(-8).some((o) => farbAbstand(o, c) < 25)) break;   // nur gegen die letzten Farben prüfen
+    }
     out.push(c);
   }
   return out;

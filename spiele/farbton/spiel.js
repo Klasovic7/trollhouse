@@ -19,7 +19,7 @@ import { hsbCss, genauigkeit, waehleFarben } from "./logik.js";
 const MERK_SEKUNDEN = 5;
 const BAU_SEKUNDEN = 30;
 const AUSWERTUNG_PUFFER_MS = 12000;   // Sicherheitsnetz, falls jemand nie abgibt
-const MAX_RUNDEN = 12;
+const MAX_RUNDEN = 100;
 const STANDARD_ANZAHL = 5;
 const START_FARBE = [180, 50, 50];     // alle starten bei derselben Mittelfarbe
 

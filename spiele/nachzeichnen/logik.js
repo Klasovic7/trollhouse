@@ -67,7 +67,23 @@ const ROH = [
   { id: "spirale", name: "Spirale", schwer: 3, geschlossen: false,
     pt: kurve(160, (t) => { const a = t * TAU * 2.5, r = 0.08 + t * 0.92; return [r * Math.cos(a), r * Math.sin(a)]; }) },
   { id: "blume", name: "Blume", schwer: 3, geschlossen: true,
-    pt: kurve(200, (t) => { const a = t * Math.PI, r = Math.cos(5 * a); return [r * Math.cos(a), r * Math.sin(a)]; }) }
+    pt: kurve(200, (t) => { const a = t * Math.PI, r = Math.cos(5 * a); return [r * Math.cos(a), r * Math.sin(a)]; }) },
+  { id: "raute", name: "Raute", schwer: 1, geschlossen: true,
+    pt: [[0, -1], [0.65, 0], [0, 1], [-0.65, 0]] },
+  { id: "fuenfeck", name: "Fünfeck", schwer: 1, geschlossen: true,
+    pt: Array.from({ length: 5 }, (_, i) => [Math.cos(-Math.PI / 2 + (i * TAU) / 5), Math.sin(-Math.PI / 2 + (i * TAU) / 5)]) },
+  { id: "sanduhr", name: "Sanduhr", schwer: 1, geschlossen: true,
+    pt: [[-0.7, -1], [0.7, -1], [0.08, 0], [0.7, 1], [-0.7, 1], [-0.08, 0]] },
+  { id: "zickzack", name: "Zickzack", schwer: 2, geschlossen: false,
+    pt: [[-1, 0.5], [-0.5, -0.5], [0, 0.5], [0.5, -0.5], [1, 0.5]] },
+  { id: "treppe", name: "Treppe", schwer: 2, geschlossen: false,
+    pt: [[-1, 1], [-0.5, 1], [-0.5, 0.5], [0, 0.5], [0, 0], [0.5, 0], [0.5, -0.5], [1, -0.5], [1, -1]] },
+  { id: "tropfen", name: "Tropfen", schwer: 2, geschlossen: true,
+    pt: kurve(100, (t) => { const a = t * TAU; return [Math.sin(a) * Math.sin(a / 2), -Math.cos(a)]; }) },
+  { id: "krone", name: "Krone", schwer: 2, geschlossen: true,
+    pt: [[-1, 0.8], [-1, -0.5], [-0.5, 0.1], [0, -0.8], [0.5, 0.1], [1, -0.5], [1, 0.8]] },
+  { id: "kleeblatt", name: "Kleeblatt", schwer: 3, geschlossen: true,
+    pt: kurve(240, (t) => { const a = t * TAU, r = Math.cos(2 * a); return [r * Math.cos(a), r * Math.sin(a)]; }) }
 ];
 
 export const FORMEN = ROH.map((f) => ({ ...f, pt: normalisiere(f.pt) }));
