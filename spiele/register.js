@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "439";
+const SPIEL_VERSION = "440";
 
 export const SPIELE = [
   {
@@ -115,6 +115,7 @@ export const SPIELE = [
     id: "nachzeichnen",
     name: "Nachmalen!",
     emoji: "✏️",
+    bild: "bilder/nachzeichnen-kachel.webp",
     farbe: "#2dd4bf",
     beschreibung: "Zeichne die Form nach - wer liegt am genauesten auf der Vorlage?",
     minSpieler: 2,
