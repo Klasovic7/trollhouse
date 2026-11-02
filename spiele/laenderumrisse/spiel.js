@@ -24,7 +24,7 @@ import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeH
 import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
 
-const STANDARD_ANZAHL = 10;
+const STANDARD_ANZAHL = 5;
 // Wie lange die Rundenergebnis-Anzeige (richtiges Land + wer was getippt hat)
 // zu sehen ist, bevor der Spielleiter automatisch weiterschaltet.
 const RUNDENERGEBNIS_ANZEIGE_MS = 3500;
@@ -400,12 +400,13 @@ function zeigeSetup() {
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(Math.min(STANDARD_ANZAHL, maxRunden));
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("lu-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einem neuen Land.`;
     anzahlFeld.disabled = false;
   } else {
     // Mitspieler*innen sehen live den Wert, den der Leiter gerade eintippt
     // (oder den Standard, solange der Leiter noch nichts geaendert hat).
-    anzahlFeld.value = String(anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, maxRunden));
+    anzahlFeld.value = String(anzahlEntwurf || Math.min(STANDARD_ANZAHL, maxRunden));
     $("lu-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einem neuen Land.`;
     anzahlFeld.disabled = true;
   }

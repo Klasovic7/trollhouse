@@ -537,11 +537,12 @@ function zeigeSetup() {
     $("zt-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} Begriff${festgelegt === 1 ? "" : "e"}.`;
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
-    if (!anzahlManuellGesetzt || !anzahlFeld.value) anzahlFeld.value = karten.length;
+    if (!anzahlManuellGesetzt || !anzahlFeld.value) anzahlFeld.value = Math.min(5, karten.length);
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("zt-anzahl-max").textContent = `Insgesamt ${karten.length} Begriffe verfügbar.`;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? karten.length);
+    anzahlFeld.value = String(anzahlEntwurf || Math.min(5, karten.length));
     $("zt-anzahl-max").textContent = `Insgesamt ${karten.length} Begriffe verfügbar.`;
     anzahlFeld.disabled = true;
   }

@@ -3714,3 +3714,9 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
   justify-content: center; color: rgba(255,255,255,.6); font-weight: 800;
 }
 .ft-erg-farbe.leer { background: rgba(255,255,255,.08); }
+
+/* v445: Spielkopf kompakter - Titel rückt näher an die Raum-verlassen-Zeile heran */
+#top-bar.im-spiel { gap: 0; padding: 12px 17px 13px; }
+#top-bar.im-spiel .spiel-kopf-titel { margin-top: -4px; }
+#top-bar.im-spiel .spiel-kopf-fortschritt { top: 12px; }
+#top-bar.im-spiel .spiel-kopf-titel strong { font-size: clamp(2.1rem, 9.6vw, 3rem); min-width: 0; }

@@ -28,7 +28,7 @@ const MODI = {
   sehens: { name: "Sehenswürdigkeiten", daten: SEHENSWUERDIGKEITEN, einzahl: "Sehenswürdigkeit" }
 };
 
-const STANDARD_ANZAHL = 8;
+const STANDARD_ANZAHL = 5;
 const MAX_ANZAHL = 25;
 const RUNDENZEIT_MS = 60000;
 const VOLLTREFFER_KM = 100;
@@ -851,10 +851,11 @@ function zeigeSetup() {
     feld.disabled = true;
   } else if (api.istLeiter) {
     if (!feld.value) feld.value = String(STANDARD_ANZAHL);
+    if (!anzahlEntwurf) schreibeEntwurf();
     $("wl-anzahl-max").textContent = `Bis zu ${max} Runden, jeweils mit einem neuen Ort.`;
     feld.disabled = false;
   } else {
-    feld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    feld.value = String(anzahlEntwurf || STANDARD_ANZAHL);
     $("wl-anzahl-max").textContent = `Bis zu ${max} Runden, jeweils mit einem neuen Ort.`;
     feld.disabled = true;
   }

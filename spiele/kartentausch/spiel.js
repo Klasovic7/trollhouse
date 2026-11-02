@@ -22,7 +22,7 @@ import { speichereWertung } from "../../kern/wertung.js";
 
 const COUNTDOWN_MS = 3000;      // "Gleich geht's los" (wie bei den anderen Spielen)
 const MAX_RUNDEN = 15;
-const STANDARD_RUNDEN = 3;
+const STANDARD_RUNDEN = 5;
 const SPALTEN = 5, ZEILEN = 4, ANZAHL = SPALTEN * ZEILEN;   // 20 Karten
 const TISCH_ZEILEN = ZEILEN + 1;                            // eine Reihe Platz oben fuer den Start
 const ANZAHL_TAUSCH = 4;       // Tauschrunden

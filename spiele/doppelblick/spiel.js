@@ -81,7 +81,7 @@ const DECK = generiereDeck(ORDNUNG); // 57 Karten, je 8 Symbole, 57 Symbole insg
 // Spielen - siehe kern/verlauf.js - ist hier bewusst weggelassen: bei jedem
 // neuen Spieldurchgang wird ohnehin komplett neu gemischt).
 const MAX_RUNDEN = Math.floor(DECK.length / 2);
-const STANDARD_ANZAHL = 10;
+const STANDARD_ANZAHL = 5;
 // Sicherheitsnetz wie bei Blitzquiz: kein manueller "Runde auswerten"-Knopf,
 // falls jemand gar nicht reagiert wertet der Spielleiter spätestens danach
 // automatisch aus.
@@ -565,11 +565,12 @@ function zeigeSetup() {
     $("db-anzahl").disabled = true;
   } else if (api.istLeiter) {
     if (gewuenschteAnzahl === 0) gewuenschteAnzahl = Math.min(STANDARD_ANZAHL, MAX_RUNDEN);
+    if (!anzahlEntwurf) schreibeEntwurfLive();
     $("db-anzahl").value = String(gewuenschteAnzahl);
     $("db-anzahl-max").textContent = `Insgesamt ${MAX_RUNDEN} Runden möglich.`;
     $("db-anzahl").disabled = false;
   } else {
-    gewuenschteAnzahl = anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, MAX_RUNDEN);
+    gewuenschteAnzahl = anzahlEntwurf || Math.min(STANDARD_ANZAHL, MAX_RUNDEN);
     $("db-anzahl").value = String(gewuenschteAnzahl);
     $("db-anzahl-max").textContent = `Insgesamt ${MAX_RUNDEN} Runden möglich.`;
     $("db-anzahl").disabled = true;
@@ -581,7 +582,7 @@ function zeigeSetup() {
     if (gewuenschteKartenProSpieler === 0) gewuenschteKartenProSpieler = Math.min(5, maxKpsp);
     if (gewuenschteKartenProSpieler > maxKpsp) gewuenschteKartenProSpieler = maxKpsp;
   } else {
-    gewuenschteKartenProSpieler = Math.min(kpspEntwurf ?? Math.min(5, maxKpsp), maxKpsp);
+    gewuenschteKartenProSpieler = Math.min(kpspEntwurf || Math.min(5, maxKpsp), maxKpsp);
   }
   $("db-kpsp").max = String(maxKpsp);
   $("db-kpsp").value = String(gewuenschteKartenProSpieler);

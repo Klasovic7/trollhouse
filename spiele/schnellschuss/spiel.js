@@ -21,7 +21,7 @@ import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 const COUNTDOWN_MS = 3000;       // "Gleich geht's los"
 const START_PAUSE_MS = 900;      // Pause nach dem Countdown bis zum ersten Bild
 const MAX_BILDER = 40;
-const STANDARD_BILDER = 15;
+const STANDARD_BILDER = 5;
 const NACHLAUF_MS = 1800;        // so lange warten wir nach dem letzten Bild auf Tipps
 const ERGEBNIS_WARTE_MS = 500;   // so lange nach dem Verschwinden des Bildes warten, bis die Tipps aller da sind
 const ERGEBNIS_MS = 2000;        // so lange ist das Ergebnis nach jedem Bild sichtbar

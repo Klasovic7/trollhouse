@@ -92,6 +92,8 @@ const VORLAGE = `
   </div>
 `;
 
+const STANDARD_ANZAHL = 5;
+
 let api = null;
 let fragen = [];
 let el = {};
@@ -311,11 +313,12 @@ function zeigeSetup() {
     $("fi-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} ${festgelegt === 1 ? "Frage" : "Fragen"}.`;
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
-    if (!anzahlFeld.value) anzahlFeld.value = fragen.length;
+    if (!anzahlFeld.value) anzahlFeld.value = String(Math.min(STANDARD_ANZAHL, fragen.length));
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("fi-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? fragen.length);
+    anzahlFeld.value = String(anzahlEntwurf || Math.min(STANDARD_ANZAHL, fragen.length));
     $("fi-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
     anzahlFeld.disabled = true;
   }

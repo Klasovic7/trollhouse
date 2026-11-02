@@ -266,11 +266,12 @@ function zeigeSetup() {
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(STANDARD_ANZAHL);
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("zg-anzahl-max").textContent =
       `Zielzeiten zwischen ${ZIEL_MIN} und ${ZIEL_MAX} Sekunden, bis zu ${MAX_RUNDEN} Runden.`;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    anzahlFeld.value = String(anzahlEntwurf || STANDARD_ANZAHL);
     $("zg-anzahl-max").textContent =
       `Zielzeiten zwischen ${ZIEL_MIN} und ${ZIEL_MAX} Sekunden, bis zu ${MAX_RUNDEN} Runden.`;
     anzahlFeld.disabled = true;

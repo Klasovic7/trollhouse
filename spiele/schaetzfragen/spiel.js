@@ -613,14 +613,15 @@ function zeigeSetup() {
     const bisher = parseInt(anzahlFeld.value, 10);
     const auswahl = anzahlManuellGesetzt && Number.isFinite(bisher)
       ? Math.min(Math.max(1, bisher), obergrenze)
-      : obergrenze;
+      : Math.min(5, obergrenze);
     anzahlFeld.max = String(obergrenze);
     anzahlFeld.value = String(auswahl);
+    if (anzahlEntwurf !== auswahl) schreibeAnzahlEntwurfLive();   // Mitspieler sehen immer denselben Wert wie der Leiter
     $("sf-anzahl-max").textContent =
       `Mit den gewählten Kategorien sind maximal ${obergrenze} möglich.`;
     anzahlFeld.disabled = false;
   } else {
-    const auswahl = Math.min(Math.max(1, anzahlEntwurf ?? obergrenze), obergrenze);
+    const auswahl = Math.min(Math.max(1, anzahlEntwurf || Math.min(5, obergrenze)), obergrenze);
     anzahlFeld.max = String(obergrenze);
     anzahlFeld.value = String(auswahl);
     $("sf-anzahl-max").textContent =

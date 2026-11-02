@@ -383,11 +383,12 @@ function zeigeSetup() {
     $("rd-anzahl-max").textContent = `In der Olympiade festgelegt: ${festgelegt} Kategorie${festgelegt === 1 ? "" : "n"}.`;
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
-    if (!anzahlManuellGesetzt || !anzahlFeld.value) anzahlFeld.value = Math.min(3, karten.length);
+    if (!anzahlManuellGesetzt || !anzahlFeld.value) anzahlFeld.value = Math.min(5, karten.length);
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("rd-anzahl-max").textContent = `Insgesamt ${karten.length} Kategorien verfügbar.`;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? Math.min(3, karten.length));
+    anzahlFeld.value = String(anzahlEntwurf || Math.min(5, karten.length));
     $("rd-anzahl-max").textContent = `Insgesamt ${karten.length} Kategorien verfügbar.`;
     anzahlFeld.disabled = true;
   }

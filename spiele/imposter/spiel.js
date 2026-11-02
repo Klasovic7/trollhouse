@@ -280,9 +280,10 @@ function zeigeSetup() {
   if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = STANDARD_ANZAHL;
     if (!anzahlImposterFeld.value) anzahlImposterFeld.value = STANDARD_ANZAHL_IMPOSTER;
+    if (!anzahlEntwurf || !anzahlImposterEntwurf) schreibeAnzahlEntwurfLive();
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
-    anzahlImposterFeld.value = String(anzahlImposterEntwurf ?? STANDARD_ANZAHL_IMPOSTER);
+    anzahlFeld.value = String(anzahlEntwurf || STANDARD_ANZAHL);
+    anzahlImposterFeld.value = String(anzahlImposterEntwurf || STANDARD_ANZAHL_IMPOSTER);
   }
   $("imp-anzahl-zeile").hidden = false;
   anzahlFeld.disabled = !api.istLeiter;

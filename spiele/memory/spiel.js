@@ -31,7 +31,7 @@ import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
 
 const COUNTDOWN_MS = 3000;
 const MAX_RUNDEN = 15;
-const STANDARD_RUNDEN = 3;
+const STANDARD_RUNDEN = 5;
 const PAARE_OPTIONEN = [6, 8, 10, 12];
 const STANDARD_PAARE = 8;
 const FLIP_MS = 1500;         // so lange bleibt ein Fehlpaar sichtbar

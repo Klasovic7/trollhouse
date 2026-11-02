@@ -43,7 +43,7 @@ import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf
 const HINWEIS_DAUER_MS = 7000;
 // v359: Nach dem letzten Hinweis bleiben noch 10 Sekunden zum Lösen, danach wird aufgelöst.
 const ANTWORT_ZEIT_MS = 10000;
-const STANDARD_ANZAHL = 8;
+const STANDARD_ANZAHL = 5;
 
 const VORLAGE = `
   <div id="ww-setup" class="bildschirm-karte" hidden>
@@ -358,13 +358,14 @@ function zeigeSetup() {
     $("ww-anzahl").disabled = true;
   } else if (api.istLeiter) {
     if (gewuenschteAnzahl === 0) gewuenschteAnzahl = Math.min(STANDARD_ANZAHL, fragen.length);
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("ww-anzahl").max = String(Math.max(1, fragen.length));
     $("ww-anzahl").value = String(gewuenschteAnzahl);
     $("ww-anzahl-max").textContent = `Insgesamt ${fragen.length} Runden verfügbar.`;
     $("ww-anzahl-zeile").hidden = false;
     $("ww-anzahl").disabled = false;
   } else {
-    gewuenschteAnzahl = anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, fragen.length);
+    gewuenschteAnzahl = anzahlEntwurf || Math.min(STANDARD_ANZAHL, fragen.length);
     $("ww-anzahl").max = String(Math.max(1, fragen.length));
     $("ww-anzahl").value = String(gewuenschteAnzahl);
     $("ww-anzahl-max").textContent = `Insgesamt ${fragen.length} Runden verfügbar.`;

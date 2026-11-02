@@ -22,7 +22,7 @@ import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
 const COUNTDOWN_MS = 3000;
 const MAX_RUNDEN = 10;
-const STANDARD_RUNDEN = 3;
+const STANDARD_RUNDEN = 5;
 const LEBEN_OPTIONEN = [1, 3];
 const STANDARD_LEBEN = 3;
 const MAX_RUNDE_MS = 15 * 60 * 1000;   // Sicherheitsgrenze, falls jemand ewig durchhält oder verschwindet

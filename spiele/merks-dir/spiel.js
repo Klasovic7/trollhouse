@@ -407,11 +407,12 @@ function zeigeSetup() {
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(STANDARD_ANZAHL);
+    if (!anzahlEntwurf) schreibeEntwurfLive();
     $("md-anzahl-max").textContent =
       `Jeder Durchgang mischt 20 neue Emojis, bis zu ${MAX_ANZAHL} Durchgänge.`;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    anzahlFeld.value = String(anzahlEntwurf || STANDARD_ANZAHL);
     $("md-anzahl-max").textContent =
       `Jeder Durchgang mischt 20 neue Emojis, bis zu ${MAX_ANZAHL} Durchgänge.`;
     anzahlFeld.disabled = true;

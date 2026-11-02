@@ -23,7 +23,7 @@ import { erzeugeFeld } from "./feld.js";
 
 const COUNTDOWN_MS = 3000;
 const MAX_RUNDEN = 15;
-const STANDARD_RUNDEN = 3;
+const STANDARD_RUNDEN = 5;
 const WAHL_MS = 25000;        // so lange darf man ein Gebiet aussuchen
 const ENTHUELLT_MS = 2800;    // so lange sind alle Quadrate sichtbar, bevor sie verschwinden
 const SCHRITT_MS = 330;       // ein Quadrat pro Farbe alle ... ms

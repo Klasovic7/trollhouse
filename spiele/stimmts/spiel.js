@@ -23,7 +23,7 @@ import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 const STANDARD_ZEIT_SEKUNDEN = 15;
 const MIN_ZEIT = 5;
 const MAX_ZEIT = 30;
-const STANDARD_ANZAHL = 10;
+const STANDARD_ANZAHL = 5;
 // Wie lange die Rundenergebnis-Anzeige (Auflösung + Erklärung + wer was
 // getippt hat) zu sehen ist, bevor der Spielleiter automatisch weiterschaltet.
 const RUNDENERGEBNIS_ANZEIGE_MS = 5000;
@@ -339,10 +339,11 @@ function zeigeSetup() {
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(Math.min(STANDARD_ANZAHL, maxRunden));
+    if (!anzahlEntwurf) schreibeEntwurfLive();
     $("st-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einer neuen Behauptung.`;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, maxRunden));
+    anzahlFeld.value = String(anzahlEntwurf || Math.min(STANDARD_ANZAHL, maxRunden));
     $("st-anzahl-max").textContent = `Bis zu ${maxRunden} Runden, jede mit einer neuen Behauptung.`;
     anzahlFeld.disabled = true;
   }

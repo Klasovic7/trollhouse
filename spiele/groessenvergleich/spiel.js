@@ -428,10 +428,11 @@ function zeigeSetup() {
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(STANDARD_ANZAHL);
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("gv-anzahl-max").textContent = hinweis;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    anzahlFeld.value = String(anzahlEntwurf || STANDARD_ANZAHL);
     $("gv-anzahl-max").textContent = hinweis;
     anzahlFeld.disabled = true;
   }

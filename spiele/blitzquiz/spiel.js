@@ -49,7 +49,7 @@ import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
 const AUFDECK_DAUER_MS = 10000;
-const STANDARD_ANZAHL = 10;
+const STANDARD_ANZAHL = 5;
 // Sicherheitsnetz: es gibt keinen manuellen "Runde auswerten"-Knopf mehr, also
 // wertet der Spielleiter eine Runde spätestens nach dieser Zeit automatisch
 // aus - auch wenn nicht alle geantwortet/gelöst/sich verbraucht haben (z. B.
@@ -452,13 +452,14 @@ function zeigeSetup() {
     $("bz-anzahl").disabled = true;
   } else if (api.istLeiter) {
     if (gewuenschteAnzahl === 0) gewuenschteAnzahl = Math.min(STANDARD_ANZAHL, fragen.length);
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();
     $("bz-anzahl").max = String(Math.max(1, fragen.length));
     $("bz-anzahl").value = String(gewuenschteAnzahl);
     $("bz-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
     $("bz-anzahl-zeile").hidden = false;
     $("bz-anzahl").disabled = false;
   } else {
-    gewuenschteAnzahl = anzahlEntwurf ?? Math.min(STANDARD_ANZAHL, fragen.length);
+    gewuenschteAnzahl = anzahlEntwurf || Math.min(STANDARD_ANZAHL, fragen.length);
     $("bz-anzahl").max = String(Math.max(1, fragen.length));
     $("bz-anzahl").value = String(gewuenschteAnzahl);
     $("bz-anzahl-max").textContent = `Insgesamt ${fragen.length} Fragen verfügbar.`;
