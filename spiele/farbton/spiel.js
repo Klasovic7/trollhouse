@@ -228,10 +228,11 @@ function zeigeSetup() {
     anzahlFeld.disabled = true;
   } else if (api.istLeiter) {
     if (!anzahlFeld.value) anzahlFeld.value = String(STANDARD_ANZAHL);
+    if (!anzahlEntwurf) schreibeAnzahlEntwurfLive();   // Mitspieler sollen den Standardwert sofort sehen
     $("ft-anzahl-max").textContent = hinweis;
     anzahlFeld.disabled = false;
   } else {
-    anzahlFeld.value = String(anzahlEntwurf ?? STANDARD_ANZAHL);
+    anzahlFeld.value = String(anzahlEntwurf || STANDARD_ANZAHL);
     $("ft-anzahl-max").textContent = hinweis;
     anzahlFeld.disabled = true;
   }

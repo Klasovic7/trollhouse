@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v443";
+export const APP_VERSION = "v444";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -61,7 +61,7 @@ document.getElementById("btn-spiel-anleitung")?.addEventListener("click", async 
     const darunter = Boolean(br && br.height > 8 && letztes && letztes.right + 10 > links);
     if (darunter) mitteY = br.bottom + 12 + hoehe / 2;
     // Zeile unter den Profilbildern braucht Platz in der Karte
-    const wunsch = darunter ? "64px" : "";
+    const wunsch = darunter || !(br && br.height > 8) ? "64px" : "";   // ohne Spielerzeile: Platz unter dem letzten Knopf
     if (karte.dataset.anlPlatz !== wunsch) { karte.dataset.anlPlatz = wunsch; karte.style.paddingBottom = wunsch; }
     knopf.style.top = Math.round(mitteY + window.scrollY - hoehe / 2) + "px";
     knopf.style.left = Math.round(links + window.scrollX) + "px";
