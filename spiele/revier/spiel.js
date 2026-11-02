@@ -905,11 +905,15 @@ function baueSpielfeld(layout) {
     ctx.drawImage(boden, 0, 0, W, H);
     const l = lage(bm);
     if (l.modus === "sichern") {
-      ctx.fillStyle = "rgba(255,255,255,0.32)";
+      // Gebiet unter der eigenen Figur sofort in der eigenen Farbe zeigen (Vorschau);
+      // sichert jemand anderes es, wird es hier zur Farbe des anderen (Boden) und die Vorschau entfaellt.
+      ctx.fillStyle = farbeVon(api.spielerId);
+      ctx.globalAlpha = 0.9;
       for (let k = 0; k < w * h; k++) {
         if (reg[k] === l.g) ctx.fillRect(ox + (k % w) * c, oy + Math.floor(k / w) * c, Math.ceil(c), Math.ceil(c));
       }
-      kanten(l.g, "#fde047", Math.max(3, c * 0.2));
+      ctx.globalAlpha = 1;
+      kanten(l.g, "#fde047", Math.max(1.5, c * 0.08));
     }
     // Figuren der anderen (geglättet); wer schon ein Gebiet hat, steht in dessen Mitte
     const gesetzt = new Map();

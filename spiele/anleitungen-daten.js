@@ -1002,15 +1002,16 @@ ANLEITUNGEN.nachzeichnen = [
     s: () => T(160, 90, "Nachmalen!", 22, "#fff", 800)
   },
   {
-    t: "Nachzeichnen",
-    x: ["Zeichne die Form mit dem **Finger** möglichst genau auf der Vorlage nach. Du hast dafür **30 Sekunden** - der Balken oben zeigt die Restzeit.",
-      "Mit **Löschen** setzt du neu an, mit **Abgeben** zählt deine Zeichnung. Du darfst auch mehrmals absetzen. Läuft die Zeit ab, wird automatisch abgegeben."],
+    t: "Aus dem Gedächtnis malen",
+    x: ["Prägt dir die Form ein: **Sobald du den Finger aufsetzt, verschwindet die Vorlage** - du musst sie dir merken und aus dem Gedächtnis nachzeichnen. Du hast **30 Sekunden**, der Balken oben zeigt die Restzeit.",
+      "Beim Malen siehst du **live deine Treffsicherheit in Prozent**. Der Strich färbt sich **grün, wenn er genau auf der Form liegt**, und **rot, wenn er daneben liegt**.",
+      "Mit **Löschen** setzt du neu an (die Vorlage kommt nicht zurück), mit **Abgeben** zählt deine Zeichnung. Läuft die Zeit ab, wird automatisch abgegeben."],
     s: () => T(160, 90, "30 s", 40, "#fff", 800)
   },
   {
     t: "Genauigkeit und Punkte",
     x: ["Bewertet wird in **Prozent**: Wie dicht liegt deine Linie an der Vorlage - und hast du die **ganze Form** nachgezeichnet? Eine halbe Form oder ein Gekritzel bringt wenig.",
-      "Wer am **genauesten** ist, ist Platz 1. " + PL, "Wer nichts abgibt, bekommt 0 Punkte. Nach jeder Runde siehst du **alle Zeichnungen übereinander**.", RUNDEN, GW],
+      "Wer am **genauesten** ist, ist Platz 1. " + PL, "Wer nichts abgibt, bekommt 0 Punkte. Die Zahl beim Malen zählt nur die Treffsicherheit - in der Endwertung wird zusätzlich geprüft, ob du die **ganze Form** gemalt hast. Nach jeder Runde siehst du **alle Zeichnungen** samt Vorlage.", RUNDEN, GW],
     s: () => rang(70, 22, [["Du", "96 % · 5", 0], ["Luca", "81 % · 3", 1], ["Kevin", "65 % · 2", 2], ["Sinan", "37 % · 1", 3]], 180)
   }
 ];

@@ -124,6 +124,20 @@ export function bewerteZeichnung(form, striche) {
   return Math.round(roh * vollstaendig * 1000) / 10;
 }
 
+// ---- Live-Anzeige beim Zeichnen
+export function zielPunkte(form) { return verdichte(form.pt, form.geschlossen, 0.025); }
+export function abstandZuZiel(p, ziel) { return naechsterAbstand(p, ziel); }
+// Toleranz-/Prozentformel wie bei der Endwertung, aber nur "Treffsicherheit" (ohne Lückenabzug),
+// damit die Zahl schon beim Zeichnen sinnvoll ist.
+export function liveProzent(ziel, striche) {
+  let summe = 0, n = 0;
+  for (const st of striche) for (const m of verdichte(st, false, 0.025)) { summe += naechsterAbstand(m, ziel); n++; }
+  if (!n) return null;
+  return Math.round(Math.pow(Math.max(0, 1 - summe / n / TOLERANZ), 1.2) * 1000) / 10;
+}
+// 0 (weit weg) .. 1 (genau) -> für die Farbe
+export function genauWert(d) { return Math.max(0, Math.min(1, 1 - (d - 0.03) / 0.12)); }
+
 // Mischt alle Formen und liefert die ersten n (bei mehr als vorhanden: nochmal gemischt hinten dran)
 export function waehleFormen(n) {
   const mische = () => {

@@ -15,7 +15,7 @@ import {
 } from "../../kern/firebase.js";
 import { spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
-import { FORMEN, formPerId, waehleFormen, bewerteZeichnung, packe, entpacke, strichLaenge } from "./logik.js";
+import { FORMEN, formPerId, waehleFormen, bewerteZeichnung, packe, entpacke, strichLaenge, zielPunkte, abstandZuZiel, liveProzent, genauWert } from "./logik.js";
 
 const ZEIT_SEKUNDEN = 30;
 const AUSWERTUNG_PUFFER_MS = 12000;   // Sicherheitsnetz, falls jemand nie abgibt
@@ -28,7 +28,9 @@ const FARBEN = ["#f87171", "#60a5fa", "#4ade80", "#fbbf24", "#c084fc", "#f472b6"
 const VORLAGE = `
   <div id="nz-setup" class="bildschirm-karte" hidden>
     <p class="hinweis-text">Alle sehen dieselbe Form als gestrichelte Vorlage - vom Haus bis zur Spirale.
-      Zeichne sie mit dem Finger möglichst genau nach, du hast 30 Sekunden. Wer am genauesten zeichnet,
+      Sobald du den Finger aufsetzt, verschwindet die Vorlage: du musst sie dir merken und aus dem Gedächtnis
+      zeichnen. Beim Malen siehst du live deine Treffsicherheit, der Strich wird rot (daneben) oder grün (genau).
+      Du hast 30 Sekunden. Wer am genauesten zeichnet,
       bekommt die meisten Punkte. Mit "Löschen" darfst du neu ansetzen, mit "Abgeben" zählt es.</p>
 
     <div id="nz-anzahl-zeile" class="setup-anzahlblock" hidden>
@@ -197,7 +199,7 @@ export function raumDaten(daten) {
   const neuerStart = daten.nzStart ?? 0;
   if (status === "runde_aktiv" && (rundenIndex !== neuerIndex || startZeit !== neuerStart)) {
     rundenIndex = neuerIndex;
-    startZeit = neuerStart;
+    startZeit = neuerStart; vorlageWeg = false;
     striche = []; aktuellerStrich = null; abgegeben = false; auswertungLaeuft = false;
   } else if (status === "ausgewertet") {
     rundenIndex = neuerIndex;
@@ -341,14 +343,62 @@ function striceZeichnen(ctx, css, liste, farbe, breite, alpha = 1) {
   ctx.restore();
 }
 
+let zielCache = null, zielCacheId = "", vorlageWeg = false;
+function zielFuerRunde() {
+  const id = formIds[rundenIndex];
+  if (zielCacheId !== id) { zielCache = zielPunkte(formPerId(id)); zielCacheId = id; }
+  return zielCache;
+}
+const farbeFuer = (t) => `hsl(${Math.round(t * 125)}, 85%, ${Math.round(46 + 6 * t)}%)`;
+
+// Strich Segment für Segment einfärben: rot = weit weg von der Form, grün = genau
+function liveStricheZeichnen(ctx, css, liste, ziel) {
+  ctx.save();
+  ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (const st of liste) {
+    if (!st._w) st._w = [];
+    for (let i = st._w.length; i < st.length; i++) st._w[i] = genauWert(abstandZuZiel(st[i], ziel));
+    if (st.length === 1) continue;
+    for (let i = 1; i < st.length; i++) {
+      const [x0, y0] = bildPunkt(css, st[i - 1]), [x1, y1] = bildPunkt(css, st[i]);
+      ctx.strokeStyle = farbeFuer((st._w[i] + st._w[i - 1]) / 2);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function zeichneRunde() {
   if (!el.wurzel) return;
   const canvas = $("nz-canvas");
   const { ctx, css } = richteCanvasEin(canvas);
   ctx.clearRect(0, 0, css, css);
-  vorlageZeichnen(ctx, css, formPerId(formIds[rundenIndex]));
   const meine = aktuellerStrich ? [...striche, aktuellerStrich] : striche;
-  striceZeichnen(ctx, css, meine, eigeneFarbe(), 5);
+  const ziel = zielFuerRunde();
+  const hatGemalt = meine.length > 0;
+  if (hatGemalt) vorlageWeg = true;
+  if (!vorlageWeg) vorlageZeichnen(ctx, css, formPerId(formIds[rundenIndex]));
+  // große Prozentzahl in der Mitte (Treffsicherheit live, nach dem Abgeben die Endwertung)
+  let zahl = null;
+  if (hatGemalt && abgegeben) {
+    const mein = antwortenDieserRunde(rundenIndex).find((a) => a.spielerId === api.spielerId);
+    zahl = mein && Number.isFinite(mein.genauigkeit) ? mein.genauigkeit : liveProzent(ziel, meine);
+  } else if (hatGemalt) zahl = liveProzent(ziel, meine);
+  if (zahl !== null) {
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `800 ${Math.round(css * 0.2)}px system-ui, sans-serif`;
+    ctx.fillStyle = farbeFuer(Math.max(0, Math.min(1, zahl / 90)));
+    ctx.globalAlpha = 0.55;
+    ctx.fillText(zahl.toFixed(1).replace(".", ",") + " %", css / 2, css / 2);
+    ctx.restore();
+  }
+  if (!abgegeben) {
+    $("nz-status").textContent = vorlageWeg
+      ? "Rot = daneben, grün = genau. Die Zahl zeigt deine Treffsicherheit."
+      : "Präg dir die Form ein - sie verschwindet, sobald du anfängst!";
+  }
+  liveStricheZeichnen(ctx, css, meine, ziel);
 }
 
 function eigeneFarbe() {
