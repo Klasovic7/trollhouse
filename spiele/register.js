@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "446";
+const SPIEL_VERSION = "447";
 
 export const SPIELE = [
   {
@@ -105,7 +105,7 @@ export const SPIELE = [
     id: "merks-dir",
     name: "Merk's dir!",
     emoji: "🧩",
-    bild: "bilder/merks-dir-karten.webp",
+    bild: "bilder/merks-dir-kachel.webp",
     farbe: "#84cc16",
     beschreibung: "Merkt euch 20 Emojis - wer sich am längsten erinnert, gewinnt",
     minSpieler: 2,
