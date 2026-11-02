@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "438";
+const SPIEL_VERSION = "439";
 
 export const SPIELE = [
   {
@@ -181,16 +181,6 @@ export const SPIELE = [
     laden: () => import(`./groessenvergleich/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
-    id: "knobeln",
-    name: "Knobeln",
-    emoji: "🔥",
-    bild: "bilder/knobeln-kachel.webp",
-    farbe: "#f59e0b",
-    beschreibung: "Streichhölzer in der Faust - tippt die Gesamtzahl, wer richtig liegt, ist raus",
-    minSpieler: 2,
-    laden: () => import(`./knobeln/spiel.js?v=${SPIEL_VERSION}`)
-  },
-  {
     id: "tetris",
     name: "Tetris-Duell",
     emoji: "🧱",
@@ -199,17 +189,6 @@ export const SPIELE = [
     beschreibung: "Alle spielen gleichzeitig Tetris - mit Müllzeilen, auch gegen Bots",
     minSpieler: 2,
     laden: () => import(`./tetris/spiel.js?v=${SPIEL_VERSION}`)
-  },
-  {
-    id: "doppelkopf",
-    name: "Doppelkopf",
-    emoji: "🃏",
-    bild: "bilder/doppelkopf-dame.webp",
-    farbe: "#16a34a",
-    beschreibung: "Das Kartenspiel zu viert (oder fünft), alleine mit Bots spielbar",
-    minSpieler: 1,
-    mitBots: true,
-    laden: () => import(`./doppelkopf/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "passgenau",
@@ -280,6 +259,27 @@ export const SPIELE = [
     beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke",
     minSpieler: 2,
     laden: () => import(`./turbo/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "knobeln",
+    name: "Knobeln",
+    emoji: "🔥",
+    bild: "bilder/knobeln-kachel.webp",
+    farbe: "#f59e0b",
+    beschreibung: "Streichhölzer in der Faust - tippt die Gesamtzahl, wer richtig liegt, ist raus",
+    minSpieler: 2,
+    laden: () => import(`./knobeln/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "doppelkopf",
+    name: "Doppelkopf",
+    emoji: "🃏",
+    bild: "bilder/doppelkopf-dame.webp",
+    farbe: "#16a34a",
+    beschreibung: "Das Kartenspiel zu viert (oder fünft), alleine mit Bots spielbar",
+    minSpieler: 1,
+    mitBots: true,
+    laden: () => import(`./doppelkopf/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "finto",
