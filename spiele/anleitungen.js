@@ -18,7 +18,7 @@ function vorladen(pfad) {
   img.decoding = "async";
   img.src = pfad;
 }
-const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=438`;
+const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=446`;
 function alleKachelnVorladen() { SPIELE.forEach((s) => vorladen(s.bild)); }
 function seitenVorladen(id) { (ANLEITUNGEN[id] || []).forEach((f, i) => { if (!f.ohneFoto) vorladen(fotoPfad(id, i)); }); }
 
