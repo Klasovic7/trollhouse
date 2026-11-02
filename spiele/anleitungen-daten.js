@@ -1015,3 +1015,26 @@ ANLEITUNGEN.nachzeichnen = [
     s: () => rang(70, 22, [["Du", "96 % · 5", 0], ["Luca", "81 % · 3", 1], ["Kevin", "65 % · 2", 2], ["Sinan", "37 % · 1", 3]], 180)
   }
 ];
+
+// ---------------------------------------------------------------------------
+// v441: Farbton! (Farbe merken und nachmischen) - Seiten mit echten Screenshots
+// ---------------------------------------------------------------------------
+ANLEITUNGEN.farbton = [
+  {
+    t: "Worum geht's?",
+    x: ["Eine **Farbe** wird gezeigt - und du musst sie dir merken. Der Spielleiter stellt ein, **wie viele Farben** gespielt werden (bis zu 12)."],
+    s: () => T(160, 90, "Farbton!", 22, "#fff", 800)
+  },
+  {
+    t: "Merken und nachmischen",
+    x: ["Die Farbe ist nur **5 Sekunden** zu sehen. Danach hast du **30 Sekunden**, sie nachzumischen - mit drei Reglern: **Helligkeit**, **Sättigung** und **Farbton**.",
+      "Mit **Abgeben** zählt deine Farbe. Läuft die Zeit ab, wird automatisch abgegeben. Wer die Regler nie anfasst, bekommt keine Punkte."],
+    s: () => T(160, 90, "5 s", 40, "#fff", 800)
+  },
+  {
+    t: "Wer liegt am nächsten?",
+    x: ["Bewertet wird in **Prozent**, wie nah deine Farbe an der echten liegt - so, wie das Auge den Unterschied sieht.",
+      "Wer am **nächsten dran** ist, ist Platz 1. " + PL, "Nach jeder Farbe siehst du das **Original** und die **Farbe jedes Spielers** neben der Rangliste.", RUNDEN, GW],
+    s: () => rang(70, 22, [["Du", "92 % · 5", 0], ["Luca", "78 % · 3", 1], ["Kevin", "55 % · 2", 2], ["Sinan", "12 % · 1", 3]], 180)
+  }
+];
