@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "441";
+const SPIEL_VERSION = "442";
 
 export const SPIELE = [
   {
@@ -120,6 +120,16 @@ export const SPIELE = [
     beschreibung: "Zeichne die Form nach - wer liegt am genauesten auf der Vorlage?",
     minSpieler: 2,
     laden: () => import(`./nachzeichnen/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "farbton",
+    name: "Farbton!",
+    emoji: "🎨",
+    bild: "bilder/farbton-kachel.webp",
+    farbe: "#ec4899",
+    beschreibung: "Farbe 5 Sekunden merken und danach aus dem Gedächtnis nachmischen",
+    minSpieler: 2,
+    laden: () => import(`./farbton/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "zeitgefuehl",
@@ -283,13 +293,14 @@ export const SPIELE = [
     laden: () => import(`./doppelkopf/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
-    id: "farbton",
-    name: "Farbton!",
-    emoji: "🎨",
-    farbe: "#ec4899",
-    beschreibung: "Farbe 5 Sekunden merken und danach aus dem Gedächtnis nachmischen",
-    minSpieler: 2,
-    laden: () => import(`./farbton/spiel.js?v=${SPIEL_VERSION}`)
+    id: "imposter",
+    name: "Imposter",
+    emoji: "🎭",
+    farbe: "#fb7185",
+    bild: "bilder/imposter-kachel.webp",
+    beschreibung: "Einer kennt das Geheimwort nicht - deckt eure Karte auf und findet ihn",
+    minSpieler: 3,
+    laden: () => import(`./imposter/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "finto",
@@ -300,16 +311,6 @@ export const SPIELE = [
     beschreibung: "Bluffe mit einer erfundenen Antwort und errate die echte",
     minSpieler: 3,
     laden: () => import(`./finto/spiel.js?v=${SPIEL_VERSION}`)
-  },
-  {
-    id: "imposter",
-    name: "Imposter",
-    emoji: "🎭",
-    farbe: "#fb7185",
-    bild: "bilder/imposter-kachel.webp",
-    beschreibung: "Einer kennt das Geheimwort nicht - deckt eure Karte auf und findet ihn",
-    minSpieler: 3,
-    laden: () => import(`./imposter/spiel.js?v=${SPIEL_VERSION}`)
   }
 ];
 
