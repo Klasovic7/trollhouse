@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "455";
+const SPIEL_VERSION = "456";
 
 export const SPIELE = [
   {
@@ -275,7 +275,7 @@ export const SPIELE = [
     id: "pokerduell",
     name: "Pokerduell",
     emoji: "♠️",
-    bild: "bilder/pokerduell-kachel.webp?v=455",
+    bild: "bilder/pokerduell-kachel.webp?v=456",
     farbe: "#15803d",
     beschreibung: "Karten ins 5x5-Raster legen - alle 12 Reihen zählen als Pokerhand",
     minSpieler: 2,
