@@ -50,7 +50,7 @@ const VORLAGE = `
     <p class="kategorie">Pokerduell - Auswertung</p>
     <ul id="pd-erg-liste" class="pd-erg-liste"></ul>
     <p class="hinweis-text" id="pd-detail-titel"></p>
-    <div id="pd-detail-raster" class="pd-raster"></div>
+    <div id="pd-detail-raster" class="pd-detail"></div>
     <ul id="pd-reihen-liste" class="pd-reihen-liste"></ul>
     <p><button id="pd-weiter" class="btn-primaer" hidden>Endstand anzeigen</button></p>
   </div>
@@ -409,7 +409,7 @@ function zeigeErgebnis() {
   $("pd-detail-titel").textContent = `Raster von ${s?.name ?? "?"} - tippe auf eine Reihe, um sie zu markieren.`;
   const reihenInfo = ergebnis.reihen[angezeigterSpieler] || [];
   const markiert = REIHEN.find((r) => r.id === markierteReihe)?.zellen || [];
-  baueRaster($("pd-detail-raster"), zellenAusZuegen(alleZuege, angezeigterSpieler).map((k) => k || FUELL), { hervorgehoben: markiert });
+  baueDetailRaster($("pd-detail-raster"), zellenAusZuegen(alleZuege, angezeigterSpieler).map((k) => k || FUELL), reihenInfo, markiert);
 
   const rl = $("pd-reihen-liste");
   rl.innerHTML = "";
@@ -420,9 +420,60 @@ function zeigeErgebnis() {
       `<span class="pd-reihe-rang">${r.rang}.</span><span class="pd-reihe-punkte">+${r.punkte}</span>`;
     li.addEventListener("click", () => { markierteReihe = markierteReihe === r.reihe ? null : r.reihe; zeigeErgebnis(); });
     rl.appendChild(li);
+    if (r.reihe === markierteReihe) rl.appendChild(vergleichsBlock(r.reihe, ergebnis));
   });
 
   $("pd-weiter").hidden = !api.istLeiter;
+}
+
+// Alle Spieler in einer Reihe, bester oben - jeweils in der Spielerfarbe, mit den fünf Karten darunter.
+function vergleichsBlock(reiheId, ergebnis) {
+  const reihe = REIHEN.find((r) => r.id === reiheId);
+  const eintraege = ergebnis.rangfolge.map((id) => ({ id, info: ergebnis.reihen[id].find((x) => x.reihe === reiheId) }))
+    .sort((a, b) => a.info.rang - b.info.rang || (ergebnis.summe[b.id] - ergebnis.summe[a.id]));
+  const li = document.createElement("li");
+  li.className = "pd-vergleich";
+  eintraege.forEach(({ id, info }) => {
+    const sp = spielerListe.find((x) => x.id === id);
+    const zellen = zellenAusZuegen(alleZuege, id).map((k) => k || FUELL);
+    const block = document.createElement("div");
+    block.className = "pd-vergleich-zeile";
+    block.innerHTML = spielerKarte(sp?.name, sp?.farbe, sp?.icon, `+${info.punkte}`, { extra: info.hand.name, punkteRechts: `${info.rang}.` }) +
+      `<div class="pd-mini">${reihe.zellen.map((z) => `<img src="${kartenBild(zellen[z])}" alt="">`).join("")}</div>`;
+    li.appendChild(block);
+  });
+  return li;
+}
+
+// Detailraster: Karten + Punkte am Ende jeder Linie (Zeilen rechts, Spalten unten, Diagonalen in den Ecken)
+function baueDetailRaster(container, zellen, reihenInfo, markiert) {
+  container.innerHTML = "";
+  const info = Object.fromEntries(reihenInfo.map((r) => [r.reihe, r]));
+  const leer = () => { const d = document.createElement("div"); container.appendChild(d); };
+  const badge = (id) => {
+    const r = info[id];
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pd-badge" + (r && r.rang === 1 ? " best" : "") + (id === markierteReihe ? " aktiv" : "");
+    b.textContent = r ? `+${r.punkte}` : "";
+    b.title = r ? `${r.name}: ${r.hand.name}` : "";
+    b.addEventListener("click", () => { markierteReihe = markierteReihe === id ? null : id; zeigeErgebnis(); });
+    container.appendChild(b);
+  };
+  for (let i = 0; i < 5; i++) leer();
+  badge("d2");
+  for (let z = 0; z < 5; z++) {
+    for (let sp = 0; sp < 5; sp++) {
+      const i = z * 5 + sp;
+      const k = document.createElement("div");
+      k.className = "pd-zelle belegt" + (markiert.includes(i) ? " hervor" : "");
+      k.innerHTML = `<img src="${kartenBild(zellen[i])}" alt="" draggable="false">`;
+      container.appendChild(k);
+    }
+    badge(`z${z}`);
+  }
+  for (let sp = 0; sp < 5; sp++) badge(`s${sp}`);
+  badge("d1");
 }
 
 async function weiter() {

@@ -63,6 +63,7 @@ export const REIHEN = (() => {
 const PLURAL = { 2: "Zweier", 3: "Dreier", 4: "Vierer", 5: "Fünfer", 6: "Sechser", 7: "Siebener", 8: "Achter", 9: "Neuner", 10: "Zehner", 11: "Buben", 12: "Damen", 13: "Könige", 14: "Asse" };
 const EINZEL = { 11: "Bube", 12: "Dame", 13: "König", 14: "Ass" };
 const einzel = (w) => EINZEL[w] || String(w);
+export const FARBNAME = { C: "Kreuz", S: "Pik", H: "Herz", D: "Karo" };
 
 export const KATEGORIEN = ["Hohe Karte", "Paar", "Zwei Paare", "Drilling", "Straße", "Flush", "Full House", "Vierling", "Straight Flush"];
 
@@ -82,16 +83,17 @@ export function bewerteHand(codes) {
     else if (werte.join() === "14,5,4,3,2") { strasse = true; hoch = 5; }   // Rad: A-2-3-4-5
   }
 
+  const fn = FARBNAME[codes[0][0]];
   let kat, vergleich, name;
   if (strasse && gleicheFarbe) {
     kat = 8; vergleich = [hoch];
-    name = hoch === 14 ? "Royal Flush" : `Straight Flush (${einzel(hoch)} hoch)`;
+    name = hoch === 14 ? `Royal Flush in ${fn}` : `Straight Flush in ${fn} (${einzel(hoch)} hoch)`;
   } else if (verteilung === "41") {
     kat = 7; vergleich = ordnung; name = `Vierling (${PLURAL[ordnung[0]]})`;
   } else if (verteilung === "32") {
     kat = 6; vergleich = ordnung; name = `Full House (${PLURAL[ordnung[0]]} und ${PLURAL[ordnung[1]]})`;
   } else if (gleicheFarbe) {
-    kat = 5; vergleich = werte; name = `Flush (${einzel(werte[0])} hoch)`;
+    kat = 5; vergleich = werte; name = `${fn}-Flush (${einzel(werte[0])} hoch)`;
   } else if (strasse) {
     kat = 4; vergleich = [hoch]; name = `Straße (${einzel(hoch)} hoch)`;
   } else if (verteilung === "311") {

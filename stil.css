@@ -3758,3 +3758,18 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 .pd-reihe-name { font-weight: 800; }
 .pd-reihe-rang { opacity: .7; text-align: right; }
 .pd-reihe-punkte { font-weight: 800; text-align: right; color: #4ade80; }
+
+.pd-detail { display: grid; grid-template-columns: repeat(5, 1fr) 42px; gap: 4px; align-items: center; width: 100%; max-width: 372px; margin: 12px auto 4px; }
+.pd-detail .pd-zelle { width: 100%; }
+.pd-badge {
+  height: 30px; min-width: 0; margin: 0; padding: 0; border-radius: 15px; border: 2px solid transparent; font-size: .82rem; font-weight: 800;
+  color: #fff; background: rgba(255,255,255,.14); box-shadow: none; cursor: pointer;
+}
+.pd-badge.best { background: rgba(74,222,128,.28); color: #86efac; }
+.pd-badge.aktiv { border-color: #fbbf24; }
+.pd-vergleich { list-style: none; display: grid; gap: 6px; margin: 2px 0 8px; padding: 6px; border-radius: 14px; background: rgba(0,0,0,.2); }
+.pd-vergleich-zeile .spieler-karte { width: auto; max-width: none; margin: 0; box-sizing: border-box; }
+.pd-mini { display: flex; justify-content: center; gap: 3px; margin-top: 4px; }
+.pd-mini img { width: 34px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.pd-reihe { grid-template-columns: 82px minmax(0, 1fr) 24px 34px; }
+.pd-reihe-hand { overflow-wrap: anywhere; }
