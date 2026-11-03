@@ -46,7 +46,8 @@ export const FREUNDE = [
   { id: "freund-baby-nader",         bild: "bilder/freund-baby-nader.jpg?v=181",         vorname: "Nader", nachname: "Baby" },
   { id: "freund-leoparden-sinan",    bild: "bilder/freund-leoparden-sinan.jpg?v=181",    vorname: "Sinan", nachname: "Leoparden" },
   { id: "freund-saiyajin-hilna",     bild: "bilder/freund-saiyajin-hilna.jpg?v=448",     vorname: "Hilna", nachname: "Saiyajin" },
-  { id: "freund-pippi-benni",         bild: "bilder/freund-pippi-benni.jpg?v=449",         vorname: "Benni", nachname: "Pippi" }
+  { id: "freund-pippi-benni",         bild: "bilder/freund-pippi-benni.jpg?v=449",         vorname: "Benni", nachname: "Pippi" },
+  { id: "freund-krankenschwester-marek", bild: "bilder/freund-krankenschwester-marek.jpg?v=450", vorname: "Marek", nachname: "Krankenschwester" }
 ];
 
 // Kombinierte Liste für Nachschlagen (z. B. in der Lobby, im laufenden Spiel,

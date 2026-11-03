@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v449";
+export const APP_VERSION = "v450";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -443,7 +443,7 @@ function renderIconKarussell() {
   // über den Kartenrand hinaus - ab 9 Zeichen wird die Schrift per CSS-Variable
   // passend verkleinert, kürzere Namen bleiben unverändert bei Skala 1.
   const nachnameLaenge = ausgewaehlt.nachname.length;
-  const nameSkala = nachnameLaenge > 8 ? Math.max(0.6, 8 / nachnameLaenge) : 1;
+  const nameSkala = nachnameLaenge > 8 ? Math.max(0.35, 6 / nachnameLaenge) : 1;
   profilNachname.style.setProperty("--name-skala", nameSkala);
 
   karussellEintraege(optionen, index).forEach(({ option, position }) => {
