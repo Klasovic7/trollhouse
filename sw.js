@@ -4,7 +4,7 @@
 // Nur dann wirft der Browser den alten Zwischenspeicher weg und alle Spieler
 // bekommen zuverlässig die neue Version. Das ist der einzige Handgriff, den man
 // nach dem Bearbeiten von Dateien nicht vergessen darf.
-const CACHE_NAME = "trollhouse-v451";
+const CACHE_NAME = "trollhouse-v452";
 
 const DATEIEN = [
   "./",
@@ -256,7 +256,7 @@ const DATEIEN = [
   "bilder/freund-saiyajin-hilna.jpg?v=448",
   "bilder/freund-pippi-benni.jpg?v=449",
   "bilder/freund-krankenschwester-marek.jpg?v=450",
-  "bilder/freund-kiffer-paul.jpg?v=451"
+  "bilder/freund-kiffer-paul.jpg?v=452"
 ];
 
 self.addEventListener("install", (event) => {
