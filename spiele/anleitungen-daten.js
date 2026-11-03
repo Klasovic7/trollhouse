@@ -1038,3 +1038,26 @@ ANLEITUNGEN.farbton = [
     s: () => rang(70, 22, [["Du", "92 % · 5", 0], ["Luca", "78 % · 3", 1], ["Kevin", "55 % · 2", 2], ["Sinan", "12 % · 1", 3]], 180)
   }
 ];
+
+// Pokerduell - Seiten mit echten Screenshots (bilder/anleitung/pokerduell-N.webp)
+ANLEITUNGEN.pokerduell = [
+  {
+    t: "Worum geht's?",
+    x: ["Jeder hat ein leeres **5x5-Raster**. Jede Runde kommt für alle **dieselbe Karte** - die legst du in ein **freies Feld**. Nach 25 Runden ist das Raster voll.",
+      "**Jede dritte Runde** kommen **zwei Karten**: Du wählst eine davon, die andere verfällt."],
+    s: () => T(160, 90, "Pokerduell", 22, "#fff", 800)
+  },
+  {
+    t: "Karten legen",
+    x: ["Tippe auf ein **freies Feld** und dann auf **Hier ablegen**. Du hast **25 Sekunden** (bei zwei Karten 35). Läuft die Zeit ab, wird die Karte automatisch gelegt.",
+      "Überlege dir, welche Reihen du stark machen willst - eine Karte zählt **gleichzeitig** in ihrer Zeile, ihrer Spalte und evtl. in einer Diagonale."],
+    s: () => T(160, 90, "25 s", 40, "#fff", 800)
+  },
+  {
+    t: "Auswertung",
+    x: ["Am Ende zählen **12 Reihen**: 5 Zeilen, 5 Spalten und die 2 Diagonalen. Jede Reihe wird als **Pokerhand** bewertet (Hohe Karte, Paar, Zwei Paare, Drilling, Straße, Flush, Full House, Vierling, Straight Flush).",
+      "In jeder Reihe bekommt die **beste Hand** so viele Reihenpunkte wie Spieler im Raum, die nächste einen weniger - die schlechteste 1. Wer insgesamt die **meisten Reihenpunkte** hat, gewinnt. " + PL,
+      "In der Auswertung tippst du auf einen Spieler und siehst sein Raster und alle 12 Reihen.", GW],
+    s: () => rang(70, 22, [["Du", "58 · 5", 0], ["Luca", "51 · 3", 1], ["Kevin", "47 · 2", 2], ["Sinan", "40 · 1", 3]], 180)
+  }
+];

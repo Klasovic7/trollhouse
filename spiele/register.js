@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "452";
+const SPIEL_VERSION = "454";
 
 export const SPIELE = [
   {
@@ -270,6 +270,16 @@ export const SPIELE = [
     beschreibung: "Zeitjagd im Rennwagen - 5 Minuten, gleiche Strecke",
     minSpieler: 2,
     laden: () => import(`./turbo/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "pokerduell",
+    name: "Pokerduell",
+    emoji: "♠️",
+    bild: "bilder/pokerduell-kachel.webp",
+    farbe: "#15803d",
+    beschreibung: "Karten ins 5x5-Raster legen - alle 12 Reihen zählen als Pokerhand",
+    minSpieler: 2,
+    laden: () => import(`./pokerduell/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "knobeln",
