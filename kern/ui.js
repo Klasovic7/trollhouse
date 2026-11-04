@@ -52,12 +52,13 @@ const FREUNDE_ROH = [
   { id: "freund-bibi-benni",          bild: "bilder/freund-bibi-benni.jpg?v=461",          vorname: "Benni", nachname: "Bibi" },
   { id: "freund-feuerwehr-benni",     bild: "bilder/freund-feuerwehr-benni.jpg?v=465",     vorname: "Benni", nachname: "Feuerwehr" },
   { id: "freund-wonder-hilna",        bild: "bilder/freund-wonder-hilna.jpg?v=466",        vorname: "Hilna", nachname: "Wonder" },
+  { id: "freund-ruffy-hilna",         bild: "bilder/freund-ruffy-hilna.jpg?v=467",         vorname: "Hilna", nachname: "Ruffy" },
 ];
 
 // Reihenfolge im Profil-Karussell: reihum je Person ein Bild (Kevin, Luca, Nader, Sinan, Benni,
 // dann wieder von vorne), danach reihum Hilna, Marek, Paul. Neue Bilder einfach oben in FREUNDE_ROH
 // ergänzen - innerhalb einer Person gilt die Reihenfolge der Liste, die Sortierung passiert automatisch.
-const FREUNDE_GRUPPEN = [["Kevin", "Luca", "Nader", "Sinan", "Benni"], ["Hilna", "Marek", "Paul"]];
+const FREUNDE_GRUPPEN = [["Kevin", "Luca", "Nader", "Sinan", "Benni", "Hilna"], ["Marek", "Paul"]];
 function sortiereFreunde(liste) {
   const ergebnis = [];
   const benutzt = new Set();
