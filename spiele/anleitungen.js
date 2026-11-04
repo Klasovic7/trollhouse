@@ -10,16 +10,22 @@ const fett = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 const symbol = (sp) => sp.bild ? `<img class="spiel-bild" src="${sp.bild}" alt="" loading="eager" decoding="sync">` : sp.emoji;
 
 // Bilder vorab laden, damit nichts erst beim Antippen / Blättern nachlädt
-const vorgeladen = new Set();
+const vorgeladen = new Map();   // Pfad -> Bild-Objekt (Referenz halten, sonst kann der Browser den Ladevorgang abbrechen)
 function vorladen(pfad) {
-  if (!pfad || vorgeladen.has(pfad)) return;
-  vorgeladen.add(pfad);
-  const img = new Image();
-  img.decoding = "async";
-  img.src = pfad;
+  if (!pfad) return Promise.resolve();
+  if (!vorgeladen.has(pfad)) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = pfad;
+    vorgeladen.set(pfad, img.decode ? img.decode().catch(() => {}) : Promise.resolve());
+  }
+  return vorgeladen.get(pfad);
 }
 const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=446`;
-function alleKachelnVorladen() { SPIELE.forEach((s) => vorladen(s.bild)); }
+function alleKachelnVorladen() {
+  const alle = Promise.all(SPIELE.filter((s) => ANLEITUNGEN[s.id]).map((s) => vorladen(s.bild)));
+  return Promise.race([alle, new Promise((r) => setTimeout(r, 2000))]);   // höchstens 2 s warten
+}
 function seitenVorladen(id) { (ANLEITUNGEN[id] || []).forEach((f, i) => { if (!f.ohneFoto) vorladen(fotoPfad(id, i)); }); }
 
 let dialog = null;
@@ -35,7 +41,7 @@ function schliessen() {
 
 export function oeffneAnleitungen(startId = null) {
   if (dialog) return;
-  alleKachelnVorladen();
+  const kachelnBereit = alleKachelnVorladen();
   dialog = document.createElement("div");
   dialog.className = "anl-overlay";
   dialog.setAttribute("role", "dialog");
@@ -118,5 +124,6 @@ export function oeffneAnleitungen(startId = null) {
   };
   document.addEventListener("keydown", tasteFn);
 
-  startId && ANLEITUNGEN[startId] ? zeige(startId, 0) : liste();
+  if (startId && ANLEITUNGEN[startId]) zeige(startId, 0);
+  else kachelnBereit.then(() => { if (dialog && !spiel) liste(); });   // Liste erst zeigen, wenn die Symbole geladen und dekodiert sind
 }

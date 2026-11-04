@@ -3773,3 +3773,6 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 .pd-mini img { width: 34px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
 .pd-reihe { grid-template-columns: 82px minmax(0, 1fr) 24px 34px; }
 .pd-reihe-hand { overflow-wrap: anywhere; }
+
+/* v463: Anleitungs-Symbole ohne Schatten-Filter - sonst werden sie teils erst beim Darüberfahren gezeichnet */
+.anl-kachel-sym .spiel-bild, .anl-titel-sym .spiel-bild { filter: none; margin: 0; height: 100%; width: 100%; }
