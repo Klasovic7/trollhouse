@@ -32,7 +32,7 @@ export const AVATARE = [
 // Profilbildschirm kann zwischen beiden Kategorien gewechselt werden.
 // "nachname" trägt hier die Rolle (groß dargestellt), "vorname" den Namen
 // (klein dargestellt) - dieselbe Beschriftungslogik wie bei den Fußballern.
-export const FREUNDE = [
+const FREUNDE_ROH = [
   { id: "freund-rapper-kevin",       bild: "bilder/freund-rapper-kevin.jpg?v=181",       vorname: "Kevin", nachname: "Rapper" },
   { id: "freund-zocker-luca",        bild: "bilder/freund-zocker-luca.jpg?v=181",        vorname: "Luca",  nachname: "Zocker" },
   { id: "freund-bettler-nader",      bild: "bilder/freund-bettler-nader.jpg?v=181",      vorname: "Nader", nachname: "Bettler" },
@@ -50,7 +50,27 @@ export const FREUNDE = [
   { id: "freund-krankenschwester-marek", bild: "bilder/freund-krankenschwester-marek.jpg?v=450", vorname: "Marek", nachname: "Krankenschwester" },
   { id: "freund-kiffer-paul",         bild: "bilder/freund-kiffer-paul.jpg?v=452",         vorname: "Paul", nachname: "Kiffer" },
   { id: "freund-bibi-benni",          bild: "bilder/freund-bibi-benni.jpg?v=461",          vorname: "Benni", nachname: "Bibi" },
+  { id: "freund-wonder-benni",        bild: "bilder/freund-wonder-benni.jpg?v=462",        vorname: "Benni", nachname: "Wonder Woman" },
 ];
+
+// Reihenfolge im Profil-Karussell: reihum je Person ein Bild (Kevin, Luca, Nader, Sinan, Benni,
+// dann wieder von vorne), danach reihum Hilna, Marek, Paul. Neue Bilder einfach oben in FREUNDE_ROH
+// ergänzen - innerhalb einer Person gilt die Reihenfolge der Liste, die Sortierung passiert automatisch.
+const FREUNDE_GRUPPEN = [["Kevin", "Luca", "Nader", "Sinan", "Benni"], ["Hilna", "Marek", "Paul"]];
+function sortiereFreunde(liste) {
+  const ergebnis = [];
+  const benutzt = new Set();
+  FREUNDE_GRUPPEN.forEach((namen) => {
+    const proPerson = namen.map((n) => liste.filter((f) => f.vorname === n));
+    const runden = Math.max(0, ...proPerson.map((l) => l.length));
+    for (let r = 0; r < runden; r++) {
+      proPerson.forEach((l) => { if (l[r]) { ergebnis.push(l[r]); benutzt.add(l[r].id); } });
+    }
+  });
+  liste.forEach((f) => { if (!benutzt.has(f.id)) ergebnis.push(f); });   // unbekannte Namen ans Ende
+  return ergebnis;
+}
+export const FREUNDE = sortiereFreunde(FREUNDE_ROH);
 
 // Kombinierte Liste für Nachschlagen (z. B. in der Lobby, im laufenden Spiel,
 // beim Endstand) - damit Freunde-Fotos überall korrekt angezeigt werden,
