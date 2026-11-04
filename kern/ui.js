@@ -51,6 +51,7 @@ const FREUNDE_ROH = [
   { id: "freund-kiffer-paul",         bild: "bilder/freund-kiffer-paul.jpg?v=452",         vorname: "Paul", nachname: "Kiffer" },
   { id: "freund-bibi-benni",          bild: "bilder/freund-bibi-benni.jpg?v=461",          vorname: "Benni", nachname: "Bibi" },
   { id: "freund-feuerwehr-benni",     bild: "bilder/freund-feuerwehr-benni.jpg?v=465",     vorname: "Benni", nachname: "Feuerwehr" },
+  { id: "freund-wonder-hilna",        bild: "bilder/freund-wonder-hilna.jpg?v=466",        vorname: "Hilna", nachname: "Wonder" },
 ];
 
 // Reihenfolge im Profil-Karussell: reihum je Person ein Bild (Kevin, Luca, Nader, Sinan, Benni,
