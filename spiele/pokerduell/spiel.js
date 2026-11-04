@@ -49,7 +49,6 @@ const VORLAGE = `
   <div id="pd-ergebnis-screen" class="bildschirm-karte pd-karte" hidden>
     <p class="kategorie">Pokerduell - Auswertung</p>
     <ul id="pd-erg-liste" class="pd-erg-liste"></ul>
-    <p class="hinweis-text" id="pd-detail-titel"></p>
     <div id="pd-detail-raster" class="pd-detail"></div>
     <ul id="pd-reihen-liste" class="pd-reihen-liste"></ul>
     <p><button id="pd-weiter" class="btn-primaer" hidden>Endstand anzeigen</button></p>
@@ -406,7 +405,6 @@ function zeigeErgebnis() {
   });
 
   const s = spielerListe.find((x) => x.id === angezeigterSpieler);
-  $("pd-detail-titel").textContent = `Raster von ${s?.name ?? "?"} - tippe auf eine Reihe, um sie zu markieren.`;
   const reihenInfo = ergebnis.reihen[angezeigterSpieler] || [];
   const markiert = REIHEN.find((r) => r.id === markierteReihe)?.zellen || [];
   baueDetailRaster($("pd-detail-raster"), zellenAusZuegen(alleZuege, angezeigterSpieler).map((k) => k || FUELL), reihenInfo, markiert);
