@@ -142,7 +142,7 @@ export function nationDesign(nation) {
 // Alle Karten, die hier NICHT eingetragen sind, bekommen automatisch die
 // gezeichnete Platzhalter-Silhouette (siehe kartenPortraitHtml in spiel.js).
 export const PORTRAET_BILDER = {
-  "de-1": "bilder/fussball-auktion/spieler-de-1.png?v=278",
+  "de-1": "bilder/fussball-auktion/spieler-de-1.png?v=460",
   "de-2": "bilder/fussball-auktion/spieler-de-2.png?v=278",
   "de-3": "bilder/fussball-auktion/spieler-de-3.png?v=278",
   "de-4": "bilder/fussball-auktion/spieler-de-4.png?v=278",
