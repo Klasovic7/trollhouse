@@ -1,6 +1,7 @@
 // Service Worker: macht die App installierbar und offline startfähig.
 //
-// WICHTIG bei Änderungen: die Zahl in CACHE_NAME hochzählen (z. B. v106 -> v181).
+// WICHTIG bei Änderungen:  node tools/bump.mjs  (zählt sw.js, app.js und register.js gemeinsam hoch
+// und prüft Syntax + Dateiliste). Vor jedem Commit:  node tools/pruefen.mjs
 // Nur dann wirft der Browser den alten Zwischenspeicher weg und alle Spieler
 // bekommen zuverlässig die neue Version. Das ist der einzige Handgriff, den man
 // nach dem Bearbeiten von Dateien nicht vergessen darf.
