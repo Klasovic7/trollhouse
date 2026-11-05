@@ -45,6 +45,7 @@ const BILD_VERSION = "411";
 const TEMPO = 2.7;            // Zellen pro Sekunde
 const KARTE = 0.8;            // Kartenkantenlänge in Zellen
 const FIGUR_R = 0.3;          // Figurenradius in Zellen
+const FIGUR_ALPHA_AUF_OFFENER_KARTE = 0.45;   // Deckkraft der Figur auf einer gerade aufgedeckten Karte
 const POS_INTERVALL_MS = 200;
 
 const motivBilder = [];
@@ -1223,17 +1224,19 @@ function baueSpielfeld(anordnung) {
     ctx.restore();
   }
   function zeichneFigur(fx, fy, id, eigene, z) {
-    // Steht die Figur auf einer aufgedeckten oder gefundenen Karte, wird sie ausgeblendet,
-    // damit man die Karte sieht (bei Karten ohne Treffer bleibt die Markierung).
+    // Steht die Figur auf einer gerade aufgedeckten Karte (noch kein Treffer), wird sie durchscheinend gezeichnet,
+    // damit man Karte und Figur sieht. Auf bereits gefundenen Paaren bleibt sie voll sichtbar.
+    let alpha = 1;
     if (z) {
       const sp = Math.floor(fx), ze = Math.floor(fy);
       if (sp >= 0 && sp < SPALTEN && ze >= 0) {
         const k = ze * SPALTEN + sp;
-        if (k < anzahl && (z.offen.has(k) || z.gefunden.has(k))) return;
+        if (k < anzahl && z.offen.has(k) && !z.gefunden.has(k)) alpha = FIGUR_ALPHA_AUF_OFFENER_KARTE;
       }
     }
     const px = ox + fx * c, py = oy + fy * c, r = FIGUR_R * c;
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = "rgba(0,0,0,0.3)";
     ctx.beginPath();
     ctx.ellipse(px + 2, py + r * 0.95, r * 0.95, r * 0.4, 0, 0, Math.PI * 2);
@@ -1260,6 +1263,7 @@ function baueSpielfeld(anordnung) {
       ctx.textAlign = "center";
       ctx.textBaseline = "alphabetic";
       const tx = "DU", tw = ctx.measureText(tx).width + 8, th = Math.max(13, c * 0.24);
+      ctx.globalAlpha = Math.max(alpha, 0.85);   // das „DU“-Schild bleibt gut lesbar
       ctx.fillStyle = "#ffffff";
       rundRechteck(px - tw / 2, py - r - th - 6, tw, th, 5);
       ctx.fill();
