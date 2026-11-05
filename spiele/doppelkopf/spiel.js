@@ -62,11 +62,11 @@ const OPT_DEF = {
 const INFO = {
   anzahl: "So viele Runden werden gespielt. Am Ende gewinnt, wer die meisten Spielpunkte hat. Mit Pflichtsolo kommen zusätzliche Partien dazu.",
   dulle: "Normalerweise gewinnt bei zwei Herz-Zehnen (Dulle) im selben Stich die zuerst gespielte. Mit dieser Regel sticht die zweite Dulle die erste.",
-  sau: "Wer beide Karo-Asse (Füchse) auf der Hand hat, hat die Sau: Beide Asse sind dann die höchsten Trümpfe, sogar über der Dulle. Gilt nur im Normalspiel. Mit Sau zählen Füchse nicht als Sonderpunkt.",
+  sau: "Wer beide Karo-Asse (Füchse) auf der Hand hat, hat die Sau: Beide Asse sind dann die höchsten Trümpfe, sogar über der Dulle. Gilt im Normalspiel und im Karo-Solo. Mit Sau zählen Füchse nicht als Sonderpunkt.",
   super: "Nur zusammen mit der Sau: Sobald eine Sau gespielt wurde, stechen die beiden Karo-Neunen sogar die Sau. Vorher sind sie ganz normale Karo-Neunen.",
   schmeissen: "Wer 5 oder mehr Neunen auf der Hand hat, darf schmeißen: Die Karten werden eingesammelt und der Geber gibt neu. Die Runde zählt nicht.",
   pflicht: "Das erste Solo jedes Spielers ist ein Pflichtsolo: Der Solospieler kommt selbst raus, die Partie zählt nicht als Runde und derselbe Geber gibt nochmal. Bei vier Pflichtsoli gibt es also vier Partien mehr.",
-  armut: "Wer höchstens 3 Trümpfe hat (Füchse zählen nicht mit), kann Armut ansagen und gibt alle seine Trümpfe an den ersten Mitspieler, der annimmt. Der gibt gleich viele Karten zurück, und beide spielen zusammen. Nimmt niemand an, wird neu gegeben. Bots nehmen erst ab 7 Trümpfen an.",
+  armut: "Wer höchstens 3 Trümpfe plus einen Fuchs hat (also bis zu 4 Trümpfe), kann Armut ansagen und gibt alle seine Trümpfe an den ersten Mitspieler, der annimmt. Der gibt gleich viele Karten zurück, und beide spielen zusammen. Nimmt niemand an, wird neu gegeben. Bots nehmen erst ab 7 Trümpfen an.",
   bock: "Endet eine Partie mit 0 Punkten für alle, zählen die nächsten 4 Partien doppelt (bei 5 Spielern die nächsten 5). Weitere 0:0-Partien verlängern die Bockrunde.",
   solo: "Wenn aus: Es gibt keine Solos (Kreuz-, Pik-, Herz-, Karo-, Damen-, Buben-Solo, Fleischlos). Gut für Einsteiger.",
   fuchs: "Wer den Karo-Ass (Fuchs) der Gegner im Stich fängt, bekommt einen Sonderpunkt. Nur im Normalspiel.",
@@ -249,7 +249,10 @@ const neunerAnzahl = (hand) => hand.filter((k) => k[1] === "9").length;
 function armutPaket(hand) {
   const r = R.regelnFuer("normal");
   const t = hand.filter((k) => r.istTrumpf(k));
-  return t.filter((k) => R.basis(k) !== "DA").length <= 3 ? t : null;
+  const fuechse = t.filter((k) => R.basis(k) === "DA").length;
+  // Armut: höchstens 3 Trümpfe plus ein Fuchs; zwei Füchse sind eine Sau (dann keine Armut)
+  if (opt.sau && fuechse >= 2) return null;
+  return t.filter((k) => R.basis(k) !== "DA").length <= 3 && fuechse <= 1 ? t : null;
 }
 
 // Sitz-Reihenfolge einer Partie: ab dem Spieler nach dem Geber; bei 5 setzt der Geber aus
@@ -617,7 +620,7 @@ async function vorbehaltAufloesen() {
 
 // Status auf "spielen" setzen (Sau-Halter bestimmen, Vorhand festlegen)
 async function spielBeginnen(upd, karten, start) {
-  const normal = upd.dkSpielart === "normal";
+  const normal = upd.dkSpielart === "normal" || upd.dkSpielart === "solo-D";
   const sauId = normal && opt.sau ? sp.find((id) => karten[id].filter((k) => R.basis(k) === "DA").length === 2) ?? null : null;
   const bockJetzt = opt.bock && bock > 0;
   await updateDoc(api.raumRef(), {
@@ -1242,21 +1245,21 @@ function zeigeErgebnis() {
   const alte = e.details.filter((d) => d.text === "Gegen die Alten");
   const erreicht = e.details.filter((d) => d.text !== "Gegen die Alten");
   const zeile = (d, plus = true) => `<li><span>${escapeHtml(d.text)}</span><b>${plus && d.punkte > 0 ? "+" : ""}${d.punkte}</b></li>`;
-  const team = (titel, cls, ids, istGewinner, augen, stiche, sonder) => {
+  const team = (titel, cls, ids, istGewinner, augen, stiche, sonder, ansageZ) => {
     const spieler = ids.map((id) => {
       const s2 = spielerVon(id);
       return `<div class="dk-erg-sp" style="--spieler-farbe:${s2?.farbe ?? "#888"}">${avatarHtml(s2?.icon, "dk-av")}<b class="dk-erg-total">${punkteSumme[id] ?? 0}</b><span>${escapeHtml(id === api.spielerId ? "Du" : name(id))}</span></div>`;
     }).join("");
     const gesamt = ids.length ? (e.punkte[ids[0]] ?? 0) : 0;
-    const eigeneSonder = sonder.map((d) => zeile({ text: d.text, punkte: 1 })).join("") + (istGewinner ? alte.map((d) => zeile(d)).join("") : "");
+    const eigeneSonder = sonder.map((d) => zeile({ text: d.text, punkte: 1 })).join("") + ansageZ.map((d) => zeile(d)).join("") + (istGewinner ? alte.map((d) => zeile(d)).join("") : "");
     return `<div class="dk-erg-team ${cls}${istGewinner ? " gewinner" : ""}">` +
       `<h3>${titel}</h3><div class="dk-erg-spieler">${spieler}</div>` +
       `<div class="dk-erg-kopf"><span>Erreichte Punkte</span><b>${stiche} ${stiche === 1 ? "Stich" : "Stiche"}, ${augen} Augen</b></div>` +
       `<ul class="dk-erg-box">${(istGewinner ? erreicht.map((d) => zeile(d)).join("") : "") + eigeneSonder || "<li><span>–</span></li>"}</ul>` +
       `<div class="dk-erg-gesamt">Gesamt: ${gesamt > 0 ? "+" : ""}${gesamt}</div></div>`;
   };
-  const teamRe = team("Re:", "re", e.re, gewinnerRe, e.reAugen, e.reStiche, e.sonderRe);
-  const teamKo = team("Kontra:", "kontra", kontraIds, !gewinnerRe, e.koAugen, e.koStiche, e.sonderKontra);
+  const teamRe = team("Re:", "re", e.re, gewinnerRe, e.reAugen, e.reStiche, e.sonderRe, e.ansageRe ?? []);
+  const teamKo = team("Kontra:", "kontra", kontraIds, !gewinnerRe, e.koAugen, e.koStiche, e.sonderKontra, e.ansageKontra ?? []);
   $("dk-erg-teams").innerHTML = gewinnerRe ? teamRe + teamKo : teamKo + teamRe;
   const notiz = [];
   if (e.bock) notiz.push("Bockrunde: alle Punkte zählen doppelt.");

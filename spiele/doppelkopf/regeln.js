@@ -50,7 +50,7 @@ export function trumpfListe(typ, opts = {}) {
     const farbkarten = f === "H" ? ["HA", "HK", "H9"] : [`${f}A`, `${f}T`, `${f}K`, `${f}9`];
     return ["HT", ...damen, ...buben, ...farbkarten];
   }
-  if (typ === "normal" && opts.sau) {
+  if ((typ === "normal" || typ === "solo-D") && opts.sau) {
     return ["DA", "HT", ...damen, ...buben, "DT", "DK", "D9"];
   }
   return ["HT", ...damen, ...buben, "DA", "DT", "DK", "D9"]; // Normalspiel und Karo-Solo
@@ -66,7 +66,7 @@ export function regelnFuer(typ, opts = {}) {
   const staerke = (id) => (istTrumpf(id) ? 1000 - index.get(basis(id)) : RANG_STAERKE[rangVon(id)]);
   return { typ, istTrumpf, farbe, staerke, anzahlTrumpf: liste.length, zweiteDulle: Boolean(opts.zweiteDulle),
     // Super-Sau: Karo-9 sticht die Sau, sobald eine Sau gespielt wurde (sauGespielt = in früheren Stichen)
-    superSau: Boolean(opts.sau && opts.superSau && typ === "normal"), sauGespielt: Boolean(opts.sauGespielt) };
+    superSau: Boolean(opts.sau && opts.superSau && (typ === "normal" || typ === "solo-D")), sauGespielt: Boolean(opts.sauGespielt) };
 }
 
 // Erlaubte Karten aus der Hand, wenn schon Karten im Stich liegen
@@ -167,15 +167,15 @@ export function bewerte(ctx) {
     }
   });
 
-  // Wer gewinnt?
+  // Wer gewinnt?  (Hausregel: nur Kontra angesagt -> Kontra braucht 121, Re gewinnt mit 120)
+  const nurKontra = aKo >= 1 && aRe === 0;
   let reGewinnt;
   const reErf = aRe >= 2 ? absageErfuellt(aRe, koAugen, koStiche) : null;
   const koErf = aKo >= 2 ? absageErfuellt(aKo, reAugen, reStiche) : null;
   if (reErf !== null && koErf === null) reGewinnt = reErf;
   else if (koErf !== null && reErf === null) reGewinnt = !koErf;
   else if (reErf !== null && koErf !== null && reErf !== koErf) reGewinnt = reErf;
-  else if (aKo >= 1 && aRe === 0) reGewinnt = reAugen >= 120; // Hausregel: nur Kontra angesagt -> Kontra braucht 121
-  else reGewinnt = reAugen >= 121;
+  else reGewinnt = reAugen >= (nurKontra ? 120 : 121);
 
   const details = [];
   let basisPunkte = 0;
@@ -188,14 +188,26 @@ export function bewerte(ctx) {
   if (verliererAugen < 30) add("Keine 30", 1);
   if (verliererStiche === 0) add("Schwarz", 1);
   if (!reGewinnt && !solo && normalRegeln) add("Gegen die Alten", 1);
-  if (aRe >= 1) add("Re angesagt", 1);
-  if (aKo >= 1) add("Kontra angesagt", 1);
-  for (let s = 2; s <= aRe; s++) add(`Re: ${ANSAGE_NAMEN[s]} angesagt`, 1);
-  for (let s = 2; s <= aKo; s++) add(`Kontra: ${ANSAGE_NAMEN[s]} angesagt`, 1);
+
+  // Ansagen (Hausregel): jede angesagte Stufe gibt +1 wenn erreicht, -1 wenn nicht - nur fürs Ansagen gibt es nichts
+  const ansageZeilen = (team, hoechste) => {
+    const z = [];
+    for (let st = 1; st <= hoechste; st++) {
+      let ok;
+      if (st === 1) ok = team === "re" ? reAugen >= (nurKontra ? 120 : 121) : koAugen >= (nurKontra ? 121 : 120);
+      else ok = team === "re" ? absageErfuellt(st, koAugen, koStiche) : absageErfuellt(st, reAugen, reStiche);
+      const name = st === 1 ? (team === "re" ? "Re" : "Kontra") : ANSAGE_NAMEN[st];
+      z.push({ text: `${name} ${ok ? "erreicht" : "verfehlt"}`, punkte: ok ? 1 : -1 });
+    }
+    return z;
+  };
+  const ansageRe = ansageZeilen("re", aRe), ansageKontra = ansageZeilen("kontra", aKo);
+  const aPunkteRe = ansageRe.reduce((x, d) => x + d.punkte, 0);
+  const aPunkteKo = ansageKontra.reduce((x, d) => x + d.punkte, 0);
 
   const spRe = sp.re.reduce((s, x) => s + x.punkte, 0);
   const spKo = sp.kontra.reduce((s, x) => s + x.punkte, 0);
-  const wert = (reGewinnt ? basisPunkte : -basisPunkte) + spRe - spKo; // aus Sicht der Re-Partei
+  const wert = (reGewinnt ? basisPunkte : -basisPunkte) + spRe - spKo + aPunkteRe - aPunkteKo; // aus Sicht der Re-Partei
 
   const punkte = {};
   const faktorSolo = solo ? 3 : 1;
@@ -203,7 +215,7 @@ export function bewerte(ctx) {
     if (istRe(id)) punkte[id] = wert * (solo ? faktorSolo : 1);
     else punkte[id] = -wert;
   });
-  return { reAugen, koAugen, reStiche, koStiche, reGewinnt, basisPunkte, details, sonderRe: sp.re, sonderKontra: sp.kontra, wert, punkte };
+  return { reAugen, koAugen, reStiche, koStiche, reGewinnt, basisPunkte, details, sonderRe: sp.re, sonderKontra: sp.kontra, ansageRe, ansageKontra, wert, punkte };
 }
 
 // Rangpunkte für die App-Wertung: n-1 für den Besten ... 0, gleiche Summen teilen sich den Rang
