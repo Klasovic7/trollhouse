@@ -8,7 +8,7 @@
 //  n Reihenpunkte, der Nächste n-1 ... Wer die meisten Reihenpunkte hat, gewinnt;
 //  die Spielpunkte folgen dem einheitlichen Punktesystem (siehe kern/wertung.js).
 //  Bonus: jede starke Hand gibt zusätzlich Bonuspunkte (Straße +1 ... Royal Flush +12).
-//  Tausch: in einer zufälligen Runde (Karte 11-20) darf jeder einmal zwei Karten im eigenen Raster tauschen.
+//  Tausch: zwischen der 11. und 20. Karte wird eine Tausch-Karte aufgedeckt - dann darf jeder zwei Karten im eigenen Raster tauschen.
 //  Raumfelder beginnen mit "pd"; die Züge liegen in "pdZuege" (Dokument je
 //  Spieler und Runde).
 // ============================================================================
@@ -19,8 +19,8 @@ import {
 import { spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
 import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 import {
-  ZELLEN, RUNDEN, REIHEN, baueRunden, kartenDerRunde, istWahlRunde, kartenBild,
-  alleKartenBilder, wertePokerduellAus, zellenAusZuegen, waehleTauschRunde, tauscheZellen
+  ZELLEN, REIHEN, baueRunden, kartenDerRunde, istTauschEintrag, istWahlEintrag, kartenBild, TAUSCH_BILD,
+  alleKartenBilder, wertePokerduellAus, zellenAusZuegen, tauscheZellen
 } from "./logik.js";
 
 const ZUG_SEKUNDEN = 25;
@@ -34,7 +34,7 @@ const VORLAGE = `
       Dann zählen alle 12 Reihen (5 Zeilen, 5 Spalten, 2 Diagonalen) als Pokerhand. Pro Reihe gibt es Punkte für die
       beste Hand - wer insgesamt die meisten Reihenpunkte hat, gewinnt. Starke Hände geben außerdem Bonuspunkte
       (Straße +1, Flush +2, Full House +3, Vierling +5, Straight Flush +8, Royal Flush +12). Zwischen Karte 11 und 20
-      kommt eine Tausch-Runde: Da darfst du einmal zwei Karten in deinem Raster vertauschen.</p>
+      wird eine Tausch-Karte aufgedeckt: Dann darfst du zwei Karten in deinem Raster vertauschen.</p>
     <p id="pd-setup-fehler" class="fehler-text"></p>
     <p><button id="pd-starten" class="btn-primaer" hidden>Spiel starten</button></p>
     <p id="pd-setup-warten" hidden><em>Warte, bis der Spielleiter das Spiel startet …</em></p>
@@ -80,7 +80,6 @@ let startZeit = 0;
 let runden = [];
 let gewaehlteKarte = null;     // Index im Angebot (nur Wahlrunden relevant)
 let gewaehlteZelle = null;
-let tauschRunde = -1;          // Runden-Index der Tausch-Runde (zufällig 10-19, vom Spielleiter beim Start festgelegt)
 let tauschModus = false;       // gerade im Tausch-Modus (zwei Karten antippen)
 let tauschErste = null;
 let tauschPaar = null;         // geplanter Tausch dieser Runde: [feldA, feldB]
@@ -110,7 +109,7 @@ export async function starten(uebergebeneApi) {
   starteListener();
 
   if (api.istLeiter && !api.raum?.pdStatus) {
-    await updateDoc(api.raumRef(), { pdStatus: "setup", pdRundenIndex: 0, pdStart: 0, pdRunden: [], pdTauschRunde: -1 });
+    await updateDoc(api.raumRef(), { pdStatus: "setup", pdRundenIndex: 0, pdStart: 0, pdRunden: [] });
   }
   tickId = setInterval(tick, 200);
 }
@@ -131,7 +130,7 @@ export function beenden() {
   el = {};
   spielerListe = []; alleZuege = []; status = null; rundenIndex = -1; startZeit = 0; runden = [];
   gewaehlteKarte = null; gewaehlteZelle = null; sendet = false; leiterBeschaeftigt = false;
-  tauschRunde = -1; tauschModus = false; tauschErste = null; tauschPaar = null;
+  tauschModus = false; tauschErste = null; tauschPaar = null;
   letzteBearbeiteteRunde = -2; angezeigterSpieler = null; markierteReihe = null;
 }
 
@@ -147,7 +146,6 @@ export function raumDaten(daten) {
   if (!daten || !el.wurzel) return;
   status = daten.pdStatus ?? null;
   runden = daten.pdRunden ?? [];
-  tauschRunde = daten.pdTauschRunde ?? -1;
   const neuerIndex = daten.pdRundenIndex ?? 0;
   const neuerStart = daten.pdStart ?? 0;
   if (status === "runde_aktiv" && (rundenIndex !== neuerIndex || startZeit !== neuerStart)) {
@@ -157,7 +155,7 @@ export function raumDaten(daten) {
   rundenIndex = neuerIndex;
   startZeit = neuerStart;
 
-  api.fortschritt(status === "runde_aktiv" ? `${rundenIndex + 1}/${RUNDEN}` : "");
+  api.fortschritt(status === "runde_aktiv" ? `${rundenIndex + 1}/${runden.length}` : "");
 
   ["pd-setup", "pd-runde-screen", "pd-ergebnis-screen", "pd-endstand-screen"].forEach((id) => { $(id).hidden = true; });
   if (status === "setup" || !status) {
@@ -197,7 +195,7 @@ async function spielStarten() {
   try {
     await raeumeSpieldatenAuf();
     await updateDoc(api.raumRef(), {
-      pdStatus: "runde_aktiv", pdRundenIndex: 0, pdRunden: baueRunden(), pdTauschRunde: waehleTauschRunde(), pdStart: Date.now()
+      pdStatus: "runde_aktiv", pdRundenIndex: 0, pdRunden: baueRunden(), pdStart: Date.now()
     });
   } catch (e) {
     zeigeDebug("Fehler beim Start: " + e.message);
@@ -216,7 +214,7 @@ async function raeumeSpieldatenAuf() {
 export async function vorZurueck() {
   try {
     await raeumeSpieldatenAuf();
-    await updateDoc(api.raumRef(), { pdStatus: null, pdRundenIndex: 0, pdStart: 0, pdRunden: [], pdTauschRunde: -1 });
+    await updateDoc(api.raumRef(), { pdStatus: null, pdRundenIndex: 0, pdStart: 0, pdRunden: [] });
     await api.zurueckZurAuswahl();
   } catch (e) {
     zeigeDebug("Fehler beim Zurückkehren: " + e.message);
@@ -254,8 +252,8 @@ function baueRaster(container, zellen, optionen = {}) {
 }
 
 // ---- Runde ---------------------------------------------------------------------
-const istTauschRunde = () => rundenIndex === tauschRunde;
-const dauerMs = () => (istWahlRunde(rundenIndex) || istTauschRunde() ? WAHL_SEKUNDEN : ZUG_SEKUNDEN) * 1000;
+const istTauschRunde = () => istTauschEintrag(runden, rundenIndex);
+const dauerMs = () => (istWahlEintrag(runden, rundenIndex) ? WAHL_SEKUNDEN : ZUG_SEKUNDEN) * 1000;
 const verstrichen = () => Date.now() - startZeit;
 const aktiveIds = () => new Set(spielerListe.map((s) => s.id));
 const zuegeDieserRunde = () => {
@@ -270,17 +268,24 @@ const meineZellenNachTausch = () => (tauschPaar ? tauscheZellen(meineZellen(), t
 function zeichneRunde() {
   if (!el.wurzel || status !== "runde_aktiv") return;
   const angebot = kartenDerRunde(runden, rundenIndex);
-  const wahl = istWahlRunde(rundenIndex);
+  const wahl = istWahlEintrag(runden, rundenIndex);
   const zug = meinZug();
   const abgelegt = Boolean(zug);
-  if (!wahl && gewaehlteKarte == null) gewaehlteKarte = 0;
+  if (!wahl && gewaehlteKarte == null) gewaehlteKarte = 0;   // (bei der Tausch-Karte nur ein Platzhalter)
 
   const tausch = istTauschRunde();
   $("pd-titel").textContent = wahl ? `Runde ${rundenIndex + 1} - Wähle eine Karte`
-    : tausch ? `Runde ${rundenIndex + 1} - Tausch-Runde` : `Runde ${rundenIndex + 1}`;
+    : tausch ? `Runde ${rundenIndex + 1} - Tausch-Karte!` : `Runde ${rundenIndex + 1}`;
 
   const box = $("pd-angebot");
   box.innerHTML = "";
+  if (tausch) {
+    const b = document.createElement("button");
+    b.type = "button"; b.tabIndex = -1;
+    b.className = "pd-angebotskarte pd-tauschkarte" + (abgelegt ? " abgelegt" : " gewaehlt");
+    b.innerHTML = `<img src="${TAUSCH_BILD}" alt="Tausch" draggable="false">`;
+    box.appendChild(b);
+  }
   angebot.forEach((code, i) => {
     const b = document.createElement("button");
     b.type = "button";
@@ -308,15 +313,21 @@ function zeichneRunde() {
   tb.textContent = tauschPaar ? "Tausch zurücknehmen" : tauschModus ? "Tausch abbrechen" : "Karten tauschen";
 
   const btn = $("pd-ablegen");
-  btn.disabled = abgelegt || sendet || gewaehlteZelle == null || gewaehlteKarte == null;
-  btn.textContent = abgelegt ? "Abgelegt" : "Hier ablegen";
+  if (tausch) {
+    btn.disabled = abgelegt || sendet || tauschModus;
+    btn.textContent = abgelegt ? "Bestätigt" : tauschPaar ? "Tausch bestätigen" : "Nicht tauschen";
+  } else {
+    btn.disabled = abgelegt || sendet || gewaehlteZelle == null || gewaehlteKarte == null;
+    btn.textContent = abgelegt ? "Abgelegt" : "Hier ablegen";
+  }
 
   const fertig = new Set(zuegeDieserRunde().map((m) => m.spielerId));
   const offen = spielerListe.filter((s) => !fertig.has(s.id)).length;
   $("pd-status").textContent = abgelegt
-    ? (offen ? `Abgelegt! Noch ${offen} ${offen === 1 ? "Person legt" : "Personen legen"} …` : "Abgelegt!")
+    ? (offen ? `${tausch ? "Fertig" : "Abgelegt"}! Noch ${offen} ${offen === 1 ? "Person ist" : "Personen sind"} dran …` : (tausch ? "Fertig!" : "Abgelegt!"))
     : imTausch ? (tauschErste == null ? "Tippe auf die erste Karte, die du tauschen willst." : "Tippe auf die zweite Karte.")
-    : tausch && !tauschPaar && gewaehlteZelle == null ? "Tausch-Runde: Du darfst einmal zwei Karten vertauschen - oder einfach normal ablegen."
+    : tausch ? (tauschPaar ? "Die beiden Karten sind vertauscht. Mit „Tausch bestätigen“ gilt es - oder nimm es mit dem Knopf oben zurück."
+        : "Tausch-Karte: Du darfst zwei Karten in deinem Raster vertauschen - oder passen.")
     : wahl && gewaehlteKarte == null ? "Tippe auf die Karte, die du behalten willst - dann auf ein freies Feld."
     : gewaehlteZelle == null ? "Tippe auf ein freies Feld, um die Karte dort abzulegen."
     : "Tippe auf „Hier ablegen“ zum Bestätigen.";
@@ -343,10 +354,11 @@ async function legeAb(automatisch) {
   if (status !== "runde_aktiv" || meinZug() || sendet) return;
   const angebot = kartenDerRunde(runden, rundenIndex);
   const zellen = meineZellenNachTausch();
-  let zelle = gewaehlteZelle;
+  const nurTausch = istTauschRunde();      // Tausch-Karte: nichts ablegen, nur (optional) zwei Karten vertauschen
+  let zelle = nurTausch ? -1 : gewaehlteZelle;
   let ki = gewaehlteKarte;
   if (ki == null || !angebot[ki]) ki = 0;
-  if (zelle == null || zellen[zelle]) {
+  if (!nurTausch && (zelle == null || zellen[zelle])) {
     const frei = zellen.map((k, i) => (k ? -1 : i)).filter((i) => i >= 0);
     if (!frei.length) return;
     zelle = frei[Math.floor(Math.random() * frei.length)];
@@ -355,8 +367,8 @@ async function legeAb(automatisch) {
   $("pd-ablegen").disabled = true;
   try {
     await setDoc(doc(api.db, "raeume", api.code, "pdZuege", `${api.spielerId}_${rundenIndex}`), {
-      spielerId: api.spielerId, spielerName: api.spielerName, rundenIndex, zelle, karte: angebot[ki],
-      tausch: istTauschRunde() && tauschPaar ? tauschPaar : null,
+      spielerId: api.spielerId, spielerName: api.spielerName, rundenIndex, zelle, karte: nurTausch ? null : angebot[ki],
+      tausch: nurTausch && tauschPaar ? tauschPaar : null,
       auto: Boolean(automatisch), zeitpunkt: serverTimestamp()
     });
   } catch (e) {
@@ -387,7 +399,13 @@ async function pruefeRunde(v) {
     leiterBeschaeftigt = true;
     try {
       const angebot = kartenDerRunde(runden, rundenIndex);
+      const nurTausch = istTauschRunde();
       await Promise.all(fehlend.map((s) => {
+        if (nurTausch) {
+          return setDoc(doc(api.db, "raeume", api.code, "pdZuege", `${s.id}_${rundenIndex}`), {
+            spielerId: s.id, spielerName: s.name, rundenIndex, zelle: -1, karte: null, tausch: null, auto: true, zeitpunkt: serverTimestamp()
+          });
+        }
         const frei = zellenAusZuegen(alleZuege, s.id).map((k, i) => (k ? -1 : i)).filter((i) => i >= 0);
         if (!frei.length) return null;
         return setDoc(doc(api.db, "raeume", api.code, "pdZuege", `${s.id}_${rundenIndex}`), {
@@ -405,7 +423,7 @@ async function pruefeRunde(v) {
   leiterBeschaeftigt = true;
   letzteBearbeiteteRunde = rundenIndex;
   try {
-    if (rundenIndex + 1 < RUNDEN) {
+    if (rundenIndex + 1 < runden.length) {
       await updateDoc(api.raumRef(), { pdRundenIndex: rundenIndex + 1, pdStart: Date.now() });
     } else {
       const ergebnis = berechne();
@@ -449,7 +467,8 @@ function zeigeErgebnis() {
     const li = document.createElement("li");
     li.className = "pd-erg-zeile" + (id === angezeigterSpieler ? " aktiv" : "");
     li.innerHTML = spielerKarte(s?.name, s?.farbe, s?.icon, `+${gewinne[id] ?? 0}`,
-      { extra: ergebnis.bonus[id] ? `${ergebnis.summe[id]} Pkt · ${ergebnis.bonus[id]} Bonus` : `${ergebnis.summe[id]} Reihenpunkte`, punkteRechts: s ? (s.punkte ?? 0) : "?" });
+      { extra: `${ergebnis.summe[id]} Reihenpunkte`, punkteRechts: s ? (s.punkte ?? 0) : "?" });
+    if (ergebnis.bonus[id]) li.querySelector(".spieler-extra")?.insertAdjacentHTML("beforeend", ` <b class="pd-gold">+${ergebnis.bonus[id]} Bonus</b>`);
     li.addEventListener("click", () => { angezeigterSpieler = id; markierteReihe = null; zeigeErgebnis(); });
     liste.appendChild(li);
   });
@@ -465,7 +484,7 @@ function zeigeErgebnis() {
     const li = document.createElement("li");
     li.className = "pd-reihe" + (r.reihe === markierteReihe ? " aktiv" : "");
     li.innerHTML = `<span class="pd-reihe-name">${r.name}</span><span class="pd-reihe-hand">${r.hand.name}</span>` +
-      `<span class="pd-reihe-rang">${r.rang}.</span><span class="pd-reihe-punkte">+${r.punkte + r.bonus}${r.bonus ? `<small class="pd-bonus" title="Bonus">★</small>` : ""}</span>`;
+      `<span class="pd-reihe-rang">${r.rang}.</span><span class="pd-reihe-punkte">+${r.punkte}${r.bonus ? `<b class="pd-gold">+${r.bonus}</b>` : ""}</span>`;
     li.addEventListener("click", () => { markierteReihe = markierteReihe === r.reihe ? null : r.reihe; zeigeErgebnis(); });
     rl.appendChild(li);
     if (r.reihe === markierteReihe) rl.appendChild(vergleichsBlock(r.reihe, ergebnis));
@@ -486,7 +505,8 @@ function vergleichsBlock(reiheId, ergebnis) {
     const zellen = zellenAusZuegen(alleZuege, id).map((k) => k || FUELL);
     const block = document.createElement("div");
     block.className = "pd-vergleich-zeile";
-    block.innerHTML = spielerKarte(sp?.name, sp?.farbe, sp?.icon, `+${info.punkte + info.bonus}`, { extra: info.bonus ? `${info.hand.name} (+${info.bonus} Bonus)` : info.hand.name, punkteRechts: `${info.rang}.` }) +
+    block.innerHTML = spielerKarte(sp?.name, sp?.farbe, sp?.icon, `+${info.punkte}`, { extra: info.hand.name, punkteRechts: `${info.rang}.` }) +
+      (info.bonus ? `<div class="pd-bonus-zeile">★ +${info.bonus} Bonus</div>` : "") +
       `<div class="pd-mini">${reihe.zellen.map((z) => `<img src="${kartenBild(zellen[z])}" alt="">`).join("")}</div>`;
     li.appendChild(block);
   });
@@ -503,7 +523,7 @@ function baueDetailRaster(container, zellen, reihenInfo, markiert) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "pd-badge" + (r && r.rang === 1 ? " best" : "") + (r && r.bonus ? " bonus" : "") + (id === markierteReihe ? " aktiv" : "");
-    b.textContent = r ? `+${r.punkte + r.bonus}` : "";
+    b.innerHTML = r ? `<span>+${r.punkte}</span>${r.bonus ? `<span class="pd-gold">+${r.bonus}</span>` : ""}` : "";
     b.title = r ? `${r.name}: ${r.hand.name}${r.bonus ? ` (+${r.bonus} Bonus)` : ""}` : "";
     b.addEventListener("click", () => { markierteReihe = markierteReihe === id ? null : id; zeigeErgebnis(); });
     container.appendChild(b);

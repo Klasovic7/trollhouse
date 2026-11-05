@@ -5,7 +5,8 @@
 //  H Herz, D Karo. Werte: 2 bis 10, 11 Bube, 12 Dame, 13 König, 14 Ass.
 // ============================================================================
 export const ZELLEN = 25;
-export const RUNDEN = 25;
+export const RUNDEN = 25;          // Karten (= Felder im Raster); dazu kommt eine Tausch-Karte, also 26 Runden insgesamt
+export const TAUSCH = "T";        // Eintrag in der Rundenliste: Tausch-Karte statt einer Spielkarte
 export const FARBEN = ["C", "S", "H", "D"];
 const FARB_ORDNER = { C: "kreuz", S: "pik", H: "herz", D: "karo" };
 const WERT_ORDNER = { 11: "bube", 12: "dame", 13: "koenig", 14: "ass" };
@@ -19,8 +20,9 @@ export function kartenBild(code) {
   const w = wertVon(code);
   return `bilder/doppelkopf/${FARB_ORDNER[code[0]]}-${WERT_ORDNER[w] || w}.webp?v=${w >= 9 ? 379 : 453}`;
 }
+export const TAUSCH_BILD = "bilder/doppelkopf/tausch.webp?v=470";
 export function alleKartenBilder() {
-  const liste = [];
+  const liste = [TAUSCH_BILD];
   FARBEN.forEach((f) => { for (let w = 2; w <= 14; w++) liste.push(kartenBild(f + w)); });
   return liste;
 }
@@ -39,14 +41,19 @@ export function mischeBlatt(zufall = Math.random) {
   return deck;
 }
 
-/** 25 Runden als Textliste: "H12" oder bei Wahlrunden "H12|S3". (Firestore kennt keine verschachtelten Listen.) */
+/** Rundenliste als Text: "H12", bei Wahlrunden "H12|S3" und genau einmal "T" (Tausch-Karte), die nach der 11. bis 20. Karte
+ *  zufällig dazwischengemischt wird. (Firestore kennt keine verschachtelten Listen.) */
 export function baueRunden(zufall = Math.random) {
   const deck = mischeBlatt(zufall);
   const runden = [];
   for (let i = 0; i < RUNDEN; i++) runden.push(istWahlRunde(i) ? `${deck.pop()}|${deck.pop()}` : deck.pop());
+  const nachKarte = 11 + Math.floor(zufall() * 10);   // 11 ... 20
+  runden.splice(nachKarte, 0, TAUSCH);
   return runden;
 }
-export const kartenDerRunde = (runden, i) => (runden?.[i] ?? "").split("|").filter(Boolean);
+export const kartenDerRunde = (runden, i) => (runden?.[i] === TAUSCH ? [] : (runden?.[i] ?? "").split("|").filter(Boolean));
+export const istTauschEintrag = (runden, i) => runden?.[i] === TAUSCH;
+export const istWahlEintrag = (runden, i) => String(runden?.[i] ?? "").includes("|");
 
 // ---- Reihen --------------------------------------------------------------------
 /** Die 12 Reihen: 5 Zeilen, 5 Spalten, 2 Diagonalen (jeweils Zellindizes 0-24). */
@@ -154,14 +161,7 @@ export function wertePokerduellAus(zellenProSpieler) {
 }
 
 // ---- Tausch --------------------------------------------------------------------------
-/** Irgendwann zwischen der 11. und 20. Karte (Index 10-19) darf jeder einmal zwei Karten im eigenen Raster tauschen.
- *  Wahlrunden (zwei Karten zur Auswahl) werden ausgelassen, damit nie zwei Sonderregeln zusammenfallen. */
-export function waehleTauschRunde(zufall = Math.random) {
-  const kandidaten = [];
-  for (let i = 10; i <= 19; i++) if (!istWahlRunde(i)) kandidaten.push(i);
-  return kandidaten[Math.floor(zufall() * kandidaten.length)];
-}
-
+// Die Tausch-Karte ist eine eigene Runde: Jeder darf zwei Karten im eigenen Raster vertauschen (oder passen).
 /** Gültiger Tausch: zwei verschiedene, belegte Felder. */
 export function tauschGueltig(zellen, paar) {
   return Array.isArray(paar) && paar.length === 2 && paar[0] !== paar[1]

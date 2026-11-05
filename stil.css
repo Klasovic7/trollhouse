@@ -3776,8 +3776,24 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 
 /* v463: Anleitungs-Symbole ohne Schatten-Filter - sonst werden sie teils erst beim Darüberfahren gezeichnet */
 .anl-kachel-sym .spiel-bild, .anl-titel-sym .spiel-bild { filter: none; margin: 0; height: 100%; width: 100%; }
-/* Pokerduell: Tausch-Runde und Bonus */
+/* Pokerduell: Tausch-Karte und Bonus */
 .pd-zelle.tauschbar { cursor: pointer; outline: 2px dashed rgba(251,191,36,.7); outline-offset: -2px; }
 .pd-zelle.tausch-gewaehlt { outline: 3px solid #fbbf24; outline-offset: -3px; z-index: 1; transform: scale(.94); }
-.pd-badge.bonus { background: rgba(251,191,36,.3); color: #fde68a; }
-.pd-bonus { color: #fbbf24; margin-left: 1px; }
+.pd-gold { color: #fbbf24; font-weight: 800; }
+.pd-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+.pd-badge.bonus { background: rgba(251,191,36,.16); padding: 0 2px; font-size: .74rem; }
+.pd-badge.bonus .pd-gold { color: #fcd34d; }
+.pd-detail { grid-template-columns: repeat(5, minmax(0, 1fr)) 52px; }
+.pd-reihe { grid-template-columns: 78px minmax(0, 1fr) 24px 58px; }
+.pd-reihe-punkte { display: flex; justify-content: flex-end; gap: 4px; white-space: nowrap; }
+.pd-reihe-punkte .pd-gold { font-weight: 800; }
+.pd-bonus-zeile { margin: 4px 0 0; text-align: center; font-weight: 800; font-size: .85rem; color: #fbbf24; letter-spacing: .02em; }
+/* Auswertung nie breiter als der Bildschirm: lange Handnamen umbrechen statt die Spalte aufzuweiten */
+.pd-reihen-liste, .pd-erg-liste { grid-template-columns: minmax(0, 1fr); width: 100%; box-sizing: border-box; }
+.pd-reihen-liste > li, .pd-erg-liste > li, .pd-vergleich, .pd-vergleich-zeile { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.pd-vergleich { grid-template-columns: minmax(0, 1fr); }
+.pd-vergleich-zeile .spieler-karte, .pd-erg-zeile .spieler-karte { min-width: 0; max-width: 100%; overflow: hidden; }
+.pd-vergleich .spieler-extra, .pd-erg-zeile .spieler-extra { white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
+.pd-tauschkarte { cursor: default; }
+/* Hochformat-Avatare (z. B. Sumo Paul): im runden Ausschnitt nicht die Körpermitte, sondern oben (Gesicht) zeigen */
+img[src*="/freund-"] { object-position: 50% 22%; }

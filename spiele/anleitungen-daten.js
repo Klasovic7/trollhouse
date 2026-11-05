@@ -1063,7 +1063,8 @@ ANLEITUNGEN.pokerduell = [
   {
     t: "Bonus & Tausch",
     x: ["**Bonuspunkte:** Starke Hände geben zusätzlich zu den Reihenpunkten feste Bonuspunkte - egal, wer die Reihe gewinnt: Straße **+1**, Flush **+2**, Full House **+3**, Vierling **+5**, Straight Flush **+8**, Royal Flush **+12**. Reihen mit Bonus leuchten in der Auswertung golden.",
-      "**Tausch-Runde:** Irgendwann zwischen **Karte 11 und 20** (zufällig, du erfährst es erst in der Runde) darfst du **einmal zwei Karten** in deinem Raster vertauschen. Tippe auf **Karten tauschen**, dann auf zwei Karten - danach legst du die Karte der Runde wie gewohnt ab. In dieser Runde hast du **35 Sekunden**. Du musst nicht tauschen."],
+      "**Tausch-Karte:** Zwischen der **11. und 20. Karte** wird zufällig eine **Tausch-Karte** dazwischengemischt und für alle aufgedeckt. Dann darfst du **zwei Karten** in deinem Raster vertauschen: Tippe auf **Karten tauschen**, dann auf zwei Karten und auf **Tausch bestätigen**. Du kannst auch **passen**. Für die Tausch-Karte legst du nichts ab - das Spiel hat dadurch eine Runde mehr. Du hast **25 Sekunden**."
+    ],
     s: () => T(160, 90, "Bonus", 30, "#fff", 800)
   }
 ];
