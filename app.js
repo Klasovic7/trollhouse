@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v473";
+export const APP_VERSION = "v474";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -1209,7 +1209,7 @@ function aktualisiereRaumNavigation(spielId) {
   } else if (info?.emoji) {
     spielKopfIcon.textContent = info.emoji;
   } else {
-    spielKopfIcon.innerHTML = '<span class="spiel-logo-badge"><img src="bilder/logo-fuchs-transparent.png" alt=""></span>';
+    spielKopfIcon.innerHTML = '<span class="spiel-logo-badge"><img src="bilder/logo-fuchs-transparent.webp?v=474" alt=""></span>';
   }
   spielKopfName.textContent = info?.name ?? "Trollhouse";
   // Das Zurückkehren aus einem Spiel ändert den gemeinsamen Raumzustand und
