@@ -5,7 +5,7 @@
 // Nur dann wirft der Browser den alten Zwischenspeicher weg und alle Spieler
 // bekommen zuverlässig die neue Version. Das ist der einzige Handgriff, den man
 // nach dem Bearbeiten von Dateien nicht vergessen darf.
-const CACHE_NAME = "trollhouse-v474";
+const CACHE_NAME = "trollhouse-v475";
 
 const DATEIEN = [
   "./",
@@ -301,11 +301,23 @@ const DATEIEN = [
   "bilder/freund-ballerina-paul.jpg?v=468",
 ];
 
+// Bilder liegen in einem eigenen Cache, der bei einem Versions-Sprung NICHT geleert wird.
+// So werden nach einem Update nur neue/geänderte Bilder geladen statt alle (~13 MB).
+// Das ist sicher, weil jede geänderte Bilddatei eine neue ?v=-Nummer bekommt (= neue URL).
+// Nur wenn ein Bild mit GLEICHER Adresse ersetzt wurde: BILD_CACHE hochzählen -> alle Bilder neu.
+const BILD_CACHE = "trollhouse-bilder-1";
+const istBildPfad = (pfad) => /\.(png|jpg|jpeg|svg|webp)$/i.test(pfad);
+const istBildEintrag = (eintrag) => istBildPfad(eintrag.split("?")[0]);
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      // Einzeln laden: fällt eine Datei aus, scheitert nicht die ganze Installation.
-      .then((cache) => Promise.allSettled(DATEIEN.map((d) => cache.add(d))))
+    Promise.all([caches.open(CACHE_NAME), caches.open(BILD_CACHE)])
+      .then(([codeCache, bildCache]) => Promise.allSettled(DATEIEN.map(async (d) => {
+        // Einzeln laden: fällt eine Datei aus, scheitert nicht die ganze Installation.
+        if (!istBildEintrag(d)) return codeCache.add(d);
+        if (await bildCache.match(d)) return; // Bild ist schon da: nicht erneut laden
+        return bildCache.add(d);
+      })))
       .then(() => self.skipWaiting())
   );
 });
@@ -313,7 +325,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((namen) => Promise.all(namen.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))))
+      .then((namen) => Promise.all(namen.filter((n) => n !== CACHE_NAME && n !== BILD_CACHE).map((n) => caches.delete(n))))
       .then(() => self.clients.claim())
   );
 });
@@ -327,13 +339,13 @@ self.addEventListener("fetch", (event) => {
 
   // "Netz zuerst, Cache als Rückfall": online sieht man immer die aktuelle Version,
   // offline startet die App trotzdem. Für Bilder umgekehrt (die ändern sich kaum).
-  const istBild = /\.(png|jpg|jpeg|svg|webp)$/i.test(url.pathname);
+  const istBild = istBildPfad(url.pathname);
 
   if (istBild) {
     event.respondWith(
       caches.match(event.request).then((treffer) => treffer || fetch(event.request).then((antwort) => {
         const kopie = antwort.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(event.request, kopie));
+        if (antwort.ok) caches.open(BILD_CACHE).then((c) => c.put(event.request, kopie));
         return antwort;
       }))
     );
