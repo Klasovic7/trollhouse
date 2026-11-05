@@ -834,9 +834,10 @@
       min-height: 48px; padding: 11px 14px; border: 2px solid #e7e3ef; border-radius: 15px;
       color: var(--text-dunkel); background: #fff; box-shadow: 0 5px 13px rgba(26,28,40,.06);
     }
-    .rd-reihen-begriff strong { line-height: 1.2; }
+    .rd-reihen-begriff strong { line-height: 1.2; min-width: 0; overflow-wrap: anywhere; }
     .rd-reihen-begriff span {
-      flex: 0 0 auto; padding: 4px 8px; border-radius: 9px;
+      flex: 0 1 auto; min-width: 0; max-width: 58%; text-align: right; overflow-wrap: anywhere;
+      padding: 4px 8px; border-radius: 9px;
       color: #5b21b6; background: #ede9fe; font-size: .76rem; font-weight: 800;
     }
     .rd-reihen-begriff.neu {
