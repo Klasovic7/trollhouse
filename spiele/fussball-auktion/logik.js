@@ -148,8 +148,12 @@ export function berechneRundenpunkte(eintraege) {
   );
   const ergebnis = {};
   const n = sortiert.length;
+  const gleich = (a, b) => a.summe === b.summe && a.gesamt === b.gesamt;
+  // Gleichstand (Summe UND Gesamt gleich) teilt sich den besseren Platz - kein Vorteil durch Reihenfolge
   sortiert.forEach((eintrag, i) => {
-    const rang = i + 1; // 1 = niedrigste Summe
+    let beste = i;
+    while (beste + 1 < n && gleich(sortiert[beste + 1], eintrag)) beste++;
+    const rang = beste + 1; // 1 = niedrigste Summe
     let punkte;
     if (rang === 1) punkte = PUNKTE_LETZTER_PLATZ;
     else punkte = rang - 1;

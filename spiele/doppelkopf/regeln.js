@@ -153,7 +153,7 @@ export function bewerte(ctx) {
     const reGewinnt = istRe(st.gewinner);
     if (reGewinnt) { reAugen += augen; reStiche++; } else { koAugen += augen; koStiche++; }
     const team = reGewinnt ? "re" : "kontra";
-    if (opt.doppelkopf && augen >= 40) sp[team].push({ text: "Doppelkopf", punkte: 1 });
+    if (opt.doppelkopf && art !== "solo" && augen >= 40) sp[team].push({ text: "Doppelkopf", punkte: 1 });
     if (mitFuchs) {
       st.karten.forEach((k) => {
         if (basis(k.karte) === "DA" && istRe(k.spielerId) !== reGewinnt) sp[team].push({ text: "Fuchs gefangen", punkte: 1 });
@@ -174,6 +174,7 @@ export function bewerte(ctx) {
   if (reErf !== null && koErf === null) reGewinnt = reErf;
   else if (koErf !== null && reErf === null) reGewinnt = !koErf;
   else if (reErf !== null && koErf !== null && reErf !== koErf) reGewinnt = reErf;
+  else if (aKo >= 1 && aRe === 0) reGewinnt = reAugen >= 120; // Hausregel: nur Kontra angesagt -> Kontra braucht 121
   else reGewinnt = reAugen >= 121;
 
   const details = [];
