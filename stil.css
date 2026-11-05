@@ -3776,3 +3776,8 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 
 /* v463: Anleitungs-Symbole ohne Schatten-Filter - sonst werden sie teils erst beim Darüberfahren gezeichnet */
 .anl-kachel-sym .spiel-bild, .anl-titel-sym .spiel-bild { filter: none; margin: 0; height: 100%; width: 100%; }
+/* Pokerduell: Tausch-Runde und Bonus */
+.pd-zelle.tauschbar { cursor: pointer; outline: 2px dashed rgba(251,191,36,.7); outline-offset: -2px; }
+.pd-zelle.tausch-gewaehlt { outline: 3px solid #fbbf24; outline-offset: -3px; z-index: 1; transform: scale(.94); }
+.pd-badge.bonus { background: rgba(251,191,36,.3); color: #fde68a; }
+.pd-bonus { color: #fbbf24; margin-left: 1px; }

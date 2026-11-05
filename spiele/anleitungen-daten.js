@@ -1059,5 +1059,11 @@ ANLEITUNGEN.pokerduell = [
       "In jeder Reihe bekommt die **beste Hand** so viele Reihenpunkte wie Spieler im Raum, die nächste einen weniger - die schlechteste 1. Wer insgesamt die **meisten Reihenpunkte** hat, gewinnt. " + PL,
       "In der Auswertung tippst du auf einen Spieler und siehst sein Raster und alle 12 Reihen.", GW],
     s: () => rang(70, 22, [["Du", "58 · 5", 0], ["Luca", "51 · 3", 1], ["Kevin", "47 · 2", 2], ["Sinan", "40 · 1", 3]], 180)
+  },
+  {
+    t: "Bonus & Tausch",
+    x: ["**Bonuspunkte:** Starke Hände geben zusätzlich zu den Reihenpunkten feste Bonuspunkte - egal, wer die Reihe gewinnt: Straße **+1**, Flush **+2**, Full House **+3**, Vierling **+5**, Straight Flush **+8**, Royal Flush **+12**. Reihen mit Bonus leuchten in der Auswertung golden.",
+      "**Tausch-Runde:** Irgendwann zwischen **Karte 11 und 20** (zufällig, du erfährst es erst in der Runde) darfst du **einmal zwei Karten** in deinem Raster vertauschen. Tippe auf **Karten tauschen**, dann auf zwei Karten - danach legst du die Karte der Runde wie gewohnt ab. In dieser Runde hast du **35 Sekunden**. Du musst nicht tauschen."],
+    s: () => T(160, 90, "Bonus", 30, "#fff", 800)
   }
 ];

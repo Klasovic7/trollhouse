@@ -65,6 +65,10 @@ const EINZEL = { 11: "Bube", 12: "Dame", 13: "König", 14: "Ass" };
 const einzel = (w) => EINZEL[w] || String(w);
 export const FARBNAME = { C: "Kreuz", S: "Pik", H: "Herz", D: "Karo" };
 
+/** Bonuspunkte je Handkategorie (0 Hohe Karte ... 8 Straight Flush); Royal Flush zählt mehr als jeder andere Straight Flush. */
+export const BONUS_KATEGORIE = [0, 0, 0, 0, 1, 2, 3, 5, 8];
+export const BONUS_ROYAL = 12;
+
 export const KATEGORIEN = ["Hohe Karte", "Paar", "Zwei Paare", "Drilling", "Straße", "Flush", "Full House", "Vierling", "Straight Flush"];
 
 /** Bewertet genau 5 Karten. Rückgabe: { kat (0-8), werte: [...], name } - vergleichbar mit vergleicheHaende(). */
@@ -105,7 +109,8 @@ export function bewerteHand(codes) {
   } else {
     kat = 0; vergleich = werte; name = `Hohe Karte (${einzel(werte[0])})`;
   }
-  return { kat, werte: vergleich, name };
+  const bonus = kat === 8 && hoch === 14 ? BONUS_ROYAL : BONUS_KATEGORIE[kat];
+  return { kat, werte: vergleich, name, bonus };
 }
 
 /** >0: a besser, <0: b besser, 0: gleich stark. */
@@ -123,13 +128,15 @@ export function vergleicheHaende(a, b) {
  * zellenProSpieler: { spielerId: [25 Codes] }.
  * Je Reihe bekommt der Beste so viele Reihenpunkte wie es Spieler gibt, der Nächste einen weniger ...
  * der Letzte 1; Gleichstand teilt sich den besseren Platz (wie beim einheitlichen Punktesystem).
- * Rückgabe: { reihen: { spielerId: [{ reihe, hand, rang, punkte }] }, summe: { spielerId: n }, rangfolge: [ids] }
+ * Dazu kommt je Reihe der Bonus der Hand (Straße +1 ... Royal Flush +12), unabhängig vom Rang.
+ * Rückgabe: { reihen: { spielerId: [{ reihe, hand, rang, punkte, bonus }] }, summe: { spielerId: n (inkl. Bonus) }, bonus: { spielerId: n }, rangfolge: [ids] }
  */
 export function wertePokerduellAus(zellenProSpieler) {
   const ids = Object.keys(zellenProSpieler);
   const n = ids.length;
   const reihen = Object.fromEntries(ids.map((id) => [id, []]));
   const summe = Object.fromEntries(ids.map((id) => [id, 0]));
+  const bonus = Object.fromEntries(ids.map((id) => [id, 0]));
   REIHEN.forEach((reihe) => {
     const haende = ids.map((id) => ({ id, hand: bewerteHand(reihe.zellen.map((z) => zellenProSpieler[id][z])) }));
     haende.sort((a, b) => vergleicheHaende(b.hand, a.hand));
@@ -137,18 +144,44 @@ export function wertePokerduellAus(zellenProSpieler) {
     haende.forEach((h, i) => {
       if (i > 0 && vergleicheHaende(haende[i - 1].hand, h.hand) !== 0) rang = i + 1;
       const punkte = n - rang + 1;
-      reihen[h.id].push({ reihe: reihe.id, name: reihe.name, hand: h.hand, rang, punkte });
-      summe[h.id] += punkte;
+      reihen[h.id].push({ reihe: reihe.id, name: reihe.name, hand: h.hand, rang, punkte, bonus: h.hand.bonus });
+      summe[h.id] += punkte + h.hand.bonus;
+      bonus[h.id] += h.hand.bonus;
     });
   });
   const rangfolge = [...ids].sort((a, b) => summe[b] - summe[a]);
-  return { reihen, summe, rangfolge };
+  return { reihen, summe, bonus, rangfolge };
 }
 
-/** Zellen eines Spielers aus der Liste der Züge ({ spielerId, zelle, karte }). */
+// ---- Tausch --------------------------------------------------------------------------
+/** Irgendwann zwischen der 11. und 20. Karte (Index 10-19) darf jeder einmal zwei Karten im eigenen Raster tauschen.
+ *  Wahlrunden (zwei Karten zur Auswahl) werden ausgelassen, damit nie zwei Sonderregeln zusammenfallen. */
+export function waehleTauschRunde(zufall = Math.random) {
+  const kandidaten = [];
+  for (let i = 10; i <= 19; i++) if (!istWahlRunde(i)) kandidaten.push(i);
+  return kandidaten[Math.floor(zufall() * kandidaten.length)];
+}
+
+/** Gültiger Tausch: zwei verschiedene, belegte Felder. */
+export function tauschGueltig(zellen, paar) {
+  return Array.isArray(paar) && paar.length === 2 && paar[0] !== paar[1]
+    && paar.every((i) => Number.isInteger(i) && i >= 0 && i < ZELLEN && zellen[i]);
+}
+
+/** Kopie des Rasters mit vertauschten Karten (bei ungültigem Tausch unverändert). */
+export function tauscheZellen(zellen, paar) {
+  const z = [...zellen];
+  if (tauschGueltig(z, paar)) [z[paar[0]], z[paar[1]]] = [z[paar[1]], z[paar[0]]];
+  return z;
+}
+
+/** Zellen eines Spielers aus der Liste der Züge ({ spielerId, zelle, karte, tausch? }); ein Tausch gilt vor dem Ablegen derselben Runde. */
 export function zellenAusZuegen(zuege, spielerId) {
-  const z = Array(ZELLEN).fill(null);
+  let z = Array(ZELLEN).fill(null);
   zuege.filter((m) => m.spielerId === spielerId).sort((a, b) => a.rundenIndex - b.rundenIndex)
-    .forEach((m) => { if (m.zelle >= 0 && m.zelle < ZELLEN && !z[m.zelle]) z[m.zelle] = m.karte; });
+    .forEach((m) => {
+      if (m.tausch) z = tauscheZellen(z, m.tausch);
+      if (m.zelle >= 0 && m.zelle < ZELLEN && !z[m.zelle]) z[m.zelle] = m.karte;
+    });
   return z;
 }
