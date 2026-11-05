@@ -21,7 +21,9 @@ function vorladen(pfad) {
   }
   return vorgeladen.get(pfad);
 }
-const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=446`;
+// Einzelne Spiele mit neuen Screenshots bekommen eine eigene ?v-Nummer (Bild-Cache bleibt sonst beim alten Bild).
+const FOTO_VERSION = { pokerduell: 478 };
+const fotoPfad = (id, nr) => `bilder/anleitung/${id}-${nr + 1}.webp?v=${FOTO_VERSION[id] || 446}`;
 function alleKachelnVorladen() {
   const alle = Promise.all(SPIELE.filter((s) => ANLEITUNGEN[s.id]).map((s) => vorladen(s.bild)));
   return Promise.race([alle, new Promise((r) => setTimeout(r, 2000))]);   // höchstens 2 s warten
