@@ -756,7 +756,7 @@ ANLEITUNGEN["memory"] = [
 ANLEITUNGEN["revier"] = [
   {
     t: "Worum geht's?",
-    x: ["Das Feld besteht aus **kleinen Quadraten**, die zu **Gebieten** zusammengefasst sind - ein Gebiet pro Spieler. Die Gebiete sind **fast gleich groß, aber nie exakt**.", "Ziel: Sichere dir das **größte** Gebiet. Alle **starten in der Mitte**."],
+    x: ["Das Feld besteht aus **kleinen Quadraten**, die zu **Gebieten** zusammengefasst sind - ein Gebiet pro Spieler. Die Gebiete sind **fast gleich groß, aber nie exakt**.", "Ziel: Sichere dir das **größte** Gebiet. Alle **starten oberhalb des Feldes** und müssen erst aufs Feld laufen."],
     s: () => [0, 1, 2, 3].map((i) => R(90 + (i % 2) * 70, 30 + Math.floor(i / 2) * 55, 66, 51, ["#22c55e", "#06b6d4", "#ef4444", "#f59e0b"][i], 6)).join("") + avatar(160, 85, 1, "Du", 12)
   },
   {

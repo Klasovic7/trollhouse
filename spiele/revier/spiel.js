@@ -3,7 +3,7 @@
 // ----------------------------------------------------------------------------
 //  Das Spielfeld besteht aus kleinen Quadraten, die zu Gebieten zusammengefasst
 //  sind - eines pro Spieler. Alle Gebiete sind fast gleich groß, aber nie exakt
-//  (jede Größe kommt nur einmal vor). Alle starten in der Feldmitte und laufen
+//  (jede Größe kommt nur einmal vor). Alle starten in einem Startstreifen oberhalb des Feldes und laufen
 //  mit dem Joystick in ein Gebiet. Mit "Gebiet sichern" gehört es einem selbst
 //  und ist für die anderen gesperrt (wer zuerst kommt - per Transaktion).
 //  Haben alle gewählt (oder ist die Wahlzeit um), werden die Quadrate sichtbar.
@@ -30,6 +30,8 @@ const SCHRITT_MS = 330;       // ein Quadrat pro Farbe alle ... ms
 const ENDE_MS = 2600;         // Pause nach dem letzten Verschwinden
 const TEMPO = 3.4;            // Zellen pro Sekunde
 const FIGUR_R = 0.34;         // Figurenradius in Zellen
+const VORLAUF = 1.7;          // Höhe des Startstreifens oberhalb des Feldes (in Zellen)
+const START_Y = -0.75;         // Startposition y (Feld beginnt bei y = 0; der Streifen darunter ist "draußen")
 const POS_INTERVALL_MS = 200;
 const LEER = "#475569";       // Farbe eines noch freien Gebiets
 
@@ -57,7 +59,7 @@ function mische(liste) {
 
 const VORLAGE = `
   <div id="rv-setup" class="bildschirm-karte" hidden>
-    <p class="hinweis-text">Revierkampf: Alle starten in der Mitte und sichern sich ein Gebiet. Danach werden die
+    <p class="hinweis-text">Revierkampf: Alle starten oberhalb des Spielfelds, laufen aufs Feld und sichern sich ein Gebiet. Danach werden die
       Quadrate sichtbar und verschwinden nach und nach - wer am Ende noch die meisten hat, gewinnt.
       Die Gebiete sind fast gleich groß - schau genau hin!</p>
     <div id="rv-einstellungen" hidden>
@@ -613,7 +615,7 @@ function baueSpielfeld(layout) {
   const farbeVon = (id) => spielerListe.find((s) => s.id === id)?.farbe || "#7c3aed";
   const iconVon = (id) => spielerListe.find((s) => s.id === id)?.icon || "";
 
-  let x = w / 2, y = h / 2;          // Startposition: Feldmitte (alle gleich)
+  let x = w / 2, y = START_Y;        // Startposition: oberhalb des Feldes (alle gleich) - erst aufs Feld laufen
   const halten = { l: false, r: false, u: false, d: false };
   const joy = { x: 0, y: 0 };
   let ausstehend = false;
@@ -627,8 +629,8 @@ function baueSpielfeld(layout) {
 
   function groesseSetzen() {
     ox = Math.round((W - w * c) / 2);
-    oy = Math.round(0.1 * c) + 2;
-    H = Math.ceil(h * c + 0.2 * c) + 4;
+    oy = Math.round(0.1 * c + VORLAUF * c) + 2;
+    H = Math.ceil((h + VORLAUF) * c + 0.2 * c) + 4;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
@@ -646,7 +648,7 @@ function baueSpielfeld(layout) {
       const unten = hinweis.getBoundingClientRect().bottom + window.scrollY;
       const ueber = unten + 12 - (window.innerHeight || 700);
       if (ueber <= 0) break;
-      c = Math.max(12, c - ueber / (h + 0.2));
+      c = Math.max(12, c - ueber / (h + VORLAUF + 0.2));
       groesseSetzen();
     }
   }
@@ -658,7 +660,9 @@ function baueSpielfeld(layout) {
     Object.entries(w2).forEach(([id, g]) => m.set(g, id));
     return m;
   }
+  const aufFeld = () => y >= 0;       // false: noch im Startstreifen oberhalb des Feldes
   function gebietUnterFigur() {
+    if (!aufFeld()) return null;
     const sx = Math.max(0, Math.min(w - 1, Math.floor(x))), sy = Math.max(0, Math.min(h - 1, Math.floor(y)));
     return reg[sy * w + sx];
   }
@@ -671,6 +675,7 @@ function baueSpielfeld(layout) {
     const g = gebietUnterFigur();
     if (enthuelltSeit) return { modus: null, g, grund: "enth" };
     if (mein !== null || ausstehend) return { modus: null, g, grund: "gewaehlt" };
+    if (g === null) return { modus: null, g, grund: "draussen" };
     if (bm.has(g)) return { modus: null, g, grund: "belegt" };
     return { modus: "sichern", g, grund: "" };
   }
@@ -928,7 +933,7 @@ function baueSpielfeld(layout) {
         const p = posDocs[s.id];
         if (p && p.r === pos) ziel = { x: p.x, y: p.y };
       }
-      if (!ziel) ziel = { x: w / 2, y: h / 2 };
+      if (!ziel) ziel = { x: w / 2, y: START_Y };
       if (!a) { a = { x: ziel.x, y: ziel.y }; anzeige.set(s.id, a); }
       a.x += (ziel.x - a.x) * 0.3;
       a.y += (ziel.y - a.y) * 0.3;
@@ -951,6 +956,19 @@ function baueSpielfeld(layout) {
   function zeichneBodenAuf(k2, bm) {
     k2.fillStyle = "#0f172a";
     k2.beginPath(); k2.roundRect ? k2.roundRect(0, 0, W, H, 12) : k2.rect(0, 0, W, H); k2.fill();
+    // Startstreifen oberhalb des Feldes: hier stehen alle am Anfang, das Feld beginnt darunter
+    k2.fillStyle = "#16203a";
+    k2.fillRect(ox, Math.round(0.1 * c) + 2, w * c, Math.round(VORLAUF * c) - 2);
+    k2.strokeStyle = "rgba(253,224,71,0.45)";
+    k2.lineWidth = Math.max(1.5, c * 0.06);
+    k2.setLineDash([c * 0.18, c * 0.14]);
+    k2.beginPath(); k2.moveTo(ox, oy); k2.lineTo(ox + w * c, oy); k2.stroke();
+    k2.setLineDash([]);
+    k2.fillStyle = "rgba(255,255,255,0.45)";
+    k2.font = `bold ${Math.max(9, Math.round(c * 0.28))}px system-ui, sans-serif`;
+    k2.textBaseline = "middle";
+    k2.textAlign = "left";  k2.fillText("START", ox + 0.3 * c, oy - 0.45 * c);       // links und rechts, damit die Figur in der Mitte nichts verdeckt
+    k2.textAlign = "right"; k2.fillText("aufs Feld ▼", ox + w * c - 0.3 * c, oy - 0.45 * c);
     for (let k = 0; k < w * h; k++) {
       const bes = bm.get(reg[k]);
       k2.fillStyle = bes ? farbeVon(bes) : LEER;
@@ -1022,6 +1040,7 @@ function baueSpielfeld(layout) {
     else if (st.phase === 3) text = "Das war's - gleich kommt die Wertung.";
     else if (meldung) text = meldung;
     else if (meinGebiet(bm) !== null) text = "Du hast dein Gebiet. Warte auf die anderen …";
+    else if (l.grund === "draussen") text = "Lauf von oben aufs Feld und sichere dir ein Gebiet. Welches ist wohl am größten?";
     else if (l.grund === "belegt") text = "Dieses Gebiet ist schon vergeben - such dir ein anderes.";
     else text = "Lauf in ein Gebiet und sichere es dir. Welches ist wohl am größten?";
     hinweis.textContent = text;
@@ -1042,7 +1061,7 @@ function baueSpielfeld(layout) {
         x += (dx / len) * tempo * dt;
         y += (dy / len) * tempo * dt;
         x = Math.max(0.15, Math.min(w - 0.15, x));
-        y = Math.max(0.15, Math.min(h - 0.15, y));
+        y = Math.max(START_Y, Math.min(h - 0.15, y));
       }
       sendePosition(false);
     } else {
