@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v472";
+export const APP_VERSION = "v473";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -434,7 +434,8 @@ function renderIconKarussell() {
   }
 
   let index = optionen.findIndex((avatar) => avatar.id === profilEntwurf.icon);
-  if (index < 0) index = 0;
+  // Kein Bild gewählt: bei den Freunden zufällig starten, bei den Fußballern wie bisher vorn.
+  if (index < 0) index = profilKategorie === "freunde" ? Math.floor(Math.random() * optionen.length) : 0;
   const ausgewaehlt = optionen[index];
   profilEntwurf.icon = ausgewaehlt.id;
   profilVorname.textContent = ausgewaehlt.vorname;
@@ -515,9 +516,12 @@ function zeigeProfilAuswahl() {
     profilEntwurf.farbe = zustand.farbe;
     profilEntwurf.icon = zustand.icon;
     avatarHinweis.textContent = "";
-    // v130: Kategorie passend zum bereits gewählten Bild vorauswählen (falls
-    // vorhanden), sonst Standard "Fußballer".
-    const istFreund = FREUNDE.some((f) => f.id === zustand.icon);
+    // Beim Betreten eines Raums (Profil noch nicht bestätigt) startet die Auswahl immer bei den
+    // "Freunden", und zwar bei einem zufälligen freien Bild (das zuletzt gewählte wird nicht
+    // mehr vorgewählt). Wer sein Profil später aus der Lobby ändert, sieht weiter sein aktuelles Bild.
+    const beimBetreten = !zustand.profilBestaetigt;
+    if (beimBetreten) profilEntwurf.icon = null;
+    const istFreund = beimBetreten || FREUNDE.some((f) => f.id === zustand.icon);
     profilKategorie = istFreund ? "freunde" : "fussballer";
     btnKategorieFussballer.classList.toggle("aktiv", !istFreund);
     btnKategorieFussballer.setAttribute("aria-selected", istFreund ? "false" : "true");
