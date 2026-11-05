@@ -538,20 +538,6 @@
     #chat-fehler { min-height: 0; margin: 4px 0 0; flex-shrink: 0; }
     @media (max-width: 370px) { .chat-dialog-inhalt { padding: 22px 14px 14px; } }
 
-    .auswahl-reihe { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
-    .farb-swatch {
-      width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.15);
-      padding: 0; cursor: pointer;
-    }
-    .farb-swatch.ausgewaehlt { border-color: #333; border-width: 3px; }
-    .farb-swatch.vergeben, .icon-swatch.vergeben { opacity: 0.3; cursor: not-allowed; }
-    .icon-swatch {
-      width: 52px; height: 52px; border-radius: 50%; border: 3px solid #ddd;
-      background: #f5f5f5; font-size: 1.3rem; cursor: pointer; overflow: hidden;
-      padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1;
-    }
-    .icon-swatch.ausgewaehlt { border-color: var(--akzent); }
-    .avatar-bild { width: 100%; height: 100%; object-fit: cover; display: block; }
     .avatar-bild-text { display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
 
     .spieler-karte {
@@ -565,21 +551,6 @@
       content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none;
       background: linear-gradient(90deg, rgba(255,255,255,0.05), transparent 54%, rgba(0,0,0,0.08));
     }
-    .spieler-zacken {
-      position: absolute; z-index: 0; inset: 0 0 0 50%; overflow: hidden;
-      opacity: 0.62; pointer-events: none;
-    }
-    .spieler-zacken span {
-      position: absolute; right: 0; display: block;
-      clip-path: polygon(0 50%, 100% 0, 100% 100%);
-    }
-    .spieler-zacken span:nth-child(-n+3) { background: var(--spieler-dunkel); }
-    .spieler-zacken span:nth-child(n+4) { background: var(--spieler-hell); }
-    .spieler-zacken span:nth-child(1) { top: 12%; width: 78%; height: 5%; }
-    .spieler-zacken span:nth-child(2) { top: 48%; width: 93%; height: 6%; }
-    .spieler-zacken span:nth-child(3) { top: 84%; width: 72%; height: 5%; }
-    .spieler-zacken span:nth-child(4) { top: 20%; width: 88%; height: 20%; }
-    .spieler-zacken span:nth-child(5) { top: 58%; width: 76%; height: 19%; }
     .spieler-punkte {
       position: relative; z-index: 1;
       font-weight: 800; font-size: 1.8rem; line-height: 1; flex-shrink: 0;
@@ -928,7 +899,6 @@
 
     /* ---------- allgemeine Textbausteine ---------- */
     .hinweis-text { color: var(--text-hell); font-size: 0.85rem; margin: 0 0 6px; }
-    .feld-titel { font-weight: 600; font-size: 0.9rem; margin: 14px 0 2px; }
     .fortschritt { color: #888; font-size: 0.9rem; }
 
     /* ---------- Spielauswahl in der Lobby ---------- */
@@ -1142,14 +1112,6 @@
     }
     #start-screen .btn-primaer:hover { background: linear-gradient(135deg, #ff806a, #ee4e3c); }
     #start-screen .btn-sekundaer { min-height: 55px; background: rgba(255,255,255,.5); }
-    .start-deko {
-      position: relative; min-height: 178px; margin-top: auto; display: flex;
-      align-items: flex-end; justify-content: center; padding: 10px 2px 2px;
-    }
-    .start-deko img {
-      display: block; width: min(100%, 340px); height: auto; max-height: 180px;
-      object-fit: contain; filter: drop-shadow(0 12px 12px rgba(75,40,22,.12));
-    }
 
     /* Die Lobby zeigt Personen als horizontale, scrollbare Gruppe. */
     #top-bar:not(.im-spiel) { display: none !important; }
@@ -1494,8 +1456,6 @@
       #start-screen { min-height: 620px; padding-top: 30px; }
       #start-screen .start-icon { width: 94px; height: 94px; margin-bottom: 8px; }
       #start-screen .app-icon { width: 74px; height: 74px; }
-      .start-deko { min-height: 116px; padding-top: 8px; }
-      .start-deko img { max-height: 118px; }
     }
 
     /* ======================================================================
@@ -1583,26 +1543,6 @@
     #start-screen .btn-primaer { background: linear-gradient(135deg, #ff673f, #ff4e2e); }
     #start-screen .btn-sekundaer { color: #ff714e; background: transparent; border-color: var(--club-orange); }
     #app-version { color: rgba(255,250,243,.64); }
-    .start-deko {
-      min-height: 118px; align-items: center; justify-content: flex-start; gap: 12px;
-      padding: 24px 0 10px; margin-top: auto;
-    }
-    .start-symbol {
-      width: 52px; height: 52px; display: grid; place-items: center;
-      color: #f4ece8; border: 1px solid rgba(255,250,243,.42); border-radius: 12px;
-      background: rgba(255,255,255,.025); font-size: 1.65rem; font-weight: 700;
-    }
-    .start-symbol svg {
-      width: 29px; height: 29px; fill: none; stroke: currentColor;
-      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-    }
-    .start-symbol-frage { font-family: Georgia, serif; font-size: 2rem; }
-
-    @media (max-height: 720px) {
-      .start-deko { min-height: 76px; padding-top: 12px; gap: 9px; }
-      .start-symbol { width: 43px; height: 43px; border-radius: 10px; }
-      .start-symbol svg { width: 24px; height: 24px; }
-    }
 
     /* Durchgaengiges Clubhouse-Motiv */
     button:focus-visible, input:focus-visible {
@@ -2120,14 +2060,6 @@
       background: rgba(255, 91, 54, .1); border: 1px solid rgba(255, 91, 54, .22);
     }
 
-    .wi-buzzer {
-      width: 100%; padding: 20px; font-size: 1.35rem; font-weight: 800;
-      border-radius: 18px; border: none; color: #fff;
-      background: linear-gradient(160deg, #ff8a68, #ff5b36);
-      box-shadow: 0 10px 24px rgba(255, 91, 54, .35);
-    }
-    .wi-buzzer:disabled { opacity: .45; box-shadow: none; }
-    .wi-buzzer:not(:disabled):active { transform: scale(.98); }
 
     .wi-antwort-zeile { display: flex; gap: 8px; }
     .wi-antwort-zeile input { flex: 1; min-width: 0; }
@@ -2762,10 +2694,6 @@
 .fa-bonus-plus {
   margin-left: .8cqw; font-size: 3.6cqw; font-weight: 800; color: #0b7a2b;
 }
-.fa-boni-legende ul { margin: 4px 0; padding-left: 18px; }
-.fa-boni-legende li { margin: 2px 0; }
-.fa-bonus-zeile { flex-wrap: wrap; margin: 6px 0; }
-.fa-bonus-auswahl { padding: 4px 6px; border-radius: 6px; max-width: 48%; }
 .fa-rabatt-zeile {
   margin: 6px 0 2px; padding: 4px 8px; border-radius: 6px; font-size: .9em;
   background: rgba(22, 163, 74, .16);
@@ -2814,7 +2742,6 @@
   border-radius: 14px;
   padding: 8px;
 }
-.fa-auktion-gewinner { margin-top: 4px; }
 .fa-karte-waehlbar { cursor: pointer; }
 .fa-karte-spielen-btn { align-self: flex-start; }
 
@@ -2962,11 +2889,6 @@ body.fa-anl-offen { overflow: hidden; }
 .fa-anl-kachel-text { font-size: .9rem; line-height: 1.25; }
 
 /* Szene 7 */
-.fa-anl-de-beispiel { display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,.08); padding: 10px 14px; border-radius: 12px; }
-.fa-anl-gesamt { text-align: center; font-size: 1.5rem; font-weight: 800; }
-.fa-anl-gesamt span { color: #cbd5e1; }
-.fa-anl-gesamt .fa-anl-neu { color: #fff; }
-.fa-anl-gesamt b { color: #4ade80; font-size: 1.2rem; }
 
 /* Szene 8 */
 .fa-anl-tabelle { width: 100%; border-collapse: collapse; text-align: center; }
@@ -2979,9 +2901,6 @@ body.fa-anl-offen { overflow: hidden; }
 @keyframes fa-anl-flug { 0% { transform: translateX(-14px); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateX(14px); opacity: 0; } }
 
 /* Szene 9 */
-.fa-anl-kategorien { display: flex; gap: 10px; align-items: center; justify-content: center; }
-.fa-anl-kat { background: #7c3aed; padding: 8px 16px; border-radius: 10px; font-weight: 800; }
-.fa-anl-plus { font-size: 1.5rem; font-weight: 900; }
 .fa-anl-spielkarten { display: flex; gap: 14px; justify-content: center; }
 
 /* Szene 10 */
@@ -3098,8 +3017,6 @@ body.ank-offen { overflow: hidden; }
 .gv-timer-knapp i { background: #ef4444; }
 .gv-timer-knapp { animation: gv-puls .5s ease-in-out infinite alternate; }
 @keyframes gv-puls { from { opacity: 1; } to { opacity: .55; } }
-.gv-schaetzung { text-align: center; font-size: 1.05rem; margin: 6px 0 2px; }
-.gv-schaetzung strong { font-size: 1.6rem; color: #dc2626; font-variant-numeric: tabular-nums; }
 .gv-regler-zeile { display: flex; align-items: center; gap: 8px; }
 .gv-regler { flex: 1; min-width: 0; padding: 0; margin: 8px 0; accent-color: #ef4444; height: 36px; }
 .gv-fein { width: 44px; height: 44px; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 50%; flex: none; }
@@ -3237,7 +3154,6 @@ body.dk-aktiv #spiel-kopf-titel { display: none; }
 .dk-letzter-reihe { display: flex; gap: 8px; justify-content: center; }
 .dk-mini { width: 60px; text-align: center; font-size: .65rem; }
 .dk-mini-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dk-erg-augen { text-align: center; }
 .dk-erg-teams { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
 .dk-erg-team { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.05); }
 .dk-erg-team.gewinner { background: rgba(255,255,255,.1); box-shadow: 0 0 0 2px rgba(250,204,21,.55); }
@@ -3250,13 +3166,9 @@ body.dk-aktiv #spiel-kopf-titel { display: none; }
 .dk-erg-sp .dk-av { width: 40px; height: 40px; }
 .dk-erg-kopf { display: flex; justify-content: space-between; gap: 4px; flex-wrap: wrap; font-size: .7rem; opacity: .85; }
 .dk-erg-box { list-style: none; margin: 0; padding: 6px 8px; min-height: 66px; border-radius: 8px; background: rgba(0,0,0,.3); font-size: .78rem; display: flex; flex-direction: column; gap: 2px; }
-.dk-erg-box-klein { min-height: 46px; }
 .dk-erg-box li { display: flex; justify-content: space-between; gap: 6px; text-align: right; }
 .dk-erg-gesamt { text-align: right; font-weight: 800; color: #facc15; font-size: .95rem; }
 .dk-erg-notiz p { margin: 2px 0; text-align: center; }
-.dk-erg-details { list-style: none; padding: 0; margin: 6px 0 10px; display: grid; gap: 4px; }
-.dk-erg-details li { display: flex; justify-content: space-between; padding: 3px 10px; border-radius: 10px; background: rgba(255,255,255,.07); font-size: .9rem; }
-.dk-erg-zeile { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 14px; border-left: 5px solid var(--spieler-farbe); background: rgba(255,255,255,.07); margin-bottom: 6px; }
 #dk-erg-liste { list-style: none; padding: 0; }
 .dk-aktionen { flex-wrap: nowrap; }
 .dk-aktionen button { flex: 1 1 0; width: auto; min-width: 0; padding: 10px 6px; font-size: .88rem; box-shadow: none; }
@@ -3359,10 +3271,6 @@ body.anl-offen { overflow: hidden; }
 .dk-st1 { left: 8px; bottom: auto; top: calc(50% + 104px); }
 .dk-st3 { right: 8px; bottom: auto; top: calc(50% + 104px); }
 .dk-stapel-ich { display: flex; justify-content: center; min-height: 0; }
-.dk-stapel-unten { position: relative; width: 30px; height: 45px; margin: 8px 0 4px; }
-.dk-stapel-unten .dk-rk { position: absolute; inset: 0; }
-.dk-stapel-unten .dk-rk:nth-child(2) { transform: translate(3px, -3px); }
-.dk-stapel-unten .dk-rk:nth-child(3) { transform: translate(6px, -6px); }
 .dk-st1 { top: calc(50% - 150px); }
 .dk-st3 { top: calc(50% - 150px); }
 
@@ -3373,7 +3281,6 @@ body.anl-offen { overflow: hidden; }
 .dk-ansage-pop small { font-size: 1rem; opacity: .85; }
 .dk-ansage-pop b { font-size: 2.6rem; line-height: 1.1; color: #facc15; text-align: center; }
 @keyframes dk-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } 20% { transform: translate(-50%, -50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
-.dk-erg-box-klein { display: none; }
 
 /* v297: groessere Karten, Stichstapel an festen Plaetzen */
 .dk-hf2 { top: -16px; }
