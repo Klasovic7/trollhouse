@@ -1,3 +1,11 @@
+/* Schriften lokal (SIL Open Font License, siehe schriften/LICENSE-*.txt) - kein Google-Abruf mehr */
+@font-face { font-family: "Bungee"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("schriften/bungee-400.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 800; font-display: swap;
+  src: url("schriften/barlow-condensed-800.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: italic; font-weight: 800; font-display: swap;
+  src: url("schriften/barlow-condensed-800-italic.woff2") format("woff2"); }
+
 :root {
       --akzent: #7c3aed;
       --akzent-dunkel: #6d28d9;
