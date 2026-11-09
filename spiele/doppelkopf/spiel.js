@@ -20,7 +20,7 @@
 import {
   doc, updateDoc, setDoc, deleteDoc, collection, getDocs, onSnapshot, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml } from "../../kern/ui.js";
+import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml, avatarHtml, gleichRang } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import * as R from "./regeln.js";
 import { kartenSvg, rueckSvg } from "./karten.js?v=411";
@@ -1305,7 +1305,7 @@ function zeigeEndstand() {
   sortiert.forEach((id, i) => {
     const s = spielerVon(id);
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s?.name ?? "?", s?.farbe, s?.icon, `${punkteSumme[id] ?? 0} (${rang?.[id] ?? 0} Rangp.)`, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s?.name ?? "?", s?.farbe, s?.icon, `${punkteSumme[id] ?? 0} (${rang?.[id] ?? 0} Rangp.)`, { rang: gleichRang(sortiert, i, (x) => punkteSumme[x] ?? 0) });
     liste.appendChild(li);
   });
   $("dk-endstand-warten").hidden = api.istLeiter;

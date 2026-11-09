@@ -16,7 +16,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 import {
   ZELLEN, REIHEN, baueRunden, kartenDerRunde, istTauschEintrag, istWahlEintrag, kartenBild, TAUSCH_BILD,
@@ -562,7 +562,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   $("pd-endstand-warten").hidden = api.istLeiter;

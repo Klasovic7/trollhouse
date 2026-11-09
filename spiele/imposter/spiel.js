@@ -160,6 +160,8 @@ export async function starten(uebergebeneApi) {
     woerter = await antwort.json();
   }
 
+  // Wurde das Spiel während des Ladens schon wieder beendet, nichts mehr verdrahten
+  if (!el.wurzel || el.wurzel !== api.wurzel) return;
   verdrahteBedienelemente();
 
   if (api.istLeiter && !api.raum?.impStatus) {
@@ -200,6 +202,7 @@ function schreibeAnzahlEntwurfLive() {
   if (!api.istLeiter) return;
   clearTimeout(impEntwurfTimer);
   impEntwurfTimer = setTimeout(() => {
+    if (!el.wurzel) return;   // Spiel wurde inzwischen verlassen
     const patch = {};
     const wert = parseInt($("imp-anzahl").value, 10);
     if (Number.isFinite(wert) && wert > 0) patch.impAnzahlEntwurf = wert;
@@ -210,6 +213,7 @@ function schreibeAnzahlEntwurfLive() {
 }
 
 export function beenden() {
+  clearTimeout(impEntwurfTimer);
   bereitSystem = null;
   el = {};
   spielerListe = [];
@@ -321,7 +325,7 @@ async function spielStarten() {
   } catch (e) {
     zeigeDebug("Fehler beim Start: " + e.message);
   }
-  $("imp-starten").disabled = false;
+  if (el.wurzel) $("imp-starten").disabled = false;
 }
 
 function mischeSpieler(liste) {
@@ -470,7 +474,7 @@ async function aufloesen() {
   } catch (e) {
     zeigeDebug("Fehler beim Auflösen: " + e.message);
   }
-  $("imp-aufloesen").disabled = false;
+  if (el.wurzel) $("imp-aufloesen").disabled = false;
 }
 
 function zeigeAufloesung() {

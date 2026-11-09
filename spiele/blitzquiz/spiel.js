@@ -42,7 +42,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment
 } from "../../kern/firebase.js";
-import { escapeHtml, textMitZusatz, spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { escapeHtml, textMitZusatz, spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
@@ -204,6 +204,7 @@ let timerId = null;
 // würde ein zwischenzeitliches zeigeFrage() den gerade gesetzten
 // "gesperrt/hervorgehoben"-Zustand wieder zurücksetzen.
 let eigeneAntwortenLokal = {};
+let hinweisBeiAbgabe = {};   // Frage-Index -> wie viele Hinweis-Buchstaben beim Absenden schon offen waren
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 
@@ -398,9 +399,11 @@ export function raumDaten(daten) {
   if (status === "frage_aktiv" && index !== neuerIndex) {
     index = neuerIndex;
     $("bz-wort-eingabe").value = "";
+    tipp?.reset();
     $("bz-wort-fehler").textContent = "";
     ausgewertetAusgeloest = false;
     eigeneAntwortenLokal = {};
+    hinweisBeiAbgabe = {};
   } else if (status === "ausgewertet") {
     index = neuerIndex;
   }
@@ -708,7 +711,10 @@ function rendereMcGrid(frage, eigene) {
 
 function rendereBuchstabenReihe(frage, pos) {
   const reihenfolgeBuchstaben = buchstabenReihenfolgen[pos] ?? [];
-  const aufgedeckt = new Set(reihenfolgeBuchstaben.slice(0, aufdeckAnzahl));
+  // Hinweis-Buchstaben kommen nur bei Spielern, die noch nicht abgegeben haben;
+  // wer schon abgegeben hat, behält den Stand vom Absenden.
+  const anzahlFuerMich = eigeneAntwortAnzeige(pos) ? (hinweisBeiAbgabe[pos] ?? 0) : aufdeckAnzahl;
+  const aufgedeckt = new Set(reihenfolgeBuchstaben.slice(0, anzahlFuerMich));
   const reihe = $("bz-buchstaben-reihe");
   reihe.innerHTML = "";
   for (let i = 0; i < frage.loesung.length; i++) {
@@ -864,6 +870,7 @@ async function wortAbsenden() {
   // Wie bei antworteMC: sofort lokal merken, damit ein zwischenzeitlicher
   // Raum-Listener-Trigger den gerade gesetzten Sperr-Zustand nicht zurücksetzt.
   eigeneAntwortenLokal[index] = eintrag;
+  hinweisBeiAbgabe[index] = aufdeckAnzahl;
   try {
     await setDoc(doc(api.db, "raeume", api.code, "bzantworten", `${api.spielerId}_${index}`), {
       ...eintrag, zeitpunkt: serverTimestamp()
@@ -1029,7 +1036,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   const teamsEl = $("bz-endstand-teams");

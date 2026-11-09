@@ -30,7 +30,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, runTransaction
 } from "../../kern/firebase.js";
-import { spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, avatarHtml, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, teamEndstandHtml, teamGruppeHtml, renderWarteAvatare, avatarHtml, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
@@ -1249,7 +1249,7 @@ function zeigeEndstand() {
   sortiert.forEach((s, i) => {
     const zusatz = spielModus === "turm" && s.id === dtSiegerId ? " 🏆 Stapel zuerst leer!" : "";
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     if (zusatz) li.innerHTML += `<p class="hinweis-text db-turm-sieger-hinweis">${s.name}${zusatz}</p>`;
     liste.appendChild(li);
   });

@@ -13,7 +13,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 import { FORMEN, formPerId, waehleFormen, bewerteZeichnung, packe, entpacke, strichLaenge, zielPunkte, abstandZuZiel, liveProzent, genauWert } from "./logik.js";
 
@@ -584,7 +584,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   $("nz-endstand-warten").hidden = api.istLeiter;

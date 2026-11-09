@@ -155,6 +155,13 @@ function mischeSpielerFarbe(hex, zielwert, anteil) {
 // optionen.punkteRechts - zweite große Zahl ganz rechts (z. B. Gesamtpunktstand)
 // optionen.punkteLinks  - false blendet die linke Zahl aus (z. B. in der Lobby)
 // optionen.rang         - Platzierung für Endstände, wenn es keine Rundenpunkte gibt
+// Platzierung bei Punktgleichheit: gleiche Punkte = gleicher Platz (1., 1., 3., ...).
+// liste = nach Punkten absteigend sortiert, i = Index, wert = Punkte eines Eintrags.
+export function gleichRang(liste, i, wert = (s) => s.punkte ?? 0) {
+  const w = wert(liste[i]);
+  return liste.filter((s) => wert(s) > w).length + 1;
+}
+
 export function spielerKarte(name, farbe, icon, punkte, optionen = {}) {
   const sichereFarbe = farbe || "#7f8c8d";
   const nurIdentitaet = optionen.punkteLinks === false;

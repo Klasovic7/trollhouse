@@ -9,7 +9,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 
@@ -691,7 +691,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, index) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: index + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, index) });
     liste.appendChild(li);
   });
   $("dg-endstand-warten").hidden = api.istLeiter;

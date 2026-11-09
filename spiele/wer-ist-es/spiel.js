@@ -35,7 +35,7 @@
 //  beenden zurück (siehe Kommentar in spiele/schaetzfragen/spiel.js).
 // ============================================================================
 import { updateDoc, increment, runTransaction, arrayUnion } from "../../kern/firebase.js";
-import { spielerKarte, teamEndstandHtml, teamGruppeHtml, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, teamEndstandHtml, teamGruppeHtml, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
@@ -107,8 +107,8 @@ const VORLAGE = `
     <p class="fortschritt" id="wi-frage-fortschritt"></p>
     <div class="wi-balken" id="wi-balken" aria-hidden="true"></div>
 
+    <ol class="wi-hinweis-liste" id="wi-hinweis-liste"></ol>
     <div class="wi-hinweis-aktuell" id="wi-hinweis-aktuell"></div>
-    <ol class="wi-hinweis-liste" id="wi-hinweis-liste" reversed></ol>
     <p class="wi-countdown" id="wi-countdown"></p>
 
     <ul class="wi-falsch-liste" id="wi-falsch-liste" hidden></ul>
@@ -700,8 +700,8 @@ function zeigeFrage() {
     if (i < sichtbar) punkt.className = i === sichtbar - 1 ? "aktuell" : "gezeigt";
     balken.appendChild(punkt);
   }
-  // Neuester Hinweis groß oben mit Nummer, die früheren darunter (neu -> alt),
-  // alle gut lesbar und nummeriert.
+  // Frühere Hinweise oben (alt -> neu), der neueste groß ganz unten direkt über der
+  // Eingabe - so muss man nie hochscrollen. Alle nummeriert.
   const aktuell = $("wi-hinweis-aktuell");
   aktuell.innerHTML = "";
   const nr = document.createElement("span");
@@ -714,7 +714,7 @@ function zeigeFrage() {
 
   const liste = $("wi-hinweis-liste");
   liste.innerHTML = "";
-  for (let i = sichtbar - 2; i >= 0; i--) {
+  for (let i = 0; i <= sichtbar - 2; i++) {
     const li = document.createElement("li");
     const n = document.createElement("span");
     n.className = "wi-nr";
@@ -970,7 +970,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   const teamsEl = $("wi-endstand-teams");

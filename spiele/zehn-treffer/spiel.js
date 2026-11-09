@@ -6,7 +6,7 @@
 //  sie live. Alle Felder dieses Spiels im Raum-Dokument beginnen mit "zt".
 // ============================================================================
 import { updateDoc, runTransaction, serverTimestamp } from "../../kern/firebase.js";
-import { escapeHtml, avatarHtml, spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { escapeHtml, avatarHtml, spielerKarte, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 import {
@@ -765,7 +765,7 @@ function zwischenstandHtml(mitRundenpunkten = true) {
   return `<ul class="zt-punkteliste">` + sortiert.map((spieler, index) => {
     const gesamt = punkte[spieler.id] ?? 0;
     if (!mitRundenpunkten) {
-      return `<li>${spielerKarte(spieler.name, spieler.farbe, spieler.icon, gesamt, { rang: index + 1 })}</li>`;
+      return `<li>${spielerKarte(spieler.name, spieler.farbe, spieler.icon, gesamt, { rang: gleichRang(sortiert, index, (x) => punkte[x.id] ?? 0) })}</li>`;
     }
     const hinzugekommen = spieler.id === aktiveId ? rundenpunkte : 0;
     return `<li>${spielerKarte(

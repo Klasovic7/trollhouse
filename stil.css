@@ -461,6 +461,7 @@
     .wertung-tabelle .wertung-spieler-zelle {
       display: flex; align-items: center; gap: 8px; text-align: left; font-weight: 700;
     }
+    .wertung-spielbild { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; display: block; margin: 0 auto; }
     .wertung-avatar { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; }
     .wertung-avatar-text { display: flex; align-items: center; justify-content: center; background: #eee; font-size: .68rem; }
     .wertung-tabelle .wertung-gesamt-zelle { font-weight: 900; color: var(--akzent); }

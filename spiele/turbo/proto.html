@@ -188,7 +188,7 @@
   #menue .st.an .bild { border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34,211,238,.35), 0 0 14px rgba(34,211,238,.6); }
   #menue .st.an b { color: #7be9ff; }
   #strecken.fix .st:not(.an) { opacity: .55; cursor: default; }
-  @media (max-height: 420px) { #menue .art svg { width: 38px; height: 41px; } #menue .art { width: 58px; } #arten { margin-bottom: 5px; gap: 6px; } #strecken { gap: 5px 8px; } #menue .st b { font-size: 11.5px; } #menue .st small { font-size: 10px; } }
+  @media (max-height: 520px) { #menue .art svg { width: 38px; height: 41px; } #menue .art { width: 58px; } #arten { margin-bottom: 5px; gap: 6px; } #strecken { gap: 5px 8px; } #menue .st b { font-size: 11.5px; } #menue .st small { font-size: 10px; } }
   #b-beenden { font: inherit; font-weight: 900; font-size: 13px; letter-spacing: .04em; color: #fff; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer; background: linear-gradient(180deg, #ff5a76, #e0264f); box-shadow: 0 3px 0 #8f1330, 0 6px 14px rgba(0,0,0,.35); }
   #b-beenden:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f1330; }
   #e-stand { text-align: left; margin-top: 12px; } #e-stand h4 { margin: 0 0 5px; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #7be9ff; font-weight: 800; }
@@ -222,9 +222,11 @@
   #b-menue-exit:active { transform: scale(.96); }
   #menue .gross { margin: 0 0 6px; padding: 11px 34px; font-size: 18px; box-shadow: 0 5px 0 #b3650a, 0 10px 22px rgba(0,0,0,.4); }
   #menue .gross:active { transform: translateY(3px); box-shadow: 0 2px 0 #b3650a; }
+  /* Karte per auto-Rand zentrieren: ist sie höher als der Bildschirm (iPhone quer), beginnt sie oben statt oben abgeschnitten zu werden */
+  #menue.overlay { display: flex; } #menue .karte { margin: auto; }
   #menue.overlay { align-items: center; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
-  @media (max-height: 420px) { #menue .logo { font-size: 26px; } #menue .logo small { margin-top: 3px; } #menue .sw { height: 25px; } #menue .reihe .sw { height: 27px; } #menue .gross { padding: 9px 30px; font-size: 16px; } #menue .regeln .taste { display: none; } #menue .mkopf p { display: none; } #menue .karte { gap: 6px 22px; padding: 8px 18px 8px; } #menue.overlay { padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); } }
-  @media (max-width: 640px) and (min-height: 421px) { #menue .karte { grid-template-columns: 1fr; grid-template-areas: "kopf" "links" "rechts"; } #menue.overlay { align-items: start; } }
+  @media (max-height: 520px) { #menue .logo { font-size: 26px; } #menue .logo small { margin-top: 3px; } #menue .sw { height: 25px; } #menue .reihe .sw { height: 27px; } #menue .gross { padding: 9px 30px; font-size: 16px; } #menue .regeln .taste { display: none; } #menue .mkopf p { display: none; } #menue .karte { gap: 6px 22px; padding: 8px 18px 8px; } #menue.overlay { padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); } }
+  @media (max-width: 640px) and (min-height: 521px) { #menue .karte { grid-template-columns: 1fr; grid-template-areas: "kopf" "links" "rechts"; } #menue.overlay { align-items: start; } }
 </style>
 </head>
 <body class="">

@@ -15,7 +15,7 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v481";
+export const APP_VERSION = "v482";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
 
@@ -727,7 +727,7 @@ function renderWertungTabelle() {
     .sort((a, b) => b.gesamt - a.gesamt);
 
   const kopfzeile = gespielteSpiele
-    .map((s) => `<th scope="col" title="${escapeHtml(s.name)}">${s.emoji}</th>`)
+    .map((s) => `<th scope="col" title="${escapeHtml(s.name)}">${s.bild ? `<img class="wertung-spielbild" src="${s.bild}" alt="${escapeHtml(s.name)}">` : s.emoji}</th>`)
     .join("");
 
   const zeilenHtml = zeilen

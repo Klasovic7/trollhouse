@@ -20,7 +20,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml } from "../../kern/ui.js";
+import { spielerKarte, renderWarteAvatare, zeigeDebug, initBereitSystem, escapeHtml, gleichRang } from "../../kern/ui.js";
 import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { bindeBuchstabenEingabe } from "../../kern/buchstabeneingabe.js";
 
@@ -170,6 +170,7 @@ let buchstabenReihenfolge = [];
 let tipp = null;
 let aufdeckAnzahl = 0;
 let aufdeckAnzahlGerendert = -1;
+let hinweisBeiAbgabeLU = null;   // so viele Hinweis-Buchstaben waren beim Absenden offen
 let aufdeckFortschreibenLaeuft = false;
 
 let eigeneAntwortGesetzt = false;
@@ -489,6 +490,8 @@ function zeigeFrage() {
     : "";
 
   $("lu-antwort-eingabe").value = "";
+  tipp?.reset();
+  hinweisBeiAbgabeLU = null;
   $("lu-antwort-eingabe").disabled = false;
   $("lu-antwort-absenden").disabled = false;
   aktualisiereFrageStatus();
@@ -503,15 +506,18 @@ function zeigeFrage() {
 // Aufruf flackern).
 function rendereBuchstabenAnzeige() {
   if (!el.wurzel || status !== "frage") return;
-  if (aufdeckAnzahl === aufdeckAnzahlGerendert) return;
-  aufdeckAnzahlGerendert = aufdeckAnzahl;
+  // Hinweis-Buchstaben kommen nur bei Spielern, die noch nicht abgegeben haben;
+  // wer schon getippt hat, behält den Stand vom Absenden.
+  const anzahlFuerMich = eigeneAntwortGesetzt ? (hinweisBeiAbgabeLU ?? 0) : aufdeckAnzahl;
+  if (anzahlFuerMich === aufdeckAnzahlGerendert) return;
+  aufdeckAnzahlGerendert = anzahlFuerMich;
 
   const land = landFuerId(aktuellesLandId);
   const reihe = $("lu-buchstaben-reihe");
   reihe.innerHTML = "";
   if (!land) return;
 
-  const aufgedeckt = new Set(buchstabenReihenfolge.slice(0, aufdeckAnzahl));
+  const aufgedeckt = new Set(buchstabenReihenfolge.slice(0, anzahlFuerMich));
   for (let i = 0; i < land.name.length; i++) {
     const zeichen = land.name[i];
     const span = document.createElement("span");
@@ -557,6 +563,7 @@ async function antwortAbsenden() {
   if (!text) return;
 
   eigeneAntwortGesetzt = true;
+  hinweisBeiAbgabeLU = aufdeckAnzahl;
   eingabeFeld.disabled = true;
   $("lu-antwort-absenden").disabled = true;
   $("lu-frage-hinweis").textContent = "Getippt! Warte auf die anderen …";
@@ -713,7 +720,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   $("lu-endstand-warten").hidden = api.istLeiter;

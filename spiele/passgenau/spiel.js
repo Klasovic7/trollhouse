@@ -17,7 +17,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare } from "../../kern/ui.js";
+import { spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, gleichRang } from "../../kern/ui.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 
 const COUNTDOWN_MS = 3000;
@@ -697,7 +697,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   $("pg-endstand-warten").hidden = api.istLeiter;

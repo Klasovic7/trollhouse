@@ -35,7 +35,7 @@
 //  beenden zurück (siehe Kommentar in spiele/schaetzfragen/spiel.js).
 // ============================================================================
 import { updateDoc, increment, runTransaction, arrayUnion } from "../../kern/firebase.js";
-import { spielerKarte, teamEndstandHtml, teamGruppeHtml, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, teamEndstandHtml, teamGruppeHtml, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
@@ -106,8 +106,8 @@ const VORLAGE = `
     <p class="kategorie">Jahr</p>
     <p class="fortschritt" id="ww-frage-fortschritt"></p>
 
-    <p class="wi-hinweis-aktuell" id="ww-hinweis-aktuell"></p>
     <ul class="wi-hinweis-liste" id="ww-hinweis-liste"></ul>
+    <p class="wi-hinweis-aktuell" id="ww-hinweis-aktuell"></p>
     <p class="wi-countdown" id="ww-countdown"></p>
 
     <ul class="wi-falsch-liste" id="ww-falsch-liste" hidden></ul>
@@ -762,7 +762,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   const teamsEl = $("ww-endstand-teams");

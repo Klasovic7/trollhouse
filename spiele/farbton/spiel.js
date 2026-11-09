@@ -12,7 +12,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, writeBatch
 } from "../../kern/firebase.js";
-import { spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { spielerKarte, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { speichereWertung, punkteNachRang } from "../../kern/wertung.js";
 import { hsbCss, genauigkeit, waehleFarben } from "./logik.js";
 
@@ -328,7 +328,8 @@ async function abgeben(automatisch) {
   if (status !== "runde_aktiv" || abgegeben) return;
   abgegeben = true;
   $("ft-abgeben").disabled = true;
-  const genau = beruehrt ? genauigkeit(zielFarbe(rundenIndex), mein) : null;
+  // Ohne Änderung zählt die Startfarbe (die Regler stehen am Anfang auf START_FARBE)
+  const genau = genauigkeit(zielFarbe(rundenIndex), mein);
   try {
     await setDoc(doc(api.db, "raeume", api.code, "ftAntworten", `${api.spielerId}_${rundenIndex}`), {
       spielerId: api.spielerId, spielerName: api.spielerName, rundenIndex,
@@ -390,11 +391,14 @@ async function pruefeAuswertung(v) {
   auswertungLaeuft = true;
   try {
     if (fehlend.length) {
+      // Wer nicht abgegeben hat (z. B. App im Hintergrund): es zählt die Startfarbe
+      const startGenau = genauigkeit(zielFarbe(rundenIndex), START_FARBE);
       await Promise.all(fehlend.map((s) => setDoc(doc(api.db, "raeume", api.code, "ftAntworten", `${s.id}_${rundenIndex}`), {
-        spielerId: s.id, spielerName: s.name, rundenIndex, genauigkeit: null, h: null, s: null, b: null, zeitpunkt: serverTimestamp()
+        spielerId: s.id, spielerName: s.name, rundenIndex, genauigkeit: startGenau,
+        h: START_FARBE[0], s: START_FARBE[1], b: START_FARBE[2], zeitpunkt: serverTimestamp()
       })));
     }
-    const kombiniert = [...antworten, ...fehlend.map((s) => ({ spielerId: s.id, genauigkeit: null }))];
+    const kombiniert = [...antworten, ...fehlend.map((s) => ({ spielerId: s.id, genauigkeit: genauigkeit(zielFarbe(rundenIndex), START_FARBE) }))];
     const punkte = rundenPunkte(kombiniert);
     const batch = writeBatch(api.db);
     Object.entries(punkte).forEach(([id, wert]) => batch.update(api.spielerRef(id), { punkte: increment(wert) }));
@@ -464,7 +468,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   $("ft-endstand-warten").hidden = api.istLeiter;

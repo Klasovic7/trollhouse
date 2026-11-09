@@ -20,7 +20,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot,
   serverTimestamp, increment, arrayUnion
 } from "../../kern/firebase.js";
-import { escapeHtml, spielerKarte, avatarHtml, renderWarteAvatare, initBereitSystem, zeigeDebug } from "../../kern/ui.js";
+import { escapeHtml, spielerKarte, avatarHtml, renderWarteAvatare, initBereitSystem, zeigeDebug, gleichRang } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 import {
   KATEGORIEN, KATEGORIE_NAMEN, STARTMUENZEN, MAX_KARTEN_PRO_SPIELER,
@@ -714,7 +714,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   $("fa-endstand-warten").hidden = api.istLeiter;

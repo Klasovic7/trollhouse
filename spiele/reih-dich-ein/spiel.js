@@ -5,7 +5,7 @@
 //  Alle Felder dieses Spiels im Raum-Dokument beginnen mit "rd".
 // ============================================================================
 import { updateDoc, runTransaction } from "../../kern/firebase.js";
-import { escapeHtml, spielerKarte, zeigeDebug, initBereitSystem } from "../../kern/ui.js";
+import { escapeHtml, spielerKarte, zeigeDebug, initBereitSystem, gleichRang } from "../../kern/ui.js";
 import { speichereWertungNachPlatz } from "../../kern/wertung.js";
 import { pooleOhneWiederholung, aktualisierterVerlauf } from "../../kern/verlauf.js";
 import {
@@ -508,7 +508,7 @@ function punktestandHtml(mitKategorienPunkten = true) {
           formatiertePunkte(aenderungen[spieler.id] ?? 0),
           { punkteRechts: gesamt }
         )
-      : spielerKarte(spieler.name, spieler.farbe, spieler.icon, gesamt, { rang: index + 1 })
+      : spielerKarte(spieler.name, spieler.farbe, spieler.icon, gesamt, { rang: gleichRang(sortiert, index, (x) => punkte[x.id] ?? 0) })
     }</li>`;
   }).join("")}</ul>`;
 }

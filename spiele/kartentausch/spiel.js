@@ -16,7 +16,7 @@ import {
   increment, writeBatch, runTransaction
 } from "../../kern/firebase.js";
 import {
-  spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild
+  spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild, gleichRang
 } from "../../kern/ui.js";
 import { speichereWertung } from "../../kern/wertung.js";
 
@@ -593,7 +593,7 @@ function zeigeEndstand() {
   liste.innerHTML = "";
   sortiert.forEach((s, i) => {
     const li = document.createElement("li");
-    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: i + 1 });
+    li.innerHTML = spielerKarte(s.name, s.farbe, s.icon, s.punkte ?? 0, { rang: gleichRang(sortiert, i) });
     liste.appendChild(li);
   });
   $("kt-endstand-warten").hidden = api.istLeiter;
