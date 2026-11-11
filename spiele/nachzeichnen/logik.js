@@ -121,11 +121,12 @@ function naechsterAbstand(p, menge) {
 const TOLERANZ = 0.15;     // mittlere Abweichung, ab der es 0 % gibt (Form ist 2 breit)
 const LUECKE = 0.2;        // so weit darf die Linie von einer Stelle der Vorlage weg sein
 
-// Rückgabe: Genauigkeit in Prozent (0 bis 100, eine Nachkommastelle)
-export function bewerteZeichnung(form, striche) {
+// Gemeinsame Bewertung gegen die (verdichtete) Ziel-Linie. Endwertung und Live-Anzeige
+// nutzen exakt dieselbe Rechnung, damit die Zahl beim Zeichnen genau dem entspricht,
+// was man bekäme, wenn man jetzt abgibt.
+function bewerteGegenZiel(ziel, striche) {
   const gueltig = (striche || []).filter((s) => s.length > 1);
   if (!gueltig.length || strichLaenge(gueltig) < 0.4) return 0;
-  const ziel = verdichte(form.pt, form.geschlossen, 0.025);
   const mein = [];
   for (const st of gueltig) mein.push(...verdichte(st, false, 0.025));
   let cov = 0, luecken = 0;
@@ -140,16 +141,19 @@ export function bewerteZeichnung(form, striche) {
   return Math.round(roh * vollstaendig * 1000) / 10;
 }
 
+// Rückgabe: Genauigkeit in Prozent (0 bis 100, eine Nachkommastelle)
+export function bewerteZeichnung(form, striche) {
+  return bewerteGegenZiel(verdichte(form.pt, form.geschlossen, 0.025), striche);
+}
+
 // ---- Live-Anzeige beim Zeichnen
 export function zielPunkte(form) { return verdichte(form.pt, form.geschlossen, 0.025); }
 export function abstandZuZiel(p, ziel) { return naechsterAbstand(p, ziel); }
-// Toleranz-/Prozentformel wie bei der Endwertung, aber nur "Treffsicherheit" (ohne Lückenabzug),
-// damit die Zahl schon beim Zeichnen sinnvoll ist.
+// Live-Prozent = exakt die Endwertung, die man bekäme, wenn man jetzt abgibt
+// (inkl. nicht nachgezeichneter Stellen). Ohne Striche: null.
 export function liveProzent(ziel, striche) {
-  let summe = 0, n = 0;
-  for (const st of striche) for (const m of verdichte(st, false, 0.025)) { summe += naechsterAbstand(m, ziel); n++; }
-  if (!n) return null;
-  return Math.round(Math.pow(Math.max(0, 1 - summe / n / TOLERANZ), 1.2) * 1000) / 10;
+  if (!(striche || []).some((st) => st.length > 0)) return null;
+  return bewerteGegenZiel(ziel, striche);
 }
 // 0 (weit weg) .. 1 (genau) -> für die Farbe
 export function genauWert(d) { return Math.max(0, Math.min(1, 1 - (d - 0.03) / 0.12)); }
