@@ -43,6 +43,7 @@ const GLYPHEN = {
   kapitaen: `<rect x="5" y="13.5" width="38" height="21" rx="4.5" fill="#fbc02d" stroke="#8d6e00" stroke-width="2.4"/><path d="M6.5 17.5 H41.5 M6.5 30.5 H41.5" stroke="#c49000" stroke-width="1.4"/><path d="M29.8 19.6 A7.2 7.2 0 1 0 29.8 28.4" fill="none" stroke="#1d1d1f" stroke-width="4.2" stroke-linecap="round"/>`,
   fanliebling: `<path d="M22 38 C9 29.5 5 22 5 16.5 C5 11.5 9 8 13.5 8 C17.3 8 20 10.3 22 13.5 C24 10.3 26.7 8 30.5 8 C35 8 39 11.5 39 16.5 C39 22 35 29.5 22 38Z" fill="#e53950" stroke="#9e1b32" stroke-width="2.2" stroke-linejoin="round"/><circle cx="35" cy="34" r="8.2" fill="#f2c230" stroke="#a67a06" stroke-width="2.2"/><path d="M35 30 V38 M31 34 H39" stroke="#6b4a00" stroke-width="2.6" stroke-linecap="round"/>`
 };
+export const wuerfelIcon = (b) => GLYPHEN[b] ? `<svg class="kl-wf-icon" viewBox="6 6 36 36">${GLYPHEN[b]}</svg>` : "";
 export const bonusSymbol = (b, klasse = "kl-bsym") => b && GLYPHEN[b]
   ? `<svg class="${klasse}" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22.6" fill="#fff" stroke="#d4a017" stroke-width="2.6"/><g transform="translate(24 24) scale(.72) translate(-24 -24)">${GLYPHEN[b]}</g></svg>` : "";
 
@@ -185,6 +186,8 @@ export const STIL = `
 .kl-summe-s { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; padding:4px 5px 0; }
 .kl-summe { display:grid; place-items:center; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.05rem; border-radius:8px; background:var(--kl-flaeche2); color:var(--kl-text); }
 .kl-summe small { display:block; font-size:.62rem; color:var(--kl-muted); font-weight:700; line-height:1; }
+.kl-summe-wf { display:flex !important; align-items:center; justify-content:center; gap:1px; }
+.kl-wf-icon { width:15px; height:15px; flex:none; }
 .kl-summe.aktiv { background:var(--club-orange,#ff5b36); color:#fff; } .kl-summe.aktiv small { color:#ffe2d9; }
 .kl-raster-info { display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-size:.8rem; color:var(--kl-muted); }
 

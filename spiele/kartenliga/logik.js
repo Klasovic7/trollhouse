@@ -98,14 +98,13 @@ export function feldWerte(grid) {
       L.forEach((i) => { werte[i] += 1; details[i].push(["Nation", 1]); });
     }
   });
-  // Vereins-Chemie: Nachbar vom selben Verein
+  // Vereins-Chemie: +1 pro direktem Nachbarn vom selben Verein
   grid.forEach((z, i) => {
     if (!z) return;
     const k = karte(z.id);
     if (!k || k.start) return;
-    if (NACHBARN[i].some((j) => grid[j] && karte(grid[j].id)?.verein === k.verein && !karte(grid[j].id).start)) {
-      werte[i] += 1; details[i].push(["Verein", 1]);
-    }
+    const n = NACHBARN[i].filter((j) => grid[j] && karte(grid[j].id)?.verein === k.verein && !karte(grid[j].id).start).length;
+    if (n) { werte[i] += n; details[i].push(["Verein", n]); }
   });
   // Kapitän (nur einer pro Team zählt)
   const kap = grid.findIndex((z) => z && karte(z.id)?.bonus === "kapitaen");

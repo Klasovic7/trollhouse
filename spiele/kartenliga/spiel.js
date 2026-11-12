@@ -24,7 +24,7 @@ import {
 } from "./logik.js";
 import { istBot, spielAnlegen, draftAnwenden, draftBotPicks, transferAnwenden, arenaAnwenden, nachSpieltag } from "./ablauf.js";
 import {
-  STIL, karteHtml, teamWappen, arenaSvg, farbIndex, FARBEN_LISTE, bonusSymbol, VEREIN_NAME
+  STIL, karteHtml, teamWappen, arenaSvg, farbIndex, FARBEN_LISTE, bonusSymbol, wuerfelIcon, VEREIN_NAME
 } from "./design.js";
 
 const DRAFT_MS = 30000;
@@ -639,14 +639,14 @@ function rasterHtml(grid, { ziel = false, neu = [], klickbar = false } = {}) {
   const art = CFG.spieltage[naechsterSpieltag()] || "reihe";
   const reihen = LINIEN.reihe.map((L) => L.reduce((s, i) => s + werte[i], 0));
   const spalten = LINIEN.spalte.map((L) => L.reduce((s, i) => s + werte[i], 0));
-  const wuerfel = (L) => L.some((i) => grid[i] && ["kleiner_wuerfel", "grosser_wuerfel"].includes(karte(grid[i].id)?.bonus));
+  const wuerfel = (L) => ["kleiner_wuerfel", "grosser_wuerfel"].filter((b) => L.some((i) => grid[i] && karte(grid[i].id)?.bonus === b));
   const zellen = grid.map((zz, i) => {
     const inhalt = zz ? karteHtml(zz.id, { mini: true, wert: zz.w, neu: neu.includes(i) }) : "";
     const kl = ["kl-zelle", ziel ? "ziel" : "", zz ? "belegt" : ""].join(" ");
     const aktion = klickbar ? `data-a="feld" data-v="${i}"` : (zz ? `data-a="zoom" data-v="${zz.id}" data-w="${zz.w}"` : "");
     return `<button type="button" class="${kl}" ${aktion}>${inhalt}</button>`;
   }).join("");
-  const summe = (w, label, aktiv, wf) => `<div class="kl-summe ${aktiv ? "aktiv" : ""}"><div>${w}${wf ? "<small>+🎲</small>" : ""}<small>${label}</small></div></div>`;
+  const summe = (w, label, aktiv, wf) => `<div class="kl-summe ${aktiv ? "aktiv" : ""}"><div>${w}${wf.length ? `<small class="kl-summe-wf">+${wf.map((b) => wuerfelIcon(b)).join("")}</small>` : ""}<small>${label}</small></div></div>`;
   return `<div class="kl-raster-wrap">
     <div class="kl-reihen-label">${REIHEN_POS.map((p) => `<span style="background:${POS_FARBE[p]}">${p}</span>`).join("")}</div>
     <div class="kl-raster">${zellen}</div>
@@ -775,7 +775,7 @@ function regelnHtml() {
   ${liste([
     ["Falsche Position", `Ein Spieler außerhalb seiner Reihe bekommt −${CFG.posMalus}.`],
     ["Nation", "Drei Spieler gleicher Nation in einer Reihe oder Spalte: je +1."],
-    ["Verein", "Ein Vereinskollege direkt daneben: +1."],
+    ["Verein", "+1 für jeden Vereinskollegen direkt daneben (links, rechts, oben, unten)."],
     ["Startspieler", "Haben keine Position und zählen überall voll."]
   ])}
   <h3>Fähigkeiten</h3>
