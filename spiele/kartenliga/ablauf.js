@@ -6,8 +6,8 @@
 //  der Ablauf ohne Datenbank testen.
 // ============================================================================
 import {
-  CFG, neuesSpiel, ziehen, zurueckLegen, einnahmen, planRechnen, botDraftWahl, botTransferPlan,
-  spieltagBerechnen, spieltagAnwenden, tabelle
+  CFG, neuesSpiel, ziehen, zurueckLegen, einnahmen, planRechnen, botDraftWahl, botTransferPlan, botAusbauWahl,
+  ausbauKosten, spieltagBerechnen, spieltagAnwenden, tabelle
 } from "./logik.js";
 
 export const istBot = (id) => typeof id === "string" && id.startsWith("bot");
@@ -90,26 +90,48 @@ export const draftBotPicks = (z) => {
   return picks;
 };
 
-// plaene: { spielerId: { kaeufe, ausbau } } - fehlende Menschen kaufen nichts, Bots planen selbst
-export function transferAnwenden(z, plaene, zufall = Math.random) {
+// plaene: { spielerId: { kaeufe } } - fehlende Menschen kaufen nichts, Bots planen selbst.
+// Danach folgt für alle gemeinsam der Arena-Ausbau.
+export function transferAnwenden(z, plaene) {
   z.transfers = {};
   z.reihenfolge.forEach((id) => {
     const t = z.teams[id];
-    const plan = istBot(id) ? botTransferPlan(t, t.hand, z.runde, z.botStrat[id]) : (plaene[id] || { kaeufe: [], ausbau: null });
-    const r = planRechnen(t, t.hand, plan);
+    const roh = istBot(id) ? botTransferPlan(t, t.hand, z.runde, { ...(z.botStrat[id] || {}), lust: 0 }) : (plaene[id] || { kaeufe: [] });
+    const r = planRechnen(t, t.hand, { kaeufe: roh.kaeufe || [], ausbau: null });
     t.grid = r.grid;
     t.geld = r.geldNachVerkauf;
-    if (r.ausbau) { if (r.ausbau.pfad === "T") t.trib += 1; else t.hex += 1; }
     r.verkauft.forEach((v) => zurueckLegen(z, v.id, z.runde));
     r.rest.forEach((k) => zurueckLegen(z, k, z.runde));
-    z.transfers[id] = { gekauft: r.gekauft, verkauft: r.verkauft, ausbau: r.ausbau, handErloes: r.handErloes, rest: r.rest };
+    z.transfers[id] = { gekauft: r.gekauft, verkauft: r.verkauft, handErloes: r.handErloes, rest: r.rest };
     t.hand = [];
   });
+  z.phase = "arena";
+  z.phaseStart = Date.now();
+  return z;
+}
+
+// wahlen: { spielerId: "T" | "H" | null } - Bots entscheiden selbst
+export function arenaAnwenden(z, wahlen, zufall = Math.random) {
+  z.ausbauten = {};
+  z.reihenfolge.forEach((id) => {
+    const t = z.teams[id];
+    const wahl = istBot(id) ? botAusbauWahl(t, z.runde, z.botStrat[id]) : wahlen[id];
+    if (wahl !== "T" && wahl !== "H") return;
+    const kosten = ausbauKosten(t, wahl);
+    if (kosten == null || kosten > t.geld) return;
+    t.geld -= kosten;
+    if (wahl === "T") t.trib += 1; else t.hex += 1;
+    z.ausbauten[id] = { pfad: wahl, kosten, stufe: wahl === "T" ? t.trib : t.hex };
+  });
   if (CFG.spieltage[z.runde]) {
+    const raster = {};
+    z.reihenfolge.forEach((id) => { raster[id] = z.teams[id].grid.map((c) => (c ? { ...c } : null)); });
+    const hex = {};
+    z.reihenfolge.forEach((id) => { hex[id] = z.teams[id].hex; });
     const erg = spieltagBerechnen(z.teams, z.reihenfolge, z.runde, zufall);
     const entwicklung = spieltagAnwenden(z.teams, z.reihenfolge, erg);
     delete erg.linieStat;
-    z.spieltag = { ...erg, entwicklung, tabelle: tabelle(z.teams, z.reihenfolge) };
+    z.spieltag = { ...erg, entwicklung, raster, tabelle: tabelle(z.teams, z.reihenfolge) };
     z.historie.push({ nr: erg.nr, art: erg.art, spiele: erg.spiele.map((s) => ({ a: s.a, b: s.b, ta: s.ta, tb: s.tb, heim: s.heim })) });
     z.phase = "spieltag";
     z.phaseStart = Date.now();

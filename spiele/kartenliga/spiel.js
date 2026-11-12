@@ -22,12 +22,13 @@ import {
   CFG, setzeKarten, karte, feldWerte, LINIEN, LINIEN_NAME, REIHEN_POS, POS_NAME, BONUS_NAME, BONUS_TEXT,
   planRechnen, ausbauKosten, tabelle, mischen, botTransferPlan
 } from "./logik.js";
-import { istBot, spielAnlegen, draftAnwenden, draftBotPicks, transferAnwenden, nachSpieltag } from "./ablauf.js";
+import { istBot, spielAnlegen, draftAnwenden, draftBotPicks, transferAnwenden, arenaAnwenden, nachSpieltag } from "./ablauf.js";
 import {
   STIL, karteHtml, teamWappen, arenaSvg, farbIndex, FARBEN_LISTE, bonusSymbol, VEREIN_NAME
 } from "./design.js";
 
 const DRAFT_MS = 30000;
+const ARENA_MS = 30000;
 const TRANSFER_MS = 90000;
 const PUFFER_MS = 4000;
 const MAX_TEAMS = 5;
@@ -80,6 +81,9 @@ let ligaSicht = null;
 let hinweis = "";
 let animiert = new Set();
 let sendet = false;
+let arenaWahl = null;
+const phasenDauer = (p) => (p === "draft" ? DRAFT_MS : p === "transfer" ? TRANSFER_MS : ARENA_MS);
+const mitZeit = (p) => p === "draft" || p === "transfer" || p === "arena";
 
 const $ = (id) => el.wurzel.querySelector("#" + id);
 const klon = (x) => JSON.parse(JSON.stringify(x));
@@ -147,10 +151,10 @@ export function raumDaten(daten) {
   const key = z ? `${z.runde}_${z.phase}_${z.pick}` : "";
   if (key !== schrittKey) {
     schrittKey = key;
-    draftAuswahl = null; handAuswahl = null; plan = { kaeufe: [], ausbau: null }; hinweis = ""; sendet = false;
+    draftAuswahl = null; handAuswahl = null; plan = { kaeufe: [], ausbau: null }; hinweis = ""; sendet = false; arenaWahl = null;
   }
   if (status === "laeuft" && z) {
-    const phasen = { draft: "Draft", transfer: "Transfers", spieltag: "Spieltag" };
+    const phasen = { draft: "Draft", transfer: "Transfers", arena: "Arena", spieltag: "Spieltag" };
     api.fortschritt(`Runde ${z.runde}/${CFG.runden}${phasen[z.phase] ? " · " + phasen[z.phase] : ""}`);
   } else api.fortschritt("");
   zeichne();
@@ -269,8 +273,8 @@ async function sende(daten) {
 function tick() {
   if (!el.wurzel || status !== "laeuft" || !z) return;
   const balken = $("kl-zeitfuell");
-  if (balken && z.zeitlimit && (z.phase === "draft" || z.phase === "transfer")) {
-    const dauer = z.phase === "draft" ? DRAFT_MS : TRANSFER_MS;
+  if (balken && z.zeitlimit && mitZeit(z.phase)) {
+    const dauer = phasenDauer(z.phase);
     balken.style.width = Math.max(0, 1 - (Date.now() - z.phaseStart) / dauer) * 100 + "%";
   }
   leiterPruefen();
@@ -278,13 +282,13 @@ function tick() {
 
 async function leiterPruefen() {
   if (!api?.istLeiter || status !== "laeuft" || !z || leiterBusy) return;
-  if (z.phase !== "draft" && z.phase !== "transfer") return;
+  if (!mitZeit(z.phase)) return;
   const schritt = `${z.runde}_${z.phase}_${z.pick}`;
   if (letzterSchritt === schritt) return;
   const anwesend = new Set(spielerListe.map((s) => s.id));
   const menschen = z.reihenfolge.filter((id) => !istBot(id) && anwesend.has(id));
   const fertig = menschen.filter((id) => aktionen[aktionsKey(id, z.phase)]);
-  const dauer = z.phase === "draft" ? DRAFT_MS : TRANSFER_MS;
+  const dauer = phasenDauer(z.phase);
   const abgelaufen = z.zeitlimit && Date.now() - z.phaseStart > dauer + PUFFER_MS;
   if (fertig.length < menschen.length && !abgelaufen) return;
 
@@ -299,12 +303,16 @@ async function leiterPruefen() {
         if (a?.karte) picks[id] = a.karte;
       });
       neu = draftAnwenden(neu, picks);
+    } else if (z.phase === "arena") {
+      const wahlen = {};
+      z.reihenfolge.filter((id) => !istBot(id)).forEach((id) => { wahlen[id] = aktionen[aktionsKey(id, "arena")]?.ausbau ?? null; });
+      neu = arenaAnwenden(neu, wahlen);
     } else {
       const plaene = {};
       z.reihenfolge.filter((id) => !istBot(id)).forEach((id) => {
         const a = aktionen[aktionsKey(id, "transfer")];
         // Wer nichts geschickt hat (Zeit abgelaufen oder Raum verlassen), bekommt die Automatik
-        plaene[id] = a?.plan || botTransferPlan(neu.teams[id], neu.teams[id].hand, neu.runde, { k: 0.5, lust: 0.8 });
+        plaene[id] = a?.plan || botTransferPlan(neu.teams[id], neu.teams[id].hand, neu.runde, { k: 0.5, lust: 0 });
       });
       neu = transferAnwenden(neu, plaene);
     }
@@ -354,9 +362,21 @@ function klick(ev) {
   if (a === "zoom") { zeigeKarte(v, Number(t.dataset.w || 0)); return; }
   if (a === "weiter") { weiterNachSpieltag(); return; }
   if (a === "gesamt") { api.zeigeGesamtwertung(); return; }
+  if (a === "spiel") { zeigeSpiel(Number(v)); return; }
   if (!z || !istDabei() || meineAktion() || sendet) return;
   if (a === "draft-wahl" && z.phase === "draft") { draftAuswahl = v; zeichne(); return; }
   if (a === "draft-ok" && z.phase === "draft" && draftAuswahl) { sende({ karte: draftAuswahl }); return; }
+  if (z.phase === "arena") {
+    const team = z.teams[ich()];
+    if (a === "ausbau") {
+      const kosten = ausbauKosten(team, v);
+      if (arenaWahl === v) arenaWahl = null;
+      else if (kosten != null && kosten <= team.geld) arenaWahl = v;
+      zeichne(); return;
+    }
+    if (a === "arena-ok") { sende({ ausbau: arenaWahl }); return; }
+    return;
+  }
   if (z.phase !== "transfer") return;
   const team = z.teams[ich()];
   if (a === "hand") {
@@ -383,9 +403,47 @@ function klick(ev) {
     handAuswahl = null;
     zeichne(); return;
   }
-  if (a === "ausbau") { plan.ausbau = plan.ausbau === v ? null : v; const r = planRechnen(team, team.hand, plan); if (!r.ausbau && plan.ausbau) { plan.ausbau = null; hinweis = "Dafür reicht dein Geld nicht."; } else hinweis = ""; zeichne(); return; }
   if (a === "plan-reset") { plan = { kaeufe: [], ausbau: null }; handAuswahl = null; hinweis = ""; zeichne(); return; }
-  if (a === "transfer-ok") { sende({ plan: { kaeufe: plan.kaeufe, ausbau: plan.ausbau } }); return; }
+  if (a === "transfer-ok") { sende({ plan: { kaeufe: plan.kaeufe } }); return; }
+}
+
+function zeigeSpiel(i) {
+  const sp = z?.spieltag;
+  const s = sp?.spiele?.[i];
+  if (!s) return;
+  document.querySelector(".kl-overlay")?.remove();
+  const raster = sp.raster || {};
+  const seite = (id, wuerfe) => {
+    const grid = raster[id] || z.teams[id].grid;
+    const { werte, details } = feldWerte(grid);
+    const wurf = {};
+    (wuerfe || []).forEach((w) => { wurf[w.feld] = w.wurf; });
+    return { grid, werte, details, wurf };
+  };
+  const A = seite(s.a, s.wuerfeA), B = seite(s.b, s.wuerfeB);
+  const kartenReihe = (S, L) => `<div class="kl-sp-karten">${LINIEN[sp.art][L].map((f) => {
+    const c = S.grid[f];
+    if (!c) return `<div class="kl-sp-karte"><div class="kl-sp-leer">leer</div><div class="kl-sp-wert"><b>0</b></div></div>`;
+    const teile = [`Basis ${c.w}`, ...S.details[f].map(([n, w]) => `${n} ${w > 0 ? "+" : "−"}${Math.abs(w)}`)];
+    if (S.wurf[f]) teile.push(`🎲 +${S.wurf[f]}`);
+    return `<div class="kl-sp-karte">${karteHtml(c.id, { mini: true, wert: c.w })}<div class="kl-sp-wert"><b>${S.werte[f] + (S.wurf[f] || 0)}</b><small>${teile.join(" · ")}</small></div></div>`;
+  }).join("")}</div>`;
+  const duelle = s.duelle.map((d) => {
+    const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
+    return `<div class="kl-sp-duell">
+      <div class="kl-sp-kopf"><span>${LINIEN_NAME[sp.art][d.la]} ${teamName(s.a, false)}</span><b>${d.sa} : ${d.sb}</b><span>${teamName(s.b, false)} ${LINIEN_NAME[sp.art][d.lb]}</span></div>
+      <div class="kl-sp-tore">${"⚽".repeat(d.ta) || "–"} : ${"⚽".repeat(d.tb) || "–"}${ha || hb ? ` · Heimbonus 🏟️ +${ha || hb} (${teamInfo(ha ? s.a : s.b).name})` : ""}</div>
+      ${kartenReihe(A, d.la)}<div class="kl-sp-gegen">gegen</div>${kartenReihe(B, d.lb)}
+    </div>`;
+  }).join("");
+  const ov = document.createElement("div");
+  ov.className = "kl kl-overlay kl-overlay-scroll";
+  ov.innerHTML = `<div class="kl-sp-panel">
+    <div class="kl-spiel-kopf"><div>${teamName(s.a)}</div><div class="kl-ergebnis">${s.ta} : ${s.tb}</div><div class="r">${teamName(s.b)}</div></div>
+    ${duelle}
+    <button type="button" class="btn-primaer" style="margin-top:10px">Schließen</button></div>`;
+  ov.addEventListener("click", (e) => { if (e.target === ov || e.target.closest("button.btn-primaer")) ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 function zeigeKarte(id, wert) {
@@ -427,13 +485,26 @@ function kopfHtml() {
   const phasen = {
     draft: [`Draft · Wahl ${z.pick + 1} von ${CFG.picks}`, "Nimm eine Karte, der Rest geht weiter"],
     transfer: ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen, Rest wird verkauft`],
+    arena: ["Arena-Ausbau", "Tribüne oder Hexenkessel ausbauen oder sparen"],
     spieltag: [`${z.spieltag?.nr}. Spieltag`, z.spieltag?.art === "reihe" ? "Reihen-Duelle" : "Flügel-Duelle"]
   };
   const [titel, unter] = phasen[z.phase] || ["", ""];
-  const zeit = z.zeitlimit && (z.phase === "draft" || z.phase === "transfer");
+  const zeit = z.zeitlimit && mitZeit(z.phase);
   return `<div class="kl-kopf"><div class="kl-phase"><b>Runde ${z.runde} · ${titel}</b><span>${unter}</span></div>
-    ${team ? `<span class="kl-geld"><span class="kl-muenze">€</span>${team.geld}</span>` : ""}</div>
+    ${team ? `<span class="kl-geld"><span class="kl-muenze">€</span>${geldAnzeige(team)}</span>` : ""}</div>
     ${zeit ? `<div class="kl-zeit"><i id="kl-zeitfuell"></i></div>` : ""}`;
+}
+
+// Geld oben rechts: zieht geplante Käufe bzw. den gewählten Ausbau sofort ab
+function geldAnzeige(team) {
+  const gesendet = meineAktion();
+  if (z.phase === "transfer") return planRechnen(team, team.hand, { kaeufe: (gesendet?.plan || plan).kaeufe || [], ausbau: null }).geld;
+  if (z.phase === "arena") {
+    const wahl = gesendet ? gesendet.ausbau : arenaWahl;
+    const kosten = wahl ? ausbauKosten(team, wahl) : 0;
+    return team.geld - (kosten || 0);
+  }
+  return team.geld;
 }
 
 function werIstFertig() {
@@ -445,6 +516,7 @@ function werIstFertig() {
 function phaseHtml() {
   if (z.phase === "draft") return draftHtml();
   if (z.phase === "transfer") return transferHtml();
+  if (z.phase === "arena") return arenaHtml();
   if (z.phase === "spieltag") return spieltagHtml();
   return "";
 }
@@ -476,7 +548,7 @@ function transferHtml() {
   const team = z.teams[ich()];
   const gesendet = meineAktion();
   const aktPlan = gesendet?.plan || plan;
-  const r = planRechnen(team, team.hand, aktPlan);
+  const r = planRechnen(team, team.hand, { kaeufe: aktPlan.kaeufe || [], ausbau: null });
   const handKarten = team.hand.map((id) => {
     const geplant = aktPlan.kaeufe.find((k) => k.id === id);
     const teuer = karte(id).kosten > r.geld + (geplant ? karte(id).kosten : 0);
@@ -497,16 +569,37 @@ function transferHtml() {
       <div class="kl-rechnung">
         <span>Geld jetzt</span><span>${team.geld}</span>
         ${kaufZeilen}${verkaufZeilen}
-        ${r.ausbau ? `<span>Ausbau ${r.ausbau.pfad === "T" ? "Tribüne" : "Hexenkessel"}</span><span>−${r.ausbau.kosten}</span>` : ""}
         <span>${r.rest.length} Handkarte${r.rest.length === 1 ? "" : "n"} verkaufen</span><span>+${r.handErloes}</span>
         <span class="sum">Danach</span><span class="sum">${r.geldNachVerkauf}</span>
       </div>
     </div>
-    ${arenaPanel(team, { auswahl: !gesendet, plan: aktPlan, r })}
+    <p class="kl-muted" style="margin:8px 0 0">Wenn alle fertig sind, kommt der Arena-Ausbau.</p>
     ${hinweis ? `<p class="fehler-text">${escapeHtml(hinweis)}</p>` : ""}
     ${gesendet ? werIstFertig() : `<div class="kl-zeile" style="margin-top:12px">
       <button type="button" class="kl-btn sek" data-a="plan-reset">Zurücksetzen</button>
       <button type="button" class="btn-primaer" style="flex:1;margin:0" data-a="transfer-ok">Fertig</button></div>`}
+  </div>`;
+}
+
+// ---- Arena-Ausbau ---------------------------------------------------------------------------
+function arenaHtml() {
+  if (!istDabei()) return `<div class="kl-box"><p class="kl-muted">Die Teams bauen ihre Arenen aus …</p>${werIstFertig()}</div>`;
+  const team = z.teams[ich()];
+  const gesendet = meineAktion();
+  const wahl = gesendet ? gesendet.ausbau : arenaWahl;
+  const tr = z.transfers?.[ich()];
+  const zusammen = tr ? [
+    ...tr.gekauft.map((g) => `${escapeHtml(karte(g.id).name)} gekauft (−${g.kosten})`),
+    ...tr.verkauft.map((v) => `${escapeHtml(karte(v.id).name)} verkauft (+${v.erloes})`),
+    tr.handErloes ? `${tr.rest.length} Handkarte${tr.rest.length === 1 ? "" : "n"} verkauft (+${tr.handErloes})` : ""
+  ].filter(Boolean).join(" · ") : "";
+  const kosten = wahl ? ausbauKosten(team, wahl) : 0;
+  const knopf = wahl ? `${wahl === "T" ? "Tribüne" : "Hexenkessel"} ausbauen (−${kosten})` : "Ohne Ausbau weiter";
+  return `<div class="kl-box">
+    ${zusammen ? `<p class="kl-muted" style="margin:0 0 8px">Deine Transfers: ${zusammen}</p>` : ""}
+    ${arenaPanel(team, { auswahl: !gesendet, plan: { ausbau: wahl }, r: { geld: team.geld, ausbau: wahl ? { pfad: wahl } : null } })}
+    ${gesendet ? `<p class="kl-muted">${wahl ? "Ausbau gewählt." : "Kein Ausbau."} Warte auf die anderen …</p>${werIstFertig()}`
+      : `<button type="button" class="btn-primaer" style="margin-top:12px" data-a="arena-ok">${knopf}</button>`}
   </div>`;
 }
 
@@ -529,7 +622,7 @@ function arenaPanel(team, { auswahl = false, plan: p = null, r = null } = {}) {
     <div class="kl-pfade">
       ${pfad("T", "Tribüne", team.trib, ["+1 Münze pro Runde", "+3 Münzen pro Runde"])}
       ${pfad("H", "Hexenkessel", team.hex, ["+1 in allen Heimduellen", "+2 in allen Heimduellen"])}
-    </div>${auswahl ? `<p class="kl-muted" style="margin:6px 0 0">Höchstens ein Ausbau pro Runde.</p>` : ""}</div>`;
+    </div>${auswahl ? `<p class="kl-muted" style="margin:6px 0 0">Tippe einen Pfad an. Höchstens ein Ausbau pro Runde.</p>` : ""}</div>`;
 }
 
 // ---- Raster ---------------------------------------------------------------------------------
@@ -569,6 +662,7 @@ function spieltagHtml() {
   let delay = 0;
   const wuerfelSumme = (liste, L) => (liste || []).filter((w) => LINIEN[art][L].includes(w.feld)).reduce((s, w) => s + w.wurf, 0);
   const spielBox = (s) => {
+    const idx = sp.spiele.indexOf(s);
     const duelle = s.duelle.map((d) => {
       const wa = wuerfelSumme(s.wuerfeA, d.la), wb = wuerfelSumme(s.wuerfeB, d.lb);
       const style = erstes ? `style="animation-delay:${(delay += 0.35).toFixed(2)}s"` : `style="animation:none"`;
@@ -579,7 +673,7 @@ function spieltagHtml() {
         <div class="r"><b>${d.sb} ${LINIEN_NAME[art][d.lb]}</b><div class="w">${wb ? `🎲+${wb} ` : ""}${hb ? `🏟️+${hb}` : ""}</div></div>
       </div>`;
     }).join("");
-    return `<div class="kl-spiel"><div class="kl-spiel-kopf">
+    return `<div class="kl-spiel" data-a="spiel" data-v="${idx}" role="button"><div class="kl-spiel-kopf">
       <div>${teamName(s.a)}${s.heim === s.a ? `<span class="kl-heim">Heimspiel</span>` : ""}</div>
       <div class="kl-ergebnis">${s.ta} : ${s.tb}</div>
       <div class="r">${teamName(s.b)}${s.heim === s.b ? `<span class="kl-heim">Heimspiel</span>` : ""}</div></div>${duelle}</div>`;
@@ -597,9 +691,9 @@ function spieltagHtml() {
   const naechste = z.runde >= CFG.runden ? "Zum Endstand" : `Weiter zu Runde ${z.runde + 1}`;
   return `<div class="kl-box">
     <h3>${sp.nr}. Spieltag · ${art === "reihe" ? "Reihen-Duelle" : "Flügel-Duelle"}</h3>
-    <p class="kl-muted" style="margin:0 0 10px">${art === "reihe" ? "Sturm gegen Abwehr, Mittelfeld gegen Mittelfeld." : "Links gegen Rechts, Mitte gegen Mitte."} Differenz 1–3 = 1 Tor, 4–6 = 2 Tore, ab 7 = 3 Tore.</p>
+    <p class="kl-muted" style="margin:0 0 10px">Tippe auf ein Spiel, um die Spielerkarten der Duelle zu sehen. ${art === "reihe" ? "Sturm gegen Abwehr, Mittelfeld gegen Mittelfeld." : "Links gegen Rechts, Mitte gegen Mitte."} Differenz 1–3 = 1 Tor, 4–6 = 2 Tore, ab 7 = 3 Tore.</p>
     ${(meine.length ? meine : sp.spiele).map(spielBox).join("")}
-    ${meine.length && andere.length ? `<h3 style="margin-top:12px">Weitere Spiele</h3>${andere.map((s) => `<div class="kl-zeile" style="justify-content:space-between;padding:4px 0">${teamName(s.a)}<b>${s.ta} : ${s.tb}</b>${teamName(s.b)}</div>`).join("")}` : ""}
+    ${meine.length && andere.length ? `<h3 style="margin-top:12px">Weitere Spiele</h3>${andere.map((s) => `<div class="kl-zeile kl-weitere" data-a="spiel" data-v="${sp.spiele.indexOf(s)}" style="justify-content:space-between;padding:4px 0">${teamName(s.a)}<b>${s.ta} : ${s.tb}</b>${teamName(s.b)}</div>`).join("")}` : ""}
     <h3 style="margin-top:14px">Tabelle</h3>${tabelleHtml(sp.tabelle, gewinn)}
     ${entw ? `<h3 style="margin-top:14px">Entwicklung</h3>${entw}` : ""}
     <div style="margin-top:14px">${api.istLeiter ? `<button type="button" class="btn-primaer" data-a="weiter">${naechste}</button>` : `<p class="kl-muted">Der Spielleiter geht gleich weiter …</p>`}</div>
@@ -622,9 +716,8 @@ function tabsHtml() {
   if (tab === "team") {
     const team = z.teams[ich()];
     const zeigeRaster = z.phase !== "transfer";
-    inhalt = `<div class="kl-box">${zeigeRaster ? `<h3>Dein Team</h3>${rasterHtml(team.grid)}` : ""}
-      ${z.phase !== "transfer" ? arenaPanel(team) : ""}
-      ${z.phase === "transfer" ? `<p class="kl-muted" style="margin:0">Dein Raster und deine Arena siehst du oben bei den Transfers.</p>` : ""}</div>`;
+    inhalt = `<div class="kl-box">${zeigeRaster ? `<h3>Dein Team</h3>${rasterHtml(team.grid)}` : `<p class="kl-muted" style="margin:0 0 6px">Dein Raster siehst du oben bei den Transfers.</p>`}
+      ${z.phase !== "arena" ? arenaPanel(team) : ""}</div>`;
   } else if (tab === "liga") {
     const tab0 = tabelle(z.teams, z.reihenfolge);
     let detail = "";
@@ -649,7 +742,7 @@ function regelnHtml() {
     ["Einnahmen", `${CFG.einkommen} Münzen, dazu Tribüne, Fanlieblinge und die Aufholhilfe für den Tabellenletzten (+${CFG.aufhol} pro Runde bis zum nächsten Spieltag).`],
     ["Draft", `Jeder bekommt ${CFG.handGroesse} Karten, nimmt eine und gibt den Rest weiter, bis jeder ${CFG.picks} Karten hat.`],
     ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen und ins Raster legen. Ein belegtes Feld wird überbaut, der alte Spieler bringt die halben Kosten. Nicht gekaufte Handkarten bringen je ${CFG.verkaufHand} Münze.`],
-    ["Arena-Ausbau", "Pro Runde darfst du zusätzlich Tribüne oder Hexenkessel um eine Stufe ausbauen."],
+    ["Arena-Ausbau", "Wenn alle ihre Transfers gemacht haben, darf jeder Tribüne oder Hexenkessel um eine Stufe ausbauen oder das Geld sparen."],
     ["Spieltag", "Nach Runde 2, 4, 6 und 8 spielt jeder gegen jeden."],
     ["Deckwechsel", `Ab Runde ${CFG.deckWechselRunde} kommen nur noch die starken Spieler aus Deck 2.`]
   ], true)}

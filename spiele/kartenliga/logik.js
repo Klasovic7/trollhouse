@@ -346,6 +346,18 @@ function ausbauNutzen(team, pfad, runde, k) {
   return nutzen - kk * rs * kosten;
 }
 
+// Arena-Ausbau nach den Transfers: "T", "H" oder null
+export function botAusbauWahl(team, runde, strat = { k: 0.5, lust: 1 }) {
+  let best = null, bestN = 0;
+  ["T", "H"].forEach((p) => {
+    const kosten = ausbauKosten(team, p);
+    if (kosten == null || kosten > team.geld) return;
+    const n = ausbauNutzen(team, p, runde, strat.k) * (strat.lust ?? 1);
+    if (n > bestN) { bestN = n; best = p; }
+  });
+  return best;
+}
+
 // Draft: welche Karte nimmt der Bot (bzw. die Automatik bei abgelaufener Zeit)?
 export function botDraftWahl(team, hand, runde, k = 0.5) {
   const bewertet = hand.map((id) => {

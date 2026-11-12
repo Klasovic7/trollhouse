@@ -259,6 +259,21 @@ ol.kl-regeln li::before { content:counter(klr) "."; color:var(--kl-text); min-wi
 .kl-schon-karten { display:flex; gap:8px; margin-top:6px; }
 .kl-schon-karten button { padding:0; margin:0; background:none; border:0; width:72px; flex:none; container-type:inline-size; }
 .kl-schon-karten .kl-karte { width:100%; height:auto; aspect-ratio:18/25.2; font-size:calc(100cqw / 18); }
+.kl-spiel[data-a] { cursor:pointer; } .kl-spiel[data-a]:active { transform:scale(.99); } .kl-weitere { cursor:pointer; }
+.kl-overlay-scroll { place-items:start center; overflow-y:auto; padding:16px 12px 40px; }
+.kl-sp-panel { width:100%; max-width:440px; background:var(--kl-flaeche); border:1px solid var(--kl-linie); border-radius:18px; padding:14px; }
+.kl-sp-duell { margin-top:12px; padding-top:10px; border-top:1px solid var(--kl-linie); }
+.kl-sp-kopf { display:grid; grid-template-columns:1fr auto 1fr; gap:6px; align-items:center; font-size:.85rem; }
+.kl-sp-kopf span:last-child { text-align:right; } .kl-sp-kopf b { font-family:"Barlow Condensed",sans-serif; font-size:1.4rem; }
+.kl-sp-tore { text-align:center; font-size:.8rem; color:var(--kl-muted); margin:2px 0 6px; }
+.kl-sp-karten { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.kl-sp-karte { container-type:inline-size; min-width:0; }
+.kl-sp-karte .kl-karte { width:100%; height:auto; aspect-ratio:18/25.2; font-size:calc(100cqw / 18); }
+.kl-sp-leer { aspect-ratio:18/25.2; border:1px dashed rgba(255,255,255,.25); border-radius:8px; display:grid; place-items:center; color:var(--kl-muted); font-size:.8rem; }
+.kl-sp-wert { text-align:center; margin-top:4px; line-height:1.15; }
+.kl-sp-wert b { font-family:"Barlow Condensed",sans-serif; font-size:1.2rem; display:block; }
+.kl-sp-wert small { font-size:.62rem; color:var(--kl-muted); }
+.kl-sp-gegen { text-align:center; font-size:.72rem; color:var(--kl-muted); text-transform:uppercase; letter-spacing:.08em; margin:6px 0; }
 .kl-flagge { width:20px; height:14px; vertical-align:-2px; border-radius:2px; }
 .kl-setup-bots { display:flex; gap:6px; flex-wrap:wrap; }
 .kl-setup-bots button { margin:0; width:auto; padding:8px 14px; background:var(--kl-flaeche2,#352039); color:#fff; border:1px solid rgba(255,255,255,.15); }
