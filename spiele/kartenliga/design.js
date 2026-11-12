@@ -179,6 +179,10 @@ export const STIL = `
 .kl-zelle .kl-karte { width:100%; height:100%; font-size:calc(100cqw / 18); box-shadow:0 .3em .6em rgba(0,0,0,.4); }
 .kl-zelle.ziel { border:2px solid #fff; background:rgba(255,255,255,.12); cursor:pointer; }
 .kl-zelle.ziel.belegt { box-shadow:0 0 0 2px #fff; }
+.kl-zelle.markiert { box-shadow:0 0 0 3px var(--club-orange,#ff5b36) !important; border-color:var(--club-orange,#ff5b36) !important; }
+.kl-tausch { display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 12px; border-radius:12px; background:var(--kl-flaeche2); border:1px dashed rgba(255,255,255,.25); }
+.kl-tausch > div { flex:1; display:flex; flex-direction:column; gap:2px; }
+.kl-tausch span { font-size:.8rem; color:var(--kl-muted); }
 .kl-reihen-label { display:grid; grid-template-rows:repeat(3,1fr); gap:5px; padding:5px 0; }
 .kl-reihen-label span { writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.8rem;
   border-radius:6px; color:#fff; display:grid; place-items:center; }

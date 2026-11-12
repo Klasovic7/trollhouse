@@ -20,7 +20,7 @@ import { spielerKarte, zeigeDebug, initBereitSystem, escapeHtml } from "../../ke
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import {
   CFG, setzeKarten, karte, feldWerte, LINIEN, LINIEN_NAME, REIHEN_POS, POS_NAME, BONUS_NAME, BONUS_TEXT,
-  planRechnen, ausbauKosten, tabelle, mischen, botTransferPlan
+  planRechnen, ausbauKosten, tabelle, mischen, botTransferPlan, tauschErlaubt
 } from "./logik.js";
 import { istBot, spielAnlegen, draftAnwenden, draftBotPicks, transferAnwenden, arenaAnwenden, nachSpieltag } from "./ablauf.js";
 import {
@@ -83,6 +83,7 @@ let animiert = new Set();
 let sendet = false;
 let arenaWahl = null;
 let letztesHtml = "";
+let tauschModus = false, tauschErste = null;
 const phasenDauer = (p) => (p === "draft" ? DRAFT_MS : p === "transfer" ? TRANSFER_MS : ARENA_MS);
 const mitZeit = (p) => p === "draft" || p === "transfer" || p === "arena";
 
@@ -153,7 +154,7 @@ export function raumDaten(daten) {
   const key = z ? `${z.runde}_${z.phase}_${z.pick}` : "";
   if (key !== schrittKey) {
     schrittKey = key;
-    draftAuswahl = null; handAuswahl = null; plan = { kaeufe: [], ausbau: null }; hinweis = ""; sendet = false; arenaWahl = null;
+    draftAuswahl = null; handAuswahl = null; plan = { kaeufe: [], ausbau: null }; tauschModus = false; tauschErste = null; hinweis = ""; sendet = false; arenaWahl = null;
   }
   if (status === "laeuft" && z) {
     const phasen = { draft: "Draft", transfer: "Transfers", arena: "Arena", spieltag: "Spieltag" };
@@ -381,9 +382,30 @@ function klick(ev) {
   }
   if (z.phase !== "transfer") return;
   const team = z.teams[ich()];
+  if (a === "tausch-modus") {
+    tauschModus = !tauschModus; tauschErste = null; handAuswahl = null; hinweis = "";
+    zeichne(); return;
+  }
+  if (a === "tausch-weg") { plan.tausch = null; tauschModus = false; tauschErste = null; hinweis = ""; zeichne(); return; }
+  if (a === "feld" && tauschModus) {
+    const feld = Number(v);
+    const g = planVon(team, { ...plan, tausch: null }).grid;
+    if (!g[feld]) { hinweis = "Tauschen geht nur zwischen zwei Spielern."; zeichne(); return; }
+    if (tauschErste == null) { tauschErste = feld; hinweis = ""; zeichne(); return; }
+    if (tauschErste === feld) { tauschErste = null; zeichne(); return; }
+    plan.tausch = [tauschErste, feld];
+    if (planVon(team, plan).fehler.length) { plan.tausch = null; hinweis = `Für den Tausch brauchst du ${CFG.tauschKosten} Münzen.`; }
+    else hinweis = "";
+    tauschModus = false; tauschErste = null;
+    zeichne(); return;
+  }
+  // Käufe ändern sich -> geplanter Tausch passt evtl. nicht mehr
+  if ((a === "hand" || a === "feld") && plan.tausch && (a === "hand" || handAuswahl || plan.kaeufe.some((x) => x.feld === Number(v)))) {
+    plan.tausch = null; hinweis = "Der Tausch wurde zurückgesetzt, weil du deine Käufe geändert hast.";
+  }
   if (a === "hand") {
     const geplant = plan.kaeufe.findIndex((k) => k.id === v);
-    if (geplant >= 0) { plan.kaeufe.splice(geplant, 1); handAuswahl = v; hinweis = ""; }
+    if (geplant >= 0) { plan.kaeufe.splice(geplant, 1); handAuswahl = v; }
     else handAuswahl = handAuswahl === v ? null : v;
     zeichne(); return;
   }
@@ -392,21 +414,20 @@ function klick(ev) {
     if (!handAuswahl) {
       const k = plan.kaeufe.find((x) => x.feld === feld);
       if (k) { plan.kaeufe = plan.kaeufe.filter((x) => x !== k); hinweis = ""; zeichne(); return; }
-      const z0 = team.grid[feld];
+      const z0 = planVon(team, plan).grid[feld];
       if (z0) zeigeKarte(z0.id, z0.w);
       return;
     }
     plan.kaeufe = plan.kaeufe.filter((x) => x.feld !== feld && x.id !== handAuswahl);
     if (plan.kaeufe.length >= CFG.maxKauf) { hinweis = `Du kannst höchstens ${CFG.maxKauf} Karten pro Runde kaufen.`; zeichne(); return; }
     plan.kaeufe.push({ id: handAuswahl, feld });
-    const r = planRechnen(team, team.hand, plan);
+    const r = planVon(team, plan);
     if (r.fehler.length) { plan.kaeufe.pop(); hinweis = "Dafür reicht dein Geld nicht."; }
-    else hinweis = "";
     handAuswahl = null;
     zeichne(); return;
   }
-  if (a === "plan-reset") { plan = { kaeufe: [], ausbau: null }; handAuswahl = null; hinweis = ""; zeichne(); return; }
-  if (a === "transfer-ok") { sende({ plan: { kaeufe: plan.kaeufe } }); return; }
+  if (a === "plan-reset") { plan = { kaeufe: [], ausbau: null }; handAuswahl = null; tauschModus = false; tauschErste = null; hinweis = ""; zeichne(); return; }
+  if (a === "transfer-ok") { tauschModus = false; sende({ plan: { kaeufe: plan.kaeufe, tausch: plan.tausch || null } }); return; }
 }
 
 function zeigeSpiel(i) {
@@ -503,10 +524,13 @@ function kopfHtml() {
     ${zeit ? `<div class="kl-zeit"><i id="kl-zeitfuell"></i></div>` : ""}`;
 }
 
+// Aktuellen Transferplan (Käufe + Tausch) für ein Team durchrechnen
+const planVon = (team, p) => planRechnen(team, team.hand, { kaeufe: p?.kaeufe || [], tausch: p?.tausch || null, ausbau: null }, z.runde);
+
 // Geld oben rechts: zieht geplante Käufe bzw. den gewählten Ausbau sofort ab
 function geldAnzeige(team) {
   const gesendet = meineAktion();
-  if (z.phase === "transfer") return planRechnen(team, team.hand, { kaeufe: (gesendet?.plan || plan).kaeufe || [], ausbau: null }).geld;
+  if (z.phase === "transfer") return planVon(team, gesendet?.plan || plan).geld;
   if (z.phase === "arena") {
     const wahl = gesendet ? gesendet.ausbau : arenaWahl;
     const kosten = wahl ? ausbauKosten(team, wahl) : 0;
@@ -556,7 +580,10 @@ function transferHtml() {
   const team = z.teams[ich()];
   const gesendet = meineAktion();
   const aktPlan = gesendet?.plan || plan;
-  const r = planRechnen(team, team.hand, { kaeufe: aktPlan.kaeufe || [], ausbau: null });
+  const r = planVon(team, aktPlan);
+  const darfTauschen = tauschErlaubt(z.runde);
+  const tw = r.tausch;
+  const zielFeld = (f) => (tw ? (f === tw.a ? tw.b : f === tw.b ? tw.a : f) : f);
   const handKarten = team.hand.map((id) => {
     const geplant = aktPlan.kaeufe.find((k) => k.id === id);
     const teuer = karte(id).kosten > r.geld + (geplant ? karte(id).kosten : 0);
@@ -564,15 +591,23 @@ function transferHtml() {
     return `<button type="button" data-a="hand" data-v="${id}" class="${kl}">${karteHtml(id)}</button>`;
   }).join("");
   const verkaufZeilen = r.verkauft.map((v) => `<span>${escapeHtml(karte(v.id).name)} verkauft</span><span>+${v.erloes}</span>`).join("");
-  const kaufZeilen = r.gekauft.map((g) => `<span>${escapeHtml(karte(g.id).name)} gekauft</span><span>−${g.kosten}</span>`).join("");
+  const kaufZeilen = r.gekauft.map((g) => `<span>${escapeHtml(karte(g.id).name)} gekauft</span><span>−${g.kosten}</span>`).join("")
+    + (tw ? `<span>Tausch ${escapeHtml(karte(r.grid[tw.b].id).name.split(" ").pop())} ⇄ ${escapeHtml(karte(r.grid[tw.a].id).name.split(" ").pop())}</span><span>−${tw.kosten}</span>` : "");
   const anleitung = gesendet ? "Abgeschickt. Warte auf die anderen …"
+    : tauschModus ? (tauschErste == null ? "Tausch: Tippe auf den ersten Spieler." : "Tausch: Tippe jetzt auf den zweiten Spieler.")
     : handAuswahl ? "Tippe jetzt auf ein Feld in deinem Raster. Ein belegtes Feld wird überbaut, der alte Spieler verkauft."
     : "Tippe auf eine Handkarte und dann auf ein Feld. Nochmal antippen nimmt den Kauf zurück.";
   return `<div class="kl-box">
     <h3>Deine Handkarten</h3>
     <div class="kl-hand" id="kl-hand-scroll">${handKarten}</div>
     <p class="kl-hand-info">${anleitung}</p>
-    ${rasterHtml(r.grid, { ziel: !gesendet && Boolean(handAuswahl), neu: r.gekauft.map((g) => g.feld), klickbar: !gesendet })}
+    ${rasterHtml(r.grid, { ziel: !gesendet && (Boolean(handAuswahl) || tauschModus), neu: r.gekauft.map((g) => zielFeld(g.feld)), klickbar: !gesendet,
+      markiert: tauschModus && tauschErste != null ? [tauschErste] : tw ? [tw.a, tw.b] : [] })}
+    ${darfTauschen ? `<div class="kl-tausch">
+      <div><b>Kartentausch vor dem Spieltag</b><span>Zwei beliebige Spieler im Raster tauschen die Plätze · ${CFG.tauschKosten} Münzen</span></div>
+      ${gesendet ? "" : tw ? `<button type="button" class="kl-btn sek" data-a="tausch-weg">Aufheben</button>`
+        : `<button type="button" class="kl-btn ${tauschModus ? "" : "sek"}" data-a="tausch-modus">${tauschModus ? "Abbrechen" : "Tauschen"}</button>`}
+    </div>` : ""}
     <div class="kl-box" style="margin:12px 0 0;background:var(--kl-flaeche2)">
       <div class="kl-rechnung">
         <span>Geld jetzt</span><span>${team.geld}</span>
@@ -599,6 +634,7 @@ function arenaHtml() {
   const zusammen = tr ? [
     ...tr.gekauft.map((g) => `${escapeHtml(karte(g.id).name)} gekauft (−${g.kosten})`),
     ...tr.verkauft.map((v) => `${escapeHtml(karte(v.id).name)} verkauft (+${v.erloes})`),
+    tr.tausch ? `Tausch (−${tr.tausch.kosten})` : "",
     tr.handErloes ? `${tr.rest.length} Handkarte${tr.rest.length === 1 ? "" : "n"} verkauft (+${tr.handErloes})` : ""
   ].filter(Boolean).join(" · ") : "";
   const kosten = wahl ? ausbauKosten(team, wahl) : 0;
@@ -634,7 +670,7 @@ function arenaPanel(team, { auswahl = false, plan: p = null, r = null } = {}) {
 }
 
 // ---- Raster ---------------------------------------------------------------------------------
-function rasterHtml(grid, { ziel = false, neu = [], klickbar = false } = {}) {
+function rasterHtml(grid, { ziel = false, neu = [], klickbar = false, markiert = [] } = {}) {
   const { werte } = feldWerte(grid);
   const art = CFG.spieltage[naechsterSpieltag()] || "reihe";
   const reihen = LINIEN.reihe.map((L) => L.reduce((s, i) => s + werte[i], 0));
@@ -642,7 +678,7 @@ function rasterHtml(grid, { ziel = false, neu = [], klickbar = false } = {}) {
   const wuerfel = (L) => ["kleiner_wuerfel", "grosser_wuerfel"].filter((b) => L.some((i) => grid[i] && karte(grid[i].id)?.bonus === b));
   const zellen = grid.map((zz, i) => {
     const inhalt = zz ? karteHtml(zz.id, { mini: true, wert: zz.w, neu: neu.includes(i) }) : "";
-    const kl = ["kl-zelle", ziel ? "ziel" : "", zz ? "belegt" : ""].join(" ");
+    const kl = ["kl-zelle", ziel ? "ziel" : "", zz ? "belegt" : "", markiert.includes(i) ? "markiert" : ""].join(" ");
     const aktion = klickbar ? `data-a="feld" data-v="${i}"` : (zz ? `data-a="zoom" data-v="${zz.id}" data-w="${zz.w}"` : "");
     return `<button type="button" class="${kl}" ${aktion}>${inhalt}</button>`;
   }).join("");
@@ -759,6 +795,7 @@ function regelnHtml() {
     ["Einnahmen", `${CFG.einkommen} Münzen, dazu Tribüne, Fanlieblinge und die Aufholhilfe für den Tabellenletzten (+${CFG.aufhol} pro Runde bis zum nächsten Spieltag).`],
     ["Draft", `Jeder bekommt ${CFG.handGroesse} Karten, nimmt eine und gibt den Rest weiter, bis jeder ${CFG.picks} Karten hat.`],
     ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen und ins Raster legen. Ein belegtes Feld wird überbaut, der alte Spieler bringt die halben Kosten. Nicht gekaufte Handkarten bringen je ${CFG.verkaufHand} Münze.`],
+    ["Kartentausch", `Nur in den Runden direkt vor einem Spieltag (2, 4, 6, 8): Für ${CFG.tauschKosten} Münzen dürfen zwei beliebige Spieler im Raster die Plätze tauschen, einmal pro Runde.`],
     ["Arena-Ausbau", "Wenn alle ihre Transfers gemacht haben, darf jeder Tribüne oder Hexenkessel um eine Stufe ausbauen oder das Geld sparen."],
     ["Spieltag", "Nach Runde 2, 4, 6 und 8 spielt jeder gegen jeden."],
     ["Deckwechsel", `Ab Runde ${CFG.deckWechselRunde} kommen nur noch die starken Spieler aus Deck 2.`]

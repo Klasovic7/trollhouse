@@ -20,8 +20,10 @@ export const CFG = {
   deckWechselRunde: 5,
   trib: { kosten: [3, 5], einnahmen: [1, 3] },
   hex: { kosten: [3, 5], heim: [1, 2] },
-  fanEinkommen: 1
+  fanEinkommen: 1,
+  tauschKosten: 2
 };
+export const tauschErlaubt = (runde) => Boolean(CFG.spieltage[runde]);
 
 export const REIHEN_POS = ["ST", "MF", "ABW"];
 export const POS_NAME = { ST: "Sturm", MF: "Mittelfeld", ABW: "Abwehr" };
@@ -253,7 +255,7 @@ export function ausbauKosten(team, pfad) {
 
 // Plan durchrechnen (für Vorschau UND Ausführung, damit beides gleich ist).
 // plan = { kaeufe: [{ id, feld }], ausbau: "T" | "H" | null }
-export function planRechnen(team, hand, plan) {
+export function planRechnen(team, hand, plan, runde = 0) {
   const grid = team.grid.map((z) => (z ? { ...z } : null));
   let geld = team.geld;
   const gekauft = [], verkauft = [], fehler = [];
@@ -268,6 +270,16 @@ export function planRechnen(team, hand, plan) {
     grid[feld] = { id, w: k.staerke };
     gekauft.push({ id, feld, kosten: k.kosten });
   });
+  // Kartentausch: nur in Runden direkt vor einem Spieltag, 2 beliebige Spieler im Raster
+  let tausch = null;
+  const tw = plan?.tausch;
+  if (Array.isArray(tw) && tw.length === 2) {
+    const [a, b] = tw.map(Number);
+    if (!tauschErlaubt(runde)) fehler.push("Tausch nur vor einem Spieltag");
+    else if (!(a >= 0 && a < 9 && b >= 0 && b < 9 && a !== b && grid[a] && grid[b])) fehler.push("Tausch ungültig");
+    else if (CFG.tauschKosten > geld) fehler.push("Tausch: zu wenig Geld");
+    else { [grid[a], grid[b]] = [grid[b], grid[a]]; geld -= CFG.tauschKosten; tausch = { a, b, kosten: CFG.tauschKosten }; }
+  }
   let ausbau = null;
   if (plan?.ausbau) {
     const kosten = ausbauKosten(team, plan.ausbau);
@@ -276,7 +288,7 @@ export function planRechnen(team, hand, plan) {
   }
   const rest = hand.filter((id) => !gekauft.some((g) => g.id === id));
   const handErloes = rest.length * CFG.verkaufHand;
-  return { grid, geld, geldNachVerkauf: geld + handErloes, gekauft, verkauft, ausbau, rest, handErloes, fehler };
+  return { grid, geld, geldNachVerkauf: geld + handErloes, gekauft, verkauft, tausch, ausbau, rest, handErloes, fehler };
 }
 
 // ---- Bots --------------------------------------------------------------------------
@@ -368,6 +380,20 @@ export function botDraftWahl(team, hand, runde, k = 0.5) {
 }
 
 // Transfer: Käufe + Ausbau für einen Bot
+export function botTausch(grid, runde, k = 0.5) {
+  const { rs } = restInfo(runde);
+  const kk = muenzFaktor(k, runde);
+  const basis = bewertung(grid, runde, kk);
+  let best = null, bestG = kk * rs * CFG.tauschKosten;
+  for (let a = 0; a < 9; a++) for (let b = a + 1; b < 9; b++) {
+    if (!grid[a] || !grid[b]) continue;
+    [grid[a], grid[b]] = [grid[b], grid[a]];
+    const g = bewertung(grid, runde, kk) - basis;
+    [grid[a], grid[b]] = [grid[b], grid[a]];
+    if (g > bestG) { bestG = g; best = [a, b]; }
+  }
+  return best;
+}
 export function botTransferPlan(team, hand, runde, strat = { k: 0.5, lust: 1 }) {
   const plan = { kaeufe: [], ausbau: null };
   const t = { ...team, grid: team.grid.map((z) => (z ? { ...z } : null)) };
@@ -397,7 +423,11 @@ export function botTransferPlan(team, hand, runde, strat = { k: 0.5, lust: 1 }) 
     plan.kaeufe.push({ id: o.id, feld: o.feld });
     verfuegbar.splice(verfuegbar.indexOf(o.id), 1);
   }
-  // Ausbau muss nach den Käufen bezahlbar sein (gleiche Reihenfolge wie planRechnen)
+  // Tausch vor dem Spieltag: besten der 36 möglichen Tausche suchen
+  if (tauschErlaubt(runde) && CFG.tauschKosten <= geld && strat.tausch !== false) {
+    const t2 = botTausch(t.grid, runde, strat.k);
+    if (t2) plan.tausch = t2;
+  }
   return plan;
 }
 

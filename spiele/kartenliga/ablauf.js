@@ -97,12 +97,12 @@ export function transferAnwenden(z, plaene) {
   z.reihenfolge.forEach((id) => {
     const t = z.teams[id];
     const roh = istBot(id) ? botTransferPlan(t, t.hand, z.runde, { ...(z.botStrat[id] || {}), lust: 0 }) : (plaene[id] || { kaeufe: [] });
-    const r = planRechnen(t, t.hand, { kaeufe: roh.kaeufe || [], ausbau: null });
+    const r = planRechnen(t, t.hand, { kaeufe: roh.kaeufe || [], tausch: roh.tausch || null, ausbau: null }, z.runde);
     t.grid = r.grid;
     t.geld = r.geldNachVerkauf;
     r.verkauft.forEach((v) => zurueckLegen(z, v.id, z.runde));
     r.rest.forEach((k) => zurueckLegen(z, k, z.runde));
-    z.transfers[id] = { gekauft: r.gekauft, verkauft: r.verkauft, handErloes: r.handErloes, rest: r.rest };
+    z.transfers[id] = { gekauft: r.gekauft, verkauft: r.verkauft, tausch: r.tausch, handErloes: r.handErloes, rest: r.rest };
     t.hand = [];
   });
   z.phase = "arena";
