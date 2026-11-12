@@ -1512,6 +1512,7 @@
     body[data-spiel="blitzquiz"]      { --club-glow: linear-gradient(135deg, color-mix(in srgb, #fbbf24 32%, #3d2544) 0%, #251728 32%, #18101d 62%, #120d17 100%); }
     body[data-spiel="finto"]          { --club-glow: linear-gradient(135deg, color-mix(in srgb, #38bdf8 32%, #3d2544) 0%, #251728 32%, #18101d 62%, #120d17 100%); }
     body[data-spiel="imposter"]        { --club-glow: linear-gradient(135deg, color-mix(in srgb, #fb7185 32%, #3d2544) 0%, #251728 32%, #18101d 62%, #120d17 100%); }
+    body[data-spiel="kartenliga"]      { --club-glow: linear-gradient(135deg, color-mix(in srgb, #16a34a 32%, #3d2544) 0%, #251728 32%, #18101d 62%, #120d17 100%); }
 
     html { background: var(--app-hintergrund); }
     body {

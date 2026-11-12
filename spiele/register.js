@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "483";
+const SPIEL_VERSION = "484";
 
 export const SPIELE = [
   {
@@ -180,6 +180,16 @@ export const SPIELE = [
     beschreibung: "Ersteigere Spielerkarten und gewinne mit der besten Kombination",
     minSpieler: 2,
     laden: () => import(`./fussball-auktion/spiel.js?v=${SPIEL_VERSION}`)
+  },
+  {
+    id: "kartenliga",
+    name: "Kartenliga",
+    emoji: "🏟️",
+    farbe: "#16a34a",
+    beschreibung: "Draft dein Team im 3x3-Raster, bau deine Arena aus und werde Meister - alleine mit Bots spielbar",
+    minSpieler: 1,
+    mitBots: true,
+    laden: () => import(`./kartenliga/spiel.js?v=${SPIEL_VERSION}`)
   },
   {
     id: "groessenvergleich",
