@@ -242,12 +242,23 @@ button.kl-pfad:disabled { opacity:.5; }
 @keyframes klAuf { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion:reduce) { .kl-duell { animation:none; } }
 .kl-entw { display:flex; align-items:center; gap:8px; font-size:.85rem; padding:4px 0; }
-.kl-entw .kl-bsym { width:22px; height:22px; }
+.kl-entw .kl-bsym { width:24px; height:24px; flex:none; }
+.kl-entw { align-items:flex-start; line-height:1.4; } .kl-entw > span { min-width:0; }
 
 /* Overlay für große Karte */
 .kl-overlay { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.72); display:grid; place-items:center; padding:20px; }
 .kl-overlay .kl-karte { font-size:clamp(11px,4.2vw,16px); }
 .kl-overlay .kl-ov-info { color:#fff; text-align:center; margin-top:10px; font-size:.9rem; }
+.kl-regeln { margin:0 0 14px; padding:0; list-style:none; counter-reset:klr; color:var(--kl-muted); font-size:.9rem; }
+.kl-regeln li { display:grid; grid-template-columns:auto 1fr; column-gap:8px; margin:0 0 8px; line-height:1.4; }
+.kl-regeln li::before { content:"•"; color:var(--club-orange,#ff5b36); font-weight:800; grid-row:span 2; }
+ol.kl-regeln li { counter-increment:klr; }
+ol.kl-regeln li::before { content:counter(klr) "."; color:var(--kl-text); min-width:1.2em; }
+.kl-regeln li b { color:var(--kl-text); }
+.kl-schon { margin-top:12px; }
+.kl-schon-karten { display:flex; gap:8px; margin-top:6px; }
+.kl-schon-karten button { padding:0; margin:0; background:none; border:0; width:72px; flex:none; container-type:inline-size; }
+.kl-schon-karten .kl-karte { width:100%; height:auto; aspect-ratio:18/25.2; font-size:calc(100cqw / 18); }
 .kl-flagge { width:20px; height:14px; vertical-align:-2px; border-radius:2px; }
 .kl-setup-bots { display:flex; gap:6px; flex-wrap:wrap; }
 .kl-setup-bots button { margin:0; width:auto; padding:8px 14px; background:var(--kl-flaeche2,#352039); color:#fff; border:1px solid rgba(255,255,255,.15); }

@@ -466,7 +466,7 @@ function draftHtml() {
     <div class="kl-hand" id="kl-hand-scroll">${karten}</div>
     ${gesendet ? `<p class="kl-muted">Gewählt. Warte auf die anderen …</p>${werIstFertig()}`
       : `<button type="button" class="btn-primaer" data-a="draft-ok" ${draftAuswahl ? "" : "disabled"}>${draftAuswahl ? `${escapeHtml(karte(draftAuswahl).name)} nehmen` : "Tippe eine Karte an"}</button>`}
-    ${meine.length ? `<p class="kl-hand-info" style="margin-top:10px">Schon gewählt: ${meine.map((id) => escapeHtml(karte(id).name)).join(", ")}</p>` : ""}
+    ${meine.length ? `<div class="kl-schon"><span class="kl-muted">Schon auf der Hand:</span><div class="kl-schon-karten">${meine.map((id) => `<button type="button" data-a="zoom" data-v="${id}">${karteHtml(id, { mini: true })}</button>`).join("")}</div></div>` : ""}
   </div>`;
 }
 
@@ -643,19 +643,40 @@ function tabsHtml() {
 }
 
 function regelnHtml() {
+  const liste = (punkte, nummeriert = false) => `<${nummeriert ? "ol" : "ul"} class="kl-regeln">${punkte.map(([t, x]) => `<li><b>${t}</b><span>${x}</span></li>`).join("")}</${nummeriert ? "ol" : "ul"}>`;
   return `<h3>So läuft eine Runde</h3>
-  <p class="kl-muted">1. <b>Einnahmen:</b> ${CFG.einkommen} Münzen, dazu Tribüne, Fanlieblinge und die Aufholhilfe für den Tabellenletzten (+${CFG.aufhol} pro Runde bis zum nächsten Spieltag).<br>
-  2. <b>Draft:</b> Jeder bekommt ${CFG.handGroesse} Karten, nimmt eine und gibt den Rest weiter, bis jeder ${CFG.picks} Karten hat.<br>
-  3. <b>Transfers:</b> Bis zu ${CFG.maxKauf} Spieler kaufen und ins Raster legen. Ein belegtes Feld wird überbaut, der alte Spieler bringt die halben Kosten. Nicht gekaufte Handkarten bringen je ${CFG.verkaufHand} Münze. Dazu ein Arena-Ausbau.<br>
-  4. Nach Runde 2, 4, 6 und 8 ist <b>Spieltag</b>. Ab Runde ${CFG.deckWechselRunde} kommen nur noch die starken Spieler aus Deck 2.</p>
+  ${liste([
+    ["Einnahmen", `${CFG.einkommen} Münzen, dazu Tribüne, Fanlieblinge und die Aufholhilfe für den Tabellenletzten (+${CFG.aufhol} pro Runde bis zum nächsten Spieltag).`],
+    ["Draft", `Jeder bekommt ${CFG.handGroesse} Karten, nimmt eine und gibt den Rest weiter, bis jeder ${CFG.picks} Karten hat.`],
+    ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen und ins Raster legen. Ein belegtes Feld wird überbaut, der alte Spieler bringt die halben Kosten. Nicht gekaufte Handkarten bringen je ${CFG.verkaufHand} Münze.`],
+    ["Arena-Ausbau", "Pro Runde darfst du zusätzlich Tribüne oder Hexenkessel um eine Stufe ausbauen."],
+    ["Spieltag", "Nach Runde 2, 4, 6 und 8 spielt jeder gegen jeden."],
+    ["Deckwechsel", `Ab Runde ${CFG.deckWechselRunde} kommen nur noch die starken Spieler aus Deck 2.`]
+  ], true)}
   <h3>Spieltag</h3>
-  <p class="kl-muted">Jeder spielt gegen jeden, abwechselnd Heim und Auswärts. Spieltag 1 und 3: Sturm gegen Abwehr, Mittelfeld gegen Mittelfeld, Abwehr gegen Sturm. Spieltag 2 und 4: Links gegen Rechts, Mitte gegen Mitte, Rechts gegen Links. Differenz 1–3 gibt 1 Tor, 4–6 gibt 2 Tore, ab 7 gibt es 3 Tore. Sieg 3 Punkte, Unentschieden 1.</p>
+  ${liste([
+    ["Gegner", "Jeder spielt gegen jeden, abwechselnd Heim und Auswärts."],
+    ["Spieltag 1 und 3", "Sturm gegen Abwehr, Mittelfeld gegen Mittelfeld, Abwehr gegen Sturm."],
+    ["Spieltag 2 und 4", "Links gegen Rechts, Mitte gegen Mitte, Rechts gegen Links."],
+    ["Tore", "Differenz 1–3 gibt 1 Tor, 4–6 gibt 2 Tore, ab 7 gibt es 3 Tore."],
+    ["Punkte", "Sieg 3, Unentschieden 1, Niederlage 0."]
+  ])}
   <h3>Stärke</h3>
-  <p class="kl-muted">Spieler auf der falschen Position: −${CFG.posMalus}. Drei Spieler gleicher Nation in einer Reihe oder Spalte: je +1. Vereinskollege direkt daneben: +1. Startspieler zählen überall voll.</p>
+  ${liste([
+    ["Falsche Position", `Ein Spieler außerhalb seiner Reihe bekommt −${CFG.posMalus}.`],
+    ["Nation", "Drei Spieler gleicher Nation in einer Reihe oder Spalte: je +1."],
+    ["Verein", "Ein Vereinskollege direkt daneben: +1."],
+    ["Startspieler", "Haben keine Position und zählen überall voll."]
+  ])}
   <h3>Fähigkeiten</h3>
-  ${Object.keys(BONUS_NAME).map((b) => `<div class="kl-entw">${bonusSymbol(b)}<span><b>${BONUS_NAME[b]}:</b> ${BONUS_TEXT[b]}</span></div>`).join("")}
+  ${Object.keys(BONUS_NAME).map((b) => `<div class="kl-entw">${bonusSymbol(b)}<span><b>${BONUS_NAME[b]}:</b> ${BONUS_TEXT[b]}${b === "talent"
+    ? ". <b>Durchbruch</b> heißt: Die Linie, in der das Talent steht, hat an diesem Spieltag mehr als die Hälfte ihrer Duelle gewonnen. Bei Reihen-Spieltagen zählt seine Reihe, bei Flügel-Spieltagen seine Spalte."
+    : b === "veteran" ? ". Gemeint sind die Spiele an diesem Spieltag." : ""}</span></div>`).join("")}
   <h3 style="margin-top:10px">Arena</h3>
-  <p class="kl-muted">Tribüne: Stufe 1 für ${CFG.trib.kosten[0]} Münzen (+${CFG.trib.einnahmen[0]} pro Runde), Stufe 2 für ${CFG.trib.kosten[1]} (+${CFG.trib.einnahmen[1]}). Hexenkessel: Stufe 1 für ${CFG.hex.kosten[0]} (+${CFG.hex.heim[0]} in allen Heimduellen), Stufe 2 für ${CFG.hex.kosten[1]} (+${CFG.hex.heim[1]}).</p>`;
+  ${liste([
+    ["Tribüne", `Stufe 1 für ${CFG.trib.kosten[0]} Münzen: +${CFG.trib.einnahmen[0]} pro Runde. Stufe 2 für ${CFG.trib.kosten[1]}: +${CFG.trib.einnahmen[1]} pro Runde.`],
+    ["Hexenkessel", `Stufe 1 für ${CFG.hex.kosten[0]} Münzen: +${CFG.hex.heim[0]} in allen Heimduellen. Stufe 2 für ${CFG.hex.kosten[1]}: +${CFG.hex.heim[1]}.`]
+  ])}`;
 }
 
 // ---- Ende ------------------------------------------------------------------------------------
