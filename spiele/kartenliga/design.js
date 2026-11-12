@@ -260,9 +260,13 @@ ol.kl-regeln li::before { content:counter(klr) "."; color:var(--kl-text); min-wi
 .kl-schon-karten button { padding:0; margin:0; background:none; border:0; width:72px; flex:none; container-type:inline-size; }
 .kl-schon-karten .kl-karte { width:100%; height:auto; aspect-ratio:18/25.2; font-size:calc(100cqw / 18); }
 .kl-spiel[data-a] { cursor:pointer; } .kl-spiel[data-a]:active { transform:scale(.99); } .kl-weitere { cursor:pointer; }
-.kl-overlay-scroll { place-items:start center; overflow-y:auto; padding:16px 12px 40px; }
+.kl-overlay-scroll { display:block; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:rgba(8,6,12,.94);
+  padding:calc(env(safe-area-inset-top, 0px) + 16px) 12px calc(env(safe-area-inset-bottom, 0px) + 40px); }
+.kl-overlay-scroll .kl-sp-panel { margin:0 auto; }
 .kl-sp-panel { width:100%; max-width:440px; background:var(--kl-flaeche); border:1px solid var(--kl-linie); border-radius:18px; padding:14px; }
-.kl-sp-duell { margin-top:12px; padding-top:10px; border-top:1px solid var(--kl-linie); }
+.kl-sp-duell { margin-top:14px; padding:10px 10px 12px; background:var(--kl-flaeche2); border:1px solid rgba(255,255,255,.18); border-radius:16px; box-shadow:0 6px 18px rgba(0,0,0,.35); }
+.kl-sp-titel { font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; color:#fff;
+  background:var(--club-orange,#ff5b36); border-radius:999px; padding:2px 10px; display:inline-block; margin-bottom:6px; }
 .kl-sp-kopf { display:grid; grid-template-columns:1fr auto 1fr; gap:6px; align-items:center; font-size:.85rem; }
 .kl-sp-kopf span:last-child { text-align:right; } .kl-sp-kopf b { font-family:"Barlow Condensed",sans-serif; font-size:1.4rem; }
 .kl-sp-tore { text-align:center; font-size:.8rem; color:var(--kl-muted); margin:2px 0 6px; }

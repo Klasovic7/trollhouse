@@ -82,6 +82,7 @@ let hinweis = "";
 let animiert = new Set();
 let sendet = false;
 let arenaWahl = null;
+let letztesHtml = "";
 const phasenDauer = (p) => (p === "draft" ? DRAFT_MS : p === "transfer" ? TRANSFER_MS : ARENA_MS);
 const mitZeit = (p) => p === "draft" || p === "transfer" || p === "arena";
 
@@ -134,7 +135,8 @@ export function beenden() {
   document.querySelector(".kl-overlay")?.remove();
   el = {}; spielerListe = []; status = null; z = null; aktionen = {}; bereitSystem = null;
   leiterBusy = false; letzterSchritt = ""; schrittKey = ""; draftAuswahl = null; plan = { kaeufe: [], ausbau: null };
-  handAuswahl = null; tab = "team"; ligaSicht = null; hinweis = ""; animiert = new Set(); sendet = false;
+  handAuswahl = null; tab = "team"; ligaSicht = null; hinweis = ""; animiert = new Set(); sendet = false; letztesHtml = "";
+  document.body.style.overflow = "";
 }
 
 export function spieler(liste) {
@@ -409,8 +411,8 @@ function klick(ev) {
 
 function zeigeSpiel(i) {
   const sp = z?.spieltag;
-  const s = sp?.spiele?.[i];
-  if (!s) return;
+  if (!sp?.spiele?.[i]) return;
+  const s = heimZuerst(sp.spiele[i]);
   document.querySelector(".kl-overlay")?.remove();
   const raster = sp.raster || {};
   const seite = (id, wuerfe) => {
@@ -431,6 +433,7 @@ function zeigeSpiel(i) {
   const duelle = s.duelle.map((d) => {
     const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
     return `<div class="kl-sp-duell">
+      <div class="kl-sp-titel">${LINIEN_NAME[sp.art][d.la]} gegen ${LINIEN_NAME[sp.art][d.lb]}</div>
       <div class="kl-sp-kopf"><span>${LINIEN_NAME[sp.art][d.la]} ${teamName(s.a, false)}</span><b>${d.sa} : ${d.sb}</b><span>${teamName(s.b, false)} ${LINIEN_NAME[sp.art][d.lb]}</span></div>
       <div class="kl-sp-tore">${"⚽".repeat(d.ta) || "–"} : ${"⚽".repeat(d.tb) || "–"}${ha || hb ? ` · Heimbonus 🏟️ +${ha || hb} (${teamInfo(ha ? s.a : s.b).name})` : ""}</div>
       ${kartenReihe(A, d.la)}<div class="kl-sp-gegen">gegen</div>${kartenReihe(B, d.lb)}
@@ -442,7 +445,9 @@ function zeigeSpiel(i) {
     <div class="kl-spiel-kopf"><div>${teamName(s.a)}</div><div class="kl-ergebnis">${s.ta} : ${s.tb}</div><div class="r">${teamName(s.b)}</div></div>
     ${duelle}
     <button type="button" class="btn-primaer" style="margin-top:10px">Schließen</button></div>`;
-  ov.addEventListener("click", (e) => { if (e.target === ov || e.target.closest("button.btn-primaer")) ov.remove(); });
+  const zu = () => { ov.remove(); document.body.style.overflow = ""; };
+  ov.addEventListener("click", (e) => { if (e.target === ov || e.target.closest("button.btn-primaer")) zu(); });
+  document.body.style.overflow = "hidden";
   document.body.appendChild(ov);
 }
 
@@ -468,11 +473,14 @@ function zeichne() {
   if (status === "setup" || !status) { zeichneSetup(); return; }
   if (!z) return;
   if (status === "ende") { zeichneEnde(); return; }
+  const html = kopfHtml() + phaseHtml() + tabsHtml();
+  if (html === letztesHtml) return;
+  letztesHtml = html;
   const scrollY = window.scrollY;
   const hand = $("kl-hand-scroll")?.scrollLeft || 0;
-  $("kl-spiel").innerHTML = kopfHtml() + phaseHtml() + tabsHtml();
+  $("kl-spiel").innerHTML = html;
   const h2 = $("kl-hand-scroll"); if (h2) h2.scrollLeft = hand;
-  window.scrollTo(0, scrollY);
+  if (Math.abs(window.scrollY - scrollY) > 2) window.scrollTo(0, scrollY);
 }
 
 function naechsterSpieltag() {
@@ -651,6 +659,14 @@ function rasterHtml(grid, { ziel = false, neu = [], klickbar = false } = {}) {
 }
 
 // ---- Spieltag -------------------------------------------------------------------------------
+// Spiel so drehen, dass die Heimmannschaft links steht (Duelle dann wieder Sturm/Links zuerst)
+function heimZuerst(s) {
+  if (s.heim === s.a) return s;
+  return {
+    a: s.b, b: s.a, heim: s.heim, ta: s.tb, tb: s.ta, heimBonus: s.heimBonus, wuerfeA: s.wuerfeB, wuerfeB: s.wuerfeA,
+    duelle: s.duelle.map((d) => ({ la: d.lb, lb: d.la, sa: d.sb, sb: d.sa, ta: d.tb, tb: d.ta })).sort((x, y) => x.la - y.la)
+  };
+}
 function spieltagHtml() {
   const sp = z.spieltag;
   if (!sp) return "";
@@ -661,8 +677,9 @@ function spieltagHtml() {
   if (erstes) setTimeout(() => animiert.add(sp.nr), 50);
   let delay = 0;
   const wuerfelSumme = (liste, L) => (liste || []).filter((w) => LINIEN[art][L].includes(w.feld)).reduce((s, w) => s + w.wurf, 0);
-  const spielBox = (s) => {
-    const idx = sp.spiele.indexOf(s);
+  const spielBox = (orig) => {
+    const idx = sp.spiele.indexOf(orig);
+    const s = heimZuerst(orig);
     const duelle = s.duelle.map((d) => {
       const wa = wuerfelSumme(s.wuerfeA, d.la), wb = wuerfelSumme(s.wuerfeB, d.lb);
       const style = erstes ? `style="animation-delay:${(delay += 0.35).toFixed(2)}s"` : `style="animation:none"`;
@@ -674,9 +691,9 @@ function spieltagHtml() {
       </div>`;
     }).join("");
     return `<div class="kl-spiel" data-a="spiel" data-v="${idx}" role="button"><div class="kl-spiel-kopf">
-      <div>${teamName(s.a)}${s.heim === s.a ? `<span class="kl-heim">Heimspiel</span>` : ""}</div>
+      <div>${teamName(s.a)}</div>
       <div class="kl-ergebnis">${s.ta} : ${s.tb}</div>
-      <div class="r">${teamName(s.b)}${s.heim === s.b ? `<span class="kl-heim">Heimspiel</span>` : ""}</div></div>${duelle}</div>`;
+      <div class="r">${teamName(s.b)}</div></div>${duelle}</div>`;
   };
   const entw = (sp.entwicklung || []).map((e) => {
     const k = karte(e.karte);
@@ -691,9 +708,9 @@ function spieltagHtml() {
   const naechste = z.runde >= CFG.runden ? "Zum Endstand" : `Weiter zu Runde ${z.runde + 1}`;
   return `<div class="kl-box">
     <h3>${sp.nr}. Spieltag · ${art === "reihe" ? "Reihen-Duelle" : "Flügel-Duelle"}</h3>
-    <p class="kl-muted" style="margin:0 0 10px">Tippe auf ein Spiel, um die Spielerkarten der Duelle zu sehen. ${art === "reihe" ? "Sturm gegen Abwehr, Mittelfeld gegen Mittelfeld." : "Links gegen Rechts, Mitte gegen Mitte."} Differenz 1–3 = 1 Tor, 4–6 = 2 Tore, ab 7 = 3 Tore.</p>
+    <p class="kl-muted" style="margin:0 0 10px">Die Heimmannschaft steht jeweils links. Tippe auf ein Spiel, um die Spielerkarten der Duelle zu sehen. ${art === "reihe" ? "Sturm gegen Abwehr, Mittelfeld gegen Mittelfeld." : "Links gegen Rechts, Mitte gegen Mitte."} Differenz 1–3 = 1 Tor, 4–6 = 2 Tore, ab 7 = 3 Tore.</p>
     ${(meine.length ? meine : sp.spiele).map(spielBox).join("")}
-    ${meine.length && andere.length ? `<h3 style="margin-top:12px">Weitere Spiele</h3>${andere.map((s) => `<div class="kl-zeile kl-weitere" data-a="spiel" data-v="${sp.spiele.indexOf(s)}" style="justify-content:space-between;padding:4px 0">${teamName(s.a)}<b>${s.ta} : ${s.tb}</b>${teamName(s.b)}</div>`).join("")}` : ""}
+    ${meine.length && andere.length ? `<h3 style="margin-top:12px">Weitere Spiele</h3>${andere.map((o) => { const s = heimZuerst(o); return `<div class="kl-zeile kl-weitere" data-a="spiel" data-v="${sp.spiele.indexOf(o)}" style="justify-content:space-between;padding:4px 0">${teamName(s.a)}<b>${s.ta} : ${s.tb}</b>${teamName(s.b)}</div>`; }).join("")}` : ""}
     <h3 style="margin-top:14px">Tabelle</h3>${tabelleHtml(sp.tabelle, gewinn)}
     ${entw ? `<h3 style="margin-top:14px">Entwicklung</h3>${entw}` : ""}
     <div style="margin-top:14px">${api.istLeiter ? `<button type="button" class="btn-primaer" data-a="weiter">${naechste}</button>` : `<p class="kl-muted">Der Spielleiter geht gleich weiter …</p>`}</div>
