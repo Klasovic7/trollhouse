@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "489";
+const SPIEL_VERSION = "490";
 
 export const SPIELE = [
   {
@@ -186,6 +186,7 @@ export const SPIELE = [
     name: "Kartenliga",
     emoji: "🏟️",
     farbe: "#16a34a",
+    bild: "bilder/kartenliga-kachel.webp",
     beschreibung: "Draft dein Team im 3x3-Raster, bau deine Arena aus und werde Meister - alleine mit Bots spielbar",
     minSpieler: 1,
     mitBots: true,
