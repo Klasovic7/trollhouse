@@ -332,9 +332,11 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl .kl-tempo button.an { background:var(--club-orange,#ff5b36); color:#fff; border-color:transparent; }
 .kl .kl-tempo button:disabled { opacity:1; }
 .kl .kl-tempo button:disabled:not(.an) { opacity:.45; }
-.kl-muenze-zahl { display:inline-grid; place-items:center; width:1.5em; height:1.5em; border-radius:50%; vertical-align:middle; flex:none;
-  background:radial-gradient(circle at 35% 30%, #ffe58a, #f2c230 55%, #b8860b); border:1px solid #8a6400; color:#3e2c00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.85em; line-height:1; }
-.kl-muenze-zahl.gross { font-size:1.25rem; width:1.7em; height:1.7em; box-shadow:0 2px 6px rgba(0,0,0,.4); }
+.kl .kl-muenze-zahl { display:inline-grid; place-items:center; width:1.6em; height:1.6em; border-radius:50%; vertical-align:middle; flex:none;
+  background:radial-gradient(circle at 35% 30%,#fff0b8,#ecb928 58%,#b98a0c); box-shadow:inset 0 0 0 .1em #a67a06,0 .1em .3em rgba(0,0,0,.45);
+  color:#5a3d00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.9em; line-height:1; font-style:normal; }
+.kl .kl-muenze-zahl.gross { font-size:1.35rem; width:1.75em; height:1.75em; }
+.kl .kl-muenze-zahl.kopf { font-size:1.35rem; width:1.85em; height:1.85em; }
 .kl-hand > button.verkauft { opacity:.45; }
 .kl-hand > button.waehlbar { border-color:#ffd54a; animation:klWackel 1.2s ease-in-out infinite; }
 @keyframes klWackel { 0%,100% { transform:none; } 50% { transform:translateY(-3px); } }

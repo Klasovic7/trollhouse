@@ -557,12 +557,12 @@ function kopfHtml() {
   const [titel, unter] = phasen[z.phase] || ["", ""];
   const zeit = z.zeitlimit && mitZeit(z.phase);
   return `<div class="kl-kopf"><div class="kl-phase"><b>Runde ${z.runde} · ${titel}</b><span>${unter}</span></div>
-    ${team ? `<span class="kl-geld"><span class="kl-muenze">€</span>${geldAnzeige(team)}</span>` : ""}</div>
+    ${team ? `<span class="kl-geld">${muenze(geldAnzeige(team), "kopf")}</span>` : ""}</div>
     ${zeit ? `<div class="kl-zeit"><i id="kl-zeitfuell"></i></div>` : ""}`;
 }
 
 // Münz-Symbol mit Zahl (wie auf den Karten)
-const muenze = (n, gross = "") => `<span class="kl-muenze-zahl ${gross}">${n}</span>`;
+const muenze = (n, gross = "") => `<b class="kl-muenze-zahl ${gross}">${n}</b>`;
 
 // Aktuellen Transferplan (Käufe + Tausch) für ein Team durchrechnen
 const planVon = (team, p) => planRechnen(team, team.hand, { kaeufe: p?.kaeufe || [], verkauf: p?.verkauf || [], tausch: p?.tausch || null, ausbau: null }, z.runde);
