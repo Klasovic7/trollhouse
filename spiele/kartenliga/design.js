@@ -325,9 +325,9 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-statisch .kl-wurf-roll, .kl-statisch .kl-wurf-roll .fin { animation:none !important; opacity:1 !important; visibility:visible !important; }
 .kl-statisch .kl-wurf-roll { transform:translateY(-12%) scale(.9); }
 .kl-statisch .kl-wurf-roll .zw, .kl-statisch .kl-bd-summe b.basis { display:none; }
-.kl-tempo { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px; }
+.kl-tempo { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:14px; }
 .kl-tempo span { font-size:.75rem; color:var(--kl-muted); text-transform:uppercase; letter-spacing:.08em; margin-right:4px; }
-.kl .kl-tempo button { width:auto; margin:0; padding:5px 12px; border-radius:999px; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.95rem;
+.kl .kl-tempo button { width:auto; min-width:56px; margin:0; padding:8px 16px; border-radius:999px; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.95rem;
   background:var(--kl-flaeche2); color:var(--kl-text); border:1px solid var(--kl-linie); }
 .kl .kl-tempo button.an { background:var(--club-orange,#ff5b36); color:#fff; border-color:transparent; }
 .kl .kl-tempo button:disabled { opacity:1; }
