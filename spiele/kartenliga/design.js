@@ -221,7 +221,7 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-wer span { font-size:.8rem; padding:3px 8px; border-radius:999px; background:var(--kl-flaeche2); color:var(--kl-muted); }
 .kl-wer span.ok { color:#fff; background:#1f7a3b; }
 .kl-team-name { display:inline-flex; align-items:center; gap:6px; font-weight:700; }
-.kl-team-name svg { width:22px; height:22px; flex:none; }
+.kl-team-name svg, .kl-team-name img { width:24px; height:24px; flex:none; object-fit:contain; }
 .kl-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
 
 /* Tabelle */
@@ -255,7 +255,7 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-live-frei { margin:0 0 10px; padding:8px 10px; border-radius:10px; background:var(--kl-flaeche2); color:var(--kl-muted); font-size:.85rem; text-align:center; }
 .kl-live-paar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; padding:6px 0 12px; }
 .kl-live-team { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; min-width:0; }
-.kl-live-team svg, .kl-live-team img { width:72px; height:72px; filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
+.kl-live-team svg, .kl-live-team img { width:84px; height:84px; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
 .kl-live-team b { font-size:.95rem; line-height:1.15; overflow-wrap:anywhere; }
 .kl-live-paar > .kl-live-team:first-child { animation:klVonLinks .6s cubic-bezier(.2,.9,.3,1.2) both; }
 .kl-live-paar > .kl-live-team:last-child { animation:klVonRechts .6s cubic-bezier(.2,.9,.3,1.2) both; }
@@ -280,6 +280,33 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-live-neben > :last-child { justify-self:end; }
 .kl-live-balken { margin-top:12px; height:4px; border-radius:2px; background:var(--kl-flaeche2); overflow:hidden; }
 .kl-live-balken i { display:block; height:100%; background:var(--club-orange,#ff5b36); animation:klBalken linear forwards; }
+/* Bühne: aktuelles Duell mit Karten */
+.kl-bd { display:grid; margin-top:10px; }
+.kl-bd-duell { grid-area:1/1; padding:10px; border-radius:16px; background:var(--kl-flaeche2); border:1px solid rgba(255,255,255,.16); box-shadow:0 6px 18px rgba(0,0,0,.35);
+  opacity:0; animation:klRein .35s var(--d) ease both, klRaus .3s var(--e) ease forwards; }
+.kl-bd-reihe { display:grid; grid-template-columns:1fr 64px; gap:8px; align-items:center; }
+.kl-bd-karten { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.kl-bd-karte { position:relative; container-type:inline-size; min-width:0; }
+.kl-bd-karte .kl-sp-leer { aspect-ratio:18/25.2; }
+.kl-bd-karte .kl-karte { width:100%; height:auto; aspect-ratio:18/25.2; font-size:calc(100cqw / 18); box-shadow:0 .3em .6em rgba(0,0,0,.4); }
+.kl-bd-wert { position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); min-width:26px; padding:1px 6px; border-radius:999px; background:#111; border:1px solid rgba(255,255,255,.35);
+  font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.9rem; text-align:center; }
+.kl-bd-summe { position:relative; height:64px; display:grid; place-items:center; border-radius:12px; background:rgba(0,0,0,.3); }
+.kl-bd-summe b { grid-area:1/1; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:2rem; line-height:1; }
+.kl-bd-summe b.basis { animation:klRaus .25s var(--e) forwards; }
+.kl-bd-summe b.end { opacity:0; animation:klPop .45s cubic-bezier(.2,.9,.3,1.4) forwards; color:#ffd54a; }
+.kl-bd-summe small { position:absolute; bottom:3px; left:0; right:0; text-align:center; font-size:.62rem; color:var(--kl-muted); }
+.kl-bd-duell.sieg-a .a .kl-bd-summe b.end, .kl-bd-duell.sieg-a .a .kl-bd-summe b:only-child,
+.kl-bd-duell.sieg-b .b .kl-bd-summe b.end, .kl-bd-duell.sieg-b .b .kl-bd-summe b:only-child { color:#7dff9a; }
+.kl-bd-tore { display:flex; justify-content:center; gap:6px; font-size:1.2rem; margin:12px 64px 10px 0; }
+.kl-wurf { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
+.kl-wurf svg { width:58%; height:auto; opacity:0; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); animation:klWurf .9s var(--d) ease-out forwards; }
+.kl-wurf b { position:absolute; opacity:0; padding:2px 8px; border-radius:999px; background:#f2c230; color:#2a1d00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.2rem;
+  box-shadow:0 3px 10px rgba(0,0,0,.5); animation:klPop .4s cubic-bezier(.2,.9,.3,1.4) forwards; }
+@keyframes klWurf { 0% { opacity:0; transform:translate(-60%,-80%) rotate(-200deg) scale(.6); } 15% { opacity:1; }
+  55% { transform:translate(8%,10%) rotate(160deg) scale(1.05); } 75% { transform:translate(-4%,0) rotate(250deg) scale(1); } 90% { opacity:1; transform:rotate(360deg); } 100% { opacity:0; transform:rotate(360deg) scale(.7); } }
+@keyframes klRein { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+@keyframes klRaus { to { opacity:0; visibility:hidden; } }
 @keyframes klVonLinks { from { opacity:0; transform:translateX(-40px) scale(.8); } to { opacity:1; transform:none; } }
 @keyframes klVonRechts { from { opacity:0; transform:translateX(40px) scale(.8); } to { opacity:1; transform:none; } }
 @keyframes klVsRein { from { opacity:0; transform:scale(2.2); } to { opacity:1; transform:none; } }
@@ -435,7 +462,7 @@ function stadion(ci,t,h){
   s+=line([gx,-3.66,0],[gx,-3.66,2.44],W,1.1)+line([gx,3.66,0],[gx,3.66,2.44],W,1.1)+line([gx,-3.66,2.44],[gx,3.66,2.44],W,1.1);
  });
  // Wappen im Mittelkreis (flach auf dem Rasen)
- {const p=P(0,0,0),sz=13*p[2];s+=`<g transform="translate(${p[0]-sz/2} ${p[1]-sz*0.28}) scale(${sz/100} ${sz/100*0.56})" opacity=".9">${crest(ci).replace(/<svg[^>]*>/,'').replace('</svg>','')}</g>`}
+ {const p=P(0,0,0),sz=13*p[2];s+=`<g transform="translate(${p[0]-sz/2} ${p[1]-sz*0.28}) scale(${sz/100} ${sz/100*0.56})" opacity=".9"><image href="${teamBild(ci)}" x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet"/></g>`}
  // Werbebanden
  const bandC=h>=1?c:'#d9dee4',bandL=h>=1?l:'#ffffff';
  const boards=[[[-PW-2,PL+3],[PW+2,PL+3]],[[PW+3,-PL-2],[PW+3,PL+2]],[[-PW-3,-PL-2],[-PW-3,PL+2]]];
@@ -474,7 +501,7 @@ function stadion(ci,t,h){
   s+=poly(q,c,'opacity=".92"');
   for(let k=0;k<7;k++){const a=k/7,b=a+1/14;s+=poly([bil(q,a,0),bil(q,b,0),bil(q,b,1),bil(q,a,1)],k%2?'#ffffff':dd,'opacity=".35"')}
   const m=P(...bil(q,.5,.5)),hgt=Math.abs(P(...bil(q,.5,1))[1]-P(...bil(q,.5,0))[1])*1.15;
-  s+=`<g transform="translate(${m[0]-hgt/2} ${m[1]-hgt/2}) scale(${hgt/100})">${crest(ci).replace(/<svg[^>]*>/,'').replace('</svg>','')}</g>`;
+  s+=`<g transform="translate(${m[0]-hgt/2} ${m[1]-hgt/2}) scale(${hgt/100})"><image href="${teamBild(ci)}" x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet"/></g>`;
  }
  // Fahnen oben auf den Rängen und Zaunfahnen (Hexenkessel 1+)
  if(h>=1){const tr=G.tiers[G.tiers.length-1];
@@ -522,6 +549,9 @@ function stadion(ci,t,h){
 
 
 // ---- Öffentliche Helfer -------------------------------------------------------------------
-export const teamWappen = (farbIdx, groesse) => crest(farbIdx, groesse);
+export const WAPPEN_VERSION = 1;
+export const teamBild = (farbIdx) => `bilder/kartenliga/teams/t${(farbIdx >= 0 && farbIdx < 10) ? farbIdx : 0}.webp?v=${WAPPEN_VERSION}`;
+export const teamWappen = (farbIdx, groesse) =>
+  `<img class="kl-twappen" src="${teamBild(farbIdx)}" alt="" draggable="false"${groesse ? ` width="${groesse}" height="${groesse}"` : ""}>`;
 export const WAPPEN_NAME = WAPPEN.map((w) => w.name);
 export const arenaSvg = (farbIdx, tribuene, hexenkessel) => stadion(farbIdx, tribuene, hexenkessel);

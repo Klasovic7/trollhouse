@@ -85,7 +85,7 @@ let arenaWahl = null;
 let letztesHtml = "";
 let tauschModus = false, tauschErste = null;
 // Spieltag-Animation: alle sehen gleichzeitig Spielrunde k; der Spielleiter schaltet weiter
-const ANIM = { intro: 1600, duell: 1500, ende: 2800 };
+const ANIM = { intro: 1600, duell: 3000, ende: 3000, wurfAb: 500, wurfDauer: 900, summeAb: 1500, toreAb: 1900 };
 const SPIEL_MS = ANIM.intro + 3 * ANIM.duell + ANIM.ende;
 let animLokal = { key: "", start: 0 };
 let animGesendet = "";
@@ -736,26 +736,62 @@ function heimZuerst(s) {
 }
 function liveHtml(sp, st) {
   const art = sp.art;
-  const runde = sp.spiele.filter((s) => s.sr === st.k);
-  const mein = runde.find((s) => s.a === ich() || s.b === ich());
+  const runde = sp.spiele.filter((x) => x.sr === st.k);
+  const mein = runde.find((x) => x.a === ich() || x.b === ich());
   const haupt = mein || runde[0];
   const s = heimZuerst(haupt);
-  const ergebnisAb = ANIM.intro + 3 * ANIM.duell;
+  const T = ANIM, D = T.duell;
+  const ergebnisAb = T.intro + 3 * D;
   const ms = (x) => `--d:${x}ms;animation-delay:${x}ms`;
-  const seite = (id) => `<div class="kl-live-team">${teamWappen(z.farben?.[id] ?? 0, 72)}<b>${escapeHtml(teamInfo(id).name)}${istBot(id) ? " 🤖" : ""}</b></div>`;
-  const wuerfelSumme = (liste, L) => (liste || []).filter((w) => LINIEN[art][L].includes(w.feld)).reduce((x, w) => x + w.wurf, 0);
-  const duelle = s.duelle.map((d, i) => {
-    const wa = wuerfelSumme(s.wuerfeA, d.la), wb = wuerfelSumme(s.wuerfeB, d.lb);
+  const seite = (id) => `<div class="kl-live-team">${teamWappen(z.farben?.[id] ?? 0, 84)}<b>${escapeHtml(teamInfo(id).name)}${istBot(id) ? " 🤖" : ""}</b></div>`;
+  const daten = (id, wuerfe) => {
+    const grid = sp.raster?.[id] || z.teams[id].grid;
+    const { werte } = feldWerte(grid);
+    const wurf = {}, typ = {};
+    (wuerfe || []).forEach((w) => { wurf[w.feld] = w.wurf; typ[w.feld] = karte(grid[w.feld]?.id)?.bonus; });
+    return { grid, werte, wurf, typ };
+  };
+  const A = daten(s.a, s.wuerfeA), B = daten(s.b, s.wuerfeB);
+  // Eine Reihe: 3 Karten, Würfel rollen, Summe zählt hoch
+  const reihe = (S, L, heim, gesamt, t0, seiteKl) => {
+    const felder = LINIEN[art][L];
+    const basis = felder.reduce((x, f) => x + S.werte[f], 0);
+    const wuerfe = felder.reduce((x, f) => x + (S.wurf[f] || 0), 0);
+    const karten = felder.map((f) => {
+      const c = S.grid[f];
+      if (!c) return `<div class="kl-bd-karte"><div class="kl-sp-leer">leer</div><div class="kl-bd-wert">0</div></div>`;
+      const w = S.wurf[f];
+      return `<div class="kl-bd-karte">${karteHtml(c.id, { mini: true, wert: c.w })}
+        ${w ? `<div class="kl-wurf" style="${ms(t0 + T.wurfAb)}">${wuerfelIcon(S.typ[f])}<b style="${ms(t0 + T.wurfAb + T.wurfDauer)}">+${w}</b></div>` : ""}
+        <div class="kl-bd-wert">${S.werte[f]}</div></div>`;
+    }).join("");
+    const extra = [wuerfe ? `🎲 +${wuerfe}` : "", heim ? `🏟️ +${heim}` : ""].filter(Boolean).join(" ");
+    return `<div class="kl-bd-reihe ${seiteKl}">
+      <div class="kl-bd-karten">${karten}</div>
+      <div class="kl-bd-summe">${extra
+        ? `<b class="basis" style="--e:${t0 + T.summeAb}ms">${basis}</b><b class="end" style="${ms(t0 + T.summeAb)}">${gesamt}</b><small class="kl-live-auf" style="${ms(t0 + T.summeAb)}">${extra}</small>`
+        : `<b>${gesamt}</b>`}</div>
+    </div>`;
+  };
+  const buehne = s.duelle.map((d, i) => {
+    const t0 = T.intro + i * D;
     const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
-    return `<div class="kl-live-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" style="${ms(ANIM.intro + i * ANIM.duell)}">
-      <div class="l"><span>${LINIEN_NAME[art][d.la]}</span><b>${d.sa}</b><i>${wa ? `🎲+${wa} ` : ""}${ha ? `🏟️+${ha}` : ""}</i></div>
-      <div class="mitte">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>
-      <div class="r"><span>${LINIEN_NAME[art][d.lb]}</span><b>${d.sb}</b><i>${wb ? `🎲+${wb} ` : ""}${hb ? `🏟️+${hb}` : ""}</i></div>
+    const raus = i < 2 ? `--e:${t0 + D}ms` : "--e:999s";
+    return `<div class="kl-bd-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" style="--d:${t0}ms;${raus}">
+      <div class="kl-sp-titel">${LINIEN_NAME[art][d.la]} gegen ${LINIEN_NAME[art][d.lb]}</div>
+      ${reihe(A, d.la, ha, d.sa, t0, "a")}
+      <div class="kl-bd-tore kl-live-auf" style="${ms(t0 + T.toreAb)}">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>
+      ${reihe(B, d.lb, hb, d.sb, t0, "b")}
     </div>`;
   }).join("");
+  const kurz = s.duelle.map((d, i) => `<div class="kl-live-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" style="${ms(T.intro + i * D + T.toreAb + 300)}">
+      <div class="l"><span>${LINIEN_NAME[art][d.la]}</span><b>${d.sa}</b></div>
+      <div class="mitte">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>
+      <div class="r"><span>${LINIEN_NAME[art][d.lb]}</span><b>${d.sb}</b></div>
+    </div>`).join("");
   const neben = runde.filter((x) => x !== haupt).map((o) => { const n = heimZuerst(o); return `<div class="kl-live-neben">${teamName(n.a)}<b class="kl-live-auf" style="${ms(ergebnisAb)}">${n.ta} : ${n.tb}</b>${teamName(n.b)}</div>`; }).join("");
   const spielfrei = istDabei() && !mein ? `<p class="kl-live-frei">Du hast in dieser Runde spielfrei und schaust zu.</p>` : "";
-  const fazit = mein ? (() => { const ich_a = s.a === ich(); const eig = ich_a ? s.ta : s.tb, geg = ich_a ? s.tb : s.ta;
+  const fazit = mein ? (() => { const ichA = s.a === ich(); const eig = ichA ? s.ta : s.tb, geg = ichA ? s.tb : s.ta;
     return eig > geg ? "Sieg! +3 Punkte" : eig === geg ? "Unentschieden · +1 Punkt" : "Niederlage"; })() : "";
   return `<div class="kl-box kl-live" data-k="${st.key}">
     <div class="kl-live-kopf"><span>${sp.nr}. Spieltag · ${art === "reihe" ? "Reihen-Duelle" : "Flügel-Duelle"}</span><b>Spiel ${st.k + 1} von ${st.n}</b></div>
@@ -765,8 +801,9 @@ function liveHtml(sp, st) {
       <div class="kl-live-mitte"><div class="kl-live-vs" style="--d:${ergebnisAb}ms">VS</div><div class="kl-live-ergebnis" style="${ms(ergebnisAb)}">${s.ta} : ${s.tb}</div></div>
       ${seite(s.b)}
     </div>
-    <div class="kl-live-duelle">${duelle}</div>
     ${fazit ? `<div class="kl-live-fazit kl-live-auf" style="${ms(ergebnisAb + 300)}">${fazit}</div>` : ""}
+    <div class="kl-bd">${buehne}</div>
+    <div class="kl-live-duelle">${kurz}</div>
     ${neben ? `<div class="kl-live-nebenbox"><span class="kl-muted">Gleichzeitig</span>${neben}</div>` : ""}
     <div class="kl-live-balken"><i style="animation-duration:${SPIEL_MS}ms"></i></div>
     ${api.istLeiter ? `<div class="kl-zeile" style="margin-top:12px">
