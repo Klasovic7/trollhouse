@@ -187,7 +187,7 @@ export const SPIELE = [
     emoji: "🏟️",
     farbe: "#16a34a",
     bild: "bilder/kartenliga-kachel.webp",
-    beschreibung: "Draft dein Team im 3x3-Raster, bau deine Arena aus und werde Meister - alleine mit Bots spielbar",
+    beschreibung: "Draft dein Team im 3x3-Raster, bau deine Arena aus und werde Meister",
     minSpieler: 1,
     mitBots: true,
     laden: () => import(`./kartenliga/spiel.js?v=${SPIEL_VERSION}`)

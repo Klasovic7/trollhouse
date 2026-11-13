@@ -36,7 +36,8 @@ export function spielAnlegen(reihenfolge, bots, optionen, zufall = Math.random) 
 
 export function rundeStarten(z, zufall = Math.random) {
   z.runde += 1;
-  if (z.runde === CFG.deckWechselRunde) { z.deck[1] = []; z.ablage[1] = []; }
+  // Ab dem Deckwechsel wird nur aus Deck 2 gezogen; Deck-1-Karten bleiben als Reserve, falls Deck 2 nicht reicht
+  if (z.runde === CFG.deckWechselRunde) { z.ablage[1] = [...z.ablage[1], ...z.deck[1]]; z.deck[1] = []; }
   const nr = z.runde >= CFG.deckWechselRunde ? 2 : 1;
   z.einnahmen = {};
   z.reihenfolge.forEach((id) => {
@@ -46,8 +47,14 @@ export function rundeStarten(z, zufall = Math.random) {
     z.einnahmen[id] = e;
     t.hand = (t.hand || []).filter((k) => !karte(k)?.start);   // behaltene Karten bleiben
   });
+  // Karten für alle ziehen und reihum verteilen, damit niemand benachteiligt ist.
+  // Reicht das aktuelle Deck nicht (v. a. bei 5 Teams), wird aus dem anderen Deck aufgefüllt.
+  const n = z.reihenfolge.length, bedarf = n * CFG.handGroesse;
+  const pool = ziehen(z, nr, bedarf, zufall);
+  if (pool.length < bedarf) pool.push(...ziehen(z, nr === 1 ? 2 : 1, bedarf - pool.length, zufall));
   z.draftHaende = {};
-  z.reihenfolge.forEach((id) => { z.draftHaende[id] = ziehen(z, nr, CFG.handGroesse, zufall); });
+  z.reihenfolge.forEach((id) => { z.draftHaende[id] = []; });
+  pool.forEach((k, i) => z.draftHaende[z.reihenfolge[i % n]].push(k));
   z.pick = 0;
   z.phase = "draft";
   z.phaseStart = Date.now();

@@ -86,7 +86,8 @@ let letztesHtml = "";
 let tauschModus = false, tauschErste = null, verkaufModus = false;
 // Spieltag-Animation: alle sehen gleichzeitig Spielrunde k; der Spielleiter schaltet weiter
 // Grundtempo = x2; x1 ist doppelt so langsam, x3 anderthalbmal so schnell
-const ANIM_X2 = { intro: 1600, duell: 3900, ende: 3000, karteAb: 300, karteSchritt: 450, wurfAb: 250, wurfDauer: 850, summeAb: 2300, toreAb: 2600 };
+// Alle Zeiten +25 % gegenüber v497 (Wunsch: alle drei Stufen etwas langsamer)
+const ANIM_X2 = { intro: 2000, duell: 4900, ende: 3750, karteAb: 375, karteSchritt: 560, wurfAb: 310, wurfDauer: 1060, summeAb: 2880, toreAb: 3250 };
 const tempo = () => ([1, 2, 3].includes(opt.tempo) ? opt.tempo : 1);
 const animT = () => Object.fromEntries(Object.entries(ANIM_X2).map(([k, v]) => [k, Math.round(v * 2 / tempo())]));
 const spielMs = () => { const T = animT(); return T.intro + 3 * T.duell + T.ende; };
@@ -319,7 +320,8 @@ async function leiterPruefen() {
   if (letzterSchritt === schritt) return;
   const anwesend = new Set(spielerListe.map((s) => s.id));
   const menschen = z.reihenfolge.filter((id) => !istBot(id) && anwesend.has(id));
-  const fertig = menschen.filter((id) => aktionen[aktionsKey(id, z.phase)]);
+  // Wer im Draft keine Karten mehr hat, muss nichts wählen
+  const fertig = menschen.filter((id) => aktionen[aktionsKey(id, z.phase)] || (z.phase === "draft" && !(z.draftHaende?.[id] || []).length));
   const dauer = phasenDauer(z.phase);
   const abgelaufen = z.zeitlimit && Date.now() - z.phaseStart > dauer + PUFFER_MS;
   if (fertig.length < menschen.length && !abgelaufen) return;
@@ -607,8 +609,8 @@ function draftHtml() {
   return `<div class="kl-box">
     ${ein ? `<p class="kl-muted" style="margin:0 0 8px">Einnahmen dieser Runde: +${ein.summe} (${ein.posten.map((p) => `${escapeHtml(p.n)} ${p.w}`).join(", ")})</p>` : ""}
     <h3>Wähle eine Karte</h3>
-    <div class="kl-hand" id="kl-hand-scroll">${karten}</div>
-    ${gesendet ? `<p class="kl-muted">Gewählt. Warte auf die anderen …</p>${werIstFertig()}`
+    ${hand.length ? `<div class="kl-hand" id="kl-hand-scroll">${karten}</div>` : `<p class="kl-muted">Der Stapel ist leer – in diesem Zug bekommst du keine Karte. Warte auf die anderen …</p>`}
+    ${!hand.length ? werIstFertig() : gesendet ? `<p class="kl-muted">Gewählt. Warte auf die anderen …</p>${werIstFertig()}`
       : `<button type="button" class="btn-primaer" data-a="draft-ok" ${draftAuswahl ? "" : "disabled"}>${draftAuswahl ? `${escapeHtml(karte(draftAuswahl).name)} nehmen` : "Tippe eine Karte an"}</button>`}
     ${meine.length ? `<div class="kl-schon"><span class="kl-muted">Schon auf der Hand:</span><div class="kl-schon-karten">${meine.map((id) => `<button type="button" data-a="zoom" data-v="${id}">${karteHtml(id, { mini: true })}</button>`).join("")}</div></div>` : ""}
   </div>`;
@@ -686,7 +688,7 @@ function arenaHtml() {
     tr.behalten?.length ? `${tr.behalten.length} behalten` : ""
   ].filter(Boolean).join(" · ") : "";
   const kosten = wahl ? ausbauKosten(team, wahl) : 0;
-  const knopf = wahl ? `${wahl === "T" ? "Tribüne" : "Hexenkessel"} ausbauen (−${kosten})` : "Ohne Ausbau weiter";
+  const knopf = wahl ? `${wahl === "T" ? "Tribüne" : "Hexenkessel"} ausbauen für ${muenze(kosten)}` : "Ohne Ausbau weiter";
   return `<div class="kl-box">
     ${zusammen ? `<p class="kl-muted" style="margin:0 0 8px">Deine Transfers: ${zusammen}</p>` : ""}
     ${arenaPanel(team, { auswahl: !gesendet, plan: { ausbau: wahl }, r: { geld: team.geld, ausbau: wahl ? { pfad: wahl } : null } })}
@@ -704,7 +706,7 @@ function arenaPanel(team, { auswahl = false, plan: p = null, r = null } = {}) {
     const leistbar = kosten != null && (gewaehlt || (r && kosten <= r.geld));
     const stufen = Array.from({ length: max }, (_, i) => `<i class="${i < stufe + (gewaehlt ? 1 : 0) ? "an" : ""}"></i>`).join("");
     const naechste = stufe < max ? texte[stufe] : "Voll ausgebaut";
-    const inhalt = `<b>${titel}</b><span class="stufen">${stufen}</span><span class="kl-muted">${stufe < max ? `Stufe ${stufe + 1}: ${naechste} · ${kosten} €` : naechste}</span>`;
+    const inhalt = `<b>${titel}</b><span class="stufen">${stufen}</span><span class="kl-muted">${stufe < max ? `Stufe ${stufe + 1}: ${naechste} · ${muenze(kosten)}` : naechste}</span>`;
     if (!auswahl) return `<div class="kl-pfad">${inhalt}</div>`;
     return `<button type="button" class="kl-pfad ${gewaehlt ? "gewaehlt" : ""}" data-a="ausbau" data-v="${key}" ${leistbar ? "" : "disabled"}>${inhalt}</button>`;
   };
@@ -962,7 +964,7 @@ function regelnHtml() {
     ["Kartentausch", `Nur in den Runden direkt vor einem Spieltag (2, 4, 6, 8): Für ${CFG.tauschKosten} Münzen dürfen zwei beliebige Spieler im Raster die Plätze tauschen, einmal pro Runde.`],
     ["Arena-Ausbau", "Wenn alle ihre Transfers gemacht haben, darf jeder Tribüne oder Hexenkessel um eine Stufe ausbauen oder das Geld sparen."],
     ["Spieltag", "Nach Runde 2, 4, 6 und 8 spielt jeder gegen jeden."],
-    ["Deckwechsel", `Ab Runde ${CFG.deckWechselRunde} kommen nur noch die starken Spieler aus Deck 2.`]
+    ["Deckwechsel", `Ab Runde ${CFG.deckWechselRunde} kommen nur noch die starken Spieler aus Deck 2. Reicht ein Stapel einmal nicht für alle (vor allem zu fünft), wird mit Karten aus dem anderen Deck aufgefüllt.`]
   ], true)}
   <h3>Spieltag</h3>
   ${liste([

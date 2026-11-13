@@ -499,6 +499,5 @@ export function ziehen(zustand, nr, anzahl, zufall = Math.random) {
 export function zurueckLegen(zustand, id, runde) {
   const k = karte(id);
   if (!k || k.start) return;
-  if (k.deck === 1 && runde >= CFG.deckWechselRunde) return;
   zustand.ablage[k.deck].push(id);
 }
