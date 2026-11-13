@@ -21,7 +21,8 @@ export const CFG = {
   trib: { kosten: [3, 5], einnahmen: [1, 3] },
   hex: { kosten: [3, 5], heim: [1, 2] },
   fanEinkommen: 1,
-  tauschKosten: 2
+  tauschKosten: 2,
+  maxBehalten: 2
 };
 export const tauschErlaubt = (runde) => Boolean(CFG.spieltage[runde]);
 
@@ -276,11 +277,15 @@ export function ausbauKosten(team, pfad) {
 // plan = { kaeufe: [{ id, feld }], ausbau: "T" | "H" | null }
 export function planRechnen(team, hand, plan, runde = 0) {
   const grid = team.grid.map((z) => (z ? { ...z } : null));
-  let geld = team.geld;
-  const gekauft = [], verkauft = [], fehler = [];
+  const fehler = [];
+  // Handkarten verkaufen: das Geld steht sofort für Käufe zur Verfügung
+  const handVerkauf = [...new Set((plan?.verkauf || []).filter((id) => hand.includes(id)))];
+  const handErloes = handVerkauf.length * CFG.verkaufHand;
+  let geld = team.geld + handErloes;
+  const gekauft = [], verkauft = [];
   (plan?.kaeufe || []).slice(0, CFG.maxKauf).forEach(({ id, feld }) => {
     const k = karte(id);
-    if (!k || !hand.includes(id) || gekauft.some((g) => g.id === id) || feld < 0 || feld > 8) { fehler.push("ungültig"); return; }
+    if (!k || !hand.includes(id) || handVerkauf.includes(id) || gekauft.some((g) => g.id === id) || feld < 0 || feld > 8) { fehler.push("ungültig"); return; }
     const alt = grid[feld];
     const erloes = alt ? verkaufswert(alt.id) : 0;
     if (k.kosten > geld + erloes) { fehler.push(`${k.name}: zu wenig Geld`); return; }
@@ -305,9 +310,10 @@ export function planRechnen(team, hand, plan, runde = 0) {
     if (kosten != null && kosten <= geld) { geld -= kosten; ausbau = { pfad: plan.ausbau, kosten }; }
     else fehler.push("Ausbau nicht möglich");
   }
-  const rest = hand.filter((id) => !gekauft.some((g) => g.id === id));
-  const handErloes = rest.length * CFG.verkaufHand;
-  return { grid, geld, geldNachVerkauf: geld + handErloes, gekauft, verkauft, tausch, ausbau, rest, handErloes, fehler };
+  // Nicht gekaufte und nicht verkaufte Karten bleiben auf der Hand (höchstens CFG.maxBehalten)
+  const rest = hand.filter((id) => !gekauft.some((g) => g.id === id) && !handVerkauf.includes(id));
+  const zuViel = Math.max(0, rest.length - CFG.maxBehalten);
+  return { grid, geld, geldNachVerkauf: geld, gekauft, verkauft, tausch, ausbau, rest, handVerkauf, handErloes, zuViel, fehler };
 }
 
 // ---- Bots --------------------------------------------------------------------------
@@ -414,17 +420,19 @@ export function botTausch(grid, runde, k = 0.5) {
   return best;
 }
 export function botTransferPlan(team, hand, runde, strat = { k: 0.5, lust: 1 }) {
-  const plan = { kaeufe: [], ausbau: null };
+  const plan = { kaeufe: [], ausbau: null, verkauf: [] };
   const t = { ...team, grid: team.grid.map((z) => (z ? { ...z } : null)) };
   let geld = team.geld;
   const verfuegbar = [...hand];
+  // Optimistisch: jede nicht gekaufte Handkarte könnte für 1 Münze verkauft werden
+  const budget = () => geld + (verfuegbar.length - 1) * CFG.verkaufHand;
   for (let schritt = 0; schritt < CFG.maxKauf + 1; schritt++) {
     const optionen = [];
     if (plan.kaeufe.length < CFG.maxKauf) {
       verfuegbar.forEach((id) => {
         const { nutzen, feld } = kaufNutzen(t.grid, id, runde, strat.k);
         const erloes = t.grid[feld] ? verkaufswert(t.grid[feld].id) : 0;
-        if (karte(id).kosten <= geld + erloes) optionen.push({ art: "karte", id, feld, nutzen, erloes });
+        if (karte(id).kosten <= budget() + erloes) optionen.push({ art: "karte", id, feld, nutzen, erloes });
       });
     }
     if (!plan.ausbau && strat.lust > 0) {
@@ -442,6 +450,16 @@ export function botTransferPlan(team, hand, runde, strat = { k: 0.5, lust: 1 }) 
     plan.kaeufe.push({ id: o.id, feld: o.feld });
     verfuegbar.splice(verfuegbar.indexOf(o.id), 1);
   }
+  // Restkarten: so viele verkaufen wie für die Käufe nötig, dann die besten (max. 2) behalten
+  const noetig = Math.max(0, -geld);
+  const letzte = runde >= CFG.runden;
+  const kk = muenzFaktor(strat.k, runde + 1);
+  const { rs } = restInfo(runde + 1);
+  const wert = verfuegbar.map((id) => ({ id, w: letzte ? -1 : kaufNutzen(t.grid, id, runde + 1, strat.k).nutzen - kk * rs * CFG.verkaufHand }))
+    .sort((x, y) => y.w - x.w);
+  const behalten = strat.behalten === false ? [] : wert.filter((x) => x.w > 0).slice(0, Math.min(CFG.maxBehalten, Math.max(0, wert.length - noetig))).map((x) => x.id);
+  plan.verkauf = verfuegbar.filter((id) => !behalten.includes(id));
+  geld += plan.verkauf.length * CFG.verkaufHand;
   // Tausch vor dem Spieltag: besten der 36 möglichen Tausche suchen
   if (tauschErlaubt(runde) && CFG.tauschKosten <= geld && strat.tausch !== false) {
     const t2 = botTausch(t.grid, runde, strat.k);

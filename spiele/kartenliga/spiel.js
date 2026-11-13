@@ -74,7 +74,7 @@ let olympiadeAutoStart = false;
 // lokaler Zustand der Oberfläche
 let schrittKey = "";
 let draftAuswahl = null;
-let plan = { kaeufe: [], ausbau: null };
+let plan = { kaeufe: [], verkauf: [], ausbau: null };
 let handAuswahl = null;
 let tab = "team";
 let ligaSicht = null;
@@ -83,7 +83,7 @@ let animiert = new Set();
 let sendet = false;
 let arenaWahl = null;
 let letztesHtml = "";
-let tauschModus = false, tauschErste = null;
+let tauschModus = false, tauschErste = null, verkaufModus = false;
 // Spieltag-Animation: alle sehen gleichzeitig Spielrunde k; der Spielleiter schaltet weiter
 // Grundtempo = x2; x1 ist doppelt so langsam, x3 anderthalbmal so schnell
 const ANIM_X2 = { intro: 1600, duell: 3900, ende: 3000, karteAb: 300, karteSchritt: 450, wurfAb: 250, wurfDauer: 850, summeAb: 2300, toreAb: 2600 };
@@ -143,7 +143,7 @@ export function beenden() {
   if (tickId) { clearInterval(tickId); tickId = null; }
   document.querySelector(".kl-overlay")?.remove();
   el = {}; spielerListe = []; status = null; z = null; aktionen = {}; bereitSystem = null;
-  leiterBusy = false; letzterSchritt = ""; schrittKey = ""; draftAuswahl = null; plan = { kaeufe: [], ausbau: null };
+  leiterBusy = false; letzterSchritt = ""; schrittKey = ""; draftAuswahl = null; plan = { kaeufe: [], verkauf: [], ausbau: null };
   handAuswahl = null; tab = "team"; ligaSicht = null; hinweis = ""; animiert = new Set(); sendet = false; letztesHtml = "";
   document.body.style.overflow = "";
 }
@@ -162,7 +162,7 @@ export function raumDaten(daten) {
   const key = z ? `${z.runde}_${z.phase}_${z.pick}` : "";
   if (key !== schrittKey) {
     schrittKey = key;
-    draftAuswahl = null; handAuswahl = null; plan = { kaeufe: [], ausbau: null }; tauschModus = false; tauschErste = null; hinweis = ""; sendet = false; arenaWahl = null;
+    draftAuswahl = null; handAuswahl = null; plan = { kaeufe: [], verkauf: [], ausbau: null }; tauschModus = false; tauschErste = null; verkaufModus = false; hinweis = ""; sendet = false; arenaWahl = null;
   }
   if (status === "laeuft" && z) {
     const phasen = { draft: "Draft", transfer: "Transfers", arena: "Arena", spieltag: "Spieltag" };
@@ -435,12 +435,29 @@ function klick(ev) {
     zeichne(); return;
   }
   // Käufe ändern sich -> geplanter Tausch passt evtl. nicht mehr
-  if ((a === "hand" || a === "feld") && plan.tausch && (a === "hand" || handAuswahl || plan.kaeufe.some((x) => x.feld === Number(v)))) {
-    plan.tausch = null; hinweis = "Der Tausch wurde zurückgesetzt, weil du deine Käufe geändert hast.";
+  const kaufAenderung = () => { if (plan.tausch) { plan.tausch = null; hinweis = "Der Tausch wurde zurückgesetzt, weil du deine Käufe geändert hast."; } };
+  const verkauf = plan.verkauf || (plan.verkauf = []);
+  if (a === "verkaufen" && handAuswahl) {
+    if (!verkauf.includes(handAuswahl)) verkauf.push(handAuswahl);
+    handAuswahl = null; hinweis = ""; zeichne(); return;
   }
   if (a === "hand") {
     const geplant = plan.kaeufe.findIndex((k) => k.id === v);
-    if (geplant >= 0) { plan.kaeufe.splice(geplant, 1); handAuswahl = v; }
+    if (verkauf.includes(v)) {
+      // Verkauf zurücknehmen - aber nur, wenn das Geld für die Käufe dann noch reicht
+      plan.verkauf = verkauf.filter((x) => x !== v);
+      if (planVon(team, plan).fehler.length) { plan.verkauf.push(v); hinweis = "Ohne diesen Verkauf reicht dein Geld nicht für deine Käufe."; }
+      else hinweis = "";
+      zeichne(); return;
+    }
+    if (verkaufModus && geplant < 0) {
+      verkauf.push(v);
+      const rest = planVon(team, plan).zuViel;
+      hinweis = rest ? `Noch ${rest} Karte${rest === 1 ? "" : "n"} verkaufen.` : "";
+      if (!rest) verkaufModus = false;
+      zeichne(); return;
+    }
+    if (geplant >= 0) { kaufAenderung(); plan.kaeufe.splice(geplant, 1); handAuswahl = v; }
     else handAuswahl = handAuswahl === v ? null : v;
     zeichne(); return;
   }
@@ -448,21 +465,31 @@ function klick(ev) {
     const feld = Number(v);
     if (!handAuswahl) {
       const k = plan.kaeufe.find((x) => x.feld === feld);
-      if (k) { plan.kaeufe = plan.kaeufe.filter((x) => x !== k); hinweis = ""; zeichne(); return; }
+      if (k) { kaufAenderung(); plan.kaeufe = plan.kaeufe.filter((x) => x !== k); zeichne(); return; }
       const z0 = planVon(team, plan).grid[feld];
       if (z0) zeigeKarte(z0.id, z0.w);
       return;
     }
+    kaufAenderung();
     plan.kaeufe = plan.kaeufe.filter((x) => x.feld !== feld && x.id !== handAuswahl);
     if (plan.kaeufe.length >= CFG.maxKauf) { hinweis = `Du kannst höchstens ${CFG.maxKauf} Karten pro Runde kaufen.`; zeichne(); return; }
     plan.kaeufe.push({ id: handAuswahl, feld });
     const r = planVon(team, plan);
-    if (r.fehler.length) { plan.kaeufe.pop(); hinweis = "Dafür reicht dein Geld nicht."; }
+    if (r.fehler.length) { plan.kaeufe.pop(); hinweis = "Dafür reicht dein Geld nicht. Verkaufe vorher Handkarten, um mehr Münzen zu haben."; }
     handAuswahl = null;
     zeichne(); return;
   }
-  if (a === "plan-reset") { plan = { kaeufe: [], ausbau: null }; handAuswahl = null; tauschModus = false; tauschErste = null; hinweis = ""; zeichne(); return; }
-  if (a === "transfer-ok") { tauschModus = false; sende({ plan: { kaeufe: plan.kaeufe, tausch: plan.tausch || null } }); return; }
+  if (a === "plan-reset") { plan = { kaeufe: [], verkauf: [], ausbau: null }; handAuswahl = null; tauschModus = false; tauschErste = null; verkaufModus = false; hinweis = ""; zeichne(); return; }
+  if (a === "transfer-ok") {
+    tauschModus = false;
+    const zuViel = planVon(team, plan).zuViel;
+    if (zuViel) {
+      verkaufModus = true; handAuswahl = null;
+      hinweis = `Du darfst höchstens ${CFG.maxBehalten} Karten behalten. Tippe noch ${zuViel} Karte${zuViel === 1 ? "" : "n"} an, um sie zu verkaufen.`;
+      zeichne(); return;
+    }
+    sende({ plan: { kaeufe: plan.kaeufe, verkauf: plan.verkauf || [], tausch: plan.tausch || null } }); return;
+  }
 }
 
 function zeigeSpiel(i) {
@@ -523,7 +550,7 @@ function kopfHtml() {
   const team = z.teams[ich()];
   const phasen = {
     draft: [`Draft · Wahl ${z.pick + 1} von ${CFG.picks}`, "Nimm eine Karte, der Rest geht weiter"],
-    transfer: ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen, Rest wird verkauft`],
+    transfer: ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen, höchstens ${CFG.maxBehalten} Karten behalten`],
     arena: ["Arena-Ausbau", "Tribüne oder Hexenkessel ausbauen oder sparen"],
     spieltag: [`${z.spieltag?.nr}. Spieltag`, z.spieltag?.art === "reihe" ? "Reihen-Duelle" : "Flügel-Duelle"]
   };
@@ -534,8 +561,11 @@ function kopfHtml() {
     ${zeit ? `<div class="kl-zeit"><i id="kl-zeitfuell"></i></div>` : ""}`;
 }
 
+// Münz-Symbol mit Zahl (wie auf den Karten)
+const muenze = (n, gross = "") => `<span class="kl-muenze-zahl ${gross}">${n}</span>`;
+
 // Aktuellen Transferplan (Käufe + Tausch) für ein Team durchrechnen
-const planVon = (team, p) => planRechnen(team, team.hand, { kaeufe: p?.kaeufe || [], tausch: p?.tausch || null, ausbau: null }, z.runde);
+const planVon = (team, p) => planRechnen(team, team.hand, { kaeufe: p?.kaeufe || [], verkauf: p?.verkauf || [], tausch: p?.tausch || null, ausbau: null }, z.runde);
 
 // Geld oben rechts: zieht geplante Käufe bzw. den gewählten Ausbau sofort ab
 function geldAnzeige(team) {
@@ -594,36 +624,43 @@ function transferHtml() {
   const darfTauschen = tauschErlaubt(z.runde);
   const tw = r.tausch;
   const zielFeld = (f) => (tw ? (f === tw.a ? tw.b : f === tw.b ? tw.a : f) : f);
+  const verkauftIds = r.handVerkauf || [];
   const handKarten = team.hand.map((id) => {
     const geplant = aktPlan.kaeufe.find((k) => k.id === id);
-    const teuer = karte(id).kosten > r.geld + (geplant ? karte(id).kosten : 0);
-    const kl = [handAuswahl === id ? "gewaehlt" : "", geplant ? "platziert" : "", !geplant && teuer ? "teuer" : ""].join(" ");
-    return `<button type="button" data-a="hand" data-v="${id}" class="${kl}">${karteHtml(id)}</button>`;
+    const weg = verkauftIds.includes(id);
+    const teuer = !weg && karte(id).kosten > r.geld + (geplant ? karte(id).kosten : 0);
+    const kl = [handAuswahl === id ? "gewaehlt" : "", geplant ? "platziert" : "", weg ? "verkauft" : "", !geplant && teuer ? "teuer" : "",
+      verkaufModus && !geplant && !weg ? "waehlbar" : ""].join(" ");
+    return `<button type="button" data-a="hand" data-v="${id}" class="${kl}">${karteHtml(id, weg ? { verkauf: CFG.verkaufHand } : {})}</button>`;
   }).join("");
   const verkaufZeilen = r.verkauft.map((v) => `<span>${escapeHtml(karte(v.id).name)} verkauft</span><span>+${v.erloes}</span>`).join("");
   const kaufZeilen = r.gekauft.map((g) => `<span>${escapeHtml(karte(g.id).name)} gekauft</span><span>−${g.kosten}</span>`).join("")
     + (tw ? `<span>Tausch ${escapeHtml(karte(r.grid[tw.b].id).name.split(" ").pop())} ⇄ ${escapeHtml(karte(r.grid[tw.a].id).name.split(" ").pop())}</span><span>−${tw.kosten}</span>` : "");
   const anleitung = gesendet ? "Abgeschickt. Warte auf die anderen …"
     : tauschModus ? (tauschErste == null ? "Tausch: Tippe auf den ersten Spieler." : "Tausch: Tippe jetzt auf den zweiten Spieler.")
-    : handAuswahl ? "Tippe jetzt auf ein Feld in deinem Raster. Ein belegtes Feld wird überbaut, der alte Spieler verkauft."
-    : "Tippe auf eine Handkarte und dann auf ein Feld. Nochmal antippen nimmt den Kauf zurück.";
+    : verkaufModus ? "Tippe die Karten an, die du verkaufen willst."
+    : handAuswahl ? "Tippe auf ein Feld im Raster, um den Spieler zu kaufen (ein belegtes Feld wird überbaut) – oder verkaufe die Karte."
+    : `Tippe auf eine Handkarte: kaufen und aufs Feld legen oder für ${CFG.verkaufHand} Münze verkaufen. Bis zu ${CFG.maxBehalten} Karten darfst du für die nächste Runde behalten.`;
   return `<div class="kl-box">
     <h3>Deine Handkarten</h3>
     <div class="kl-hand" id="kl-hand-scroll">${handKarten}</div>
     <p class="kl-hand-info">${anleitung}</p>
+    ${!gesendet && handAuswahl && !verkauftIds.includes(handAuswahl) ? `<div class="kl-zeile" style="margin:0 0 10px">
+      <button type="button" class="kl-btn sek" style="flex:1" data-a="verkaufen">${escapeHtml(karte(handAuswahl).name)} verkaufen (+${CFG.verkaufHand} ${muenze(CFG.verkaufHand)})</button></div>` : ""}
     ${rasterHtml(r.grid, { ziel: !gesendet && (Boolean(handAuswahl) || tauschModus), neu: r.gekauft.map((g) => zielFeld(g.feld)), klickbar: !gesendet,
       markiert: tauschModus && tauschErste != null ? [tauschErste] : tw ? [tw.a, tw.b] : [] })}
     ${darfTauschen ? `<div class="kl-tausch">
-      <div><b>Kartentausch vor dem Spieltag</b><span>Zwei beliebige Spieler im Raster tauschen die Plätze · ${CFG.tauschKosten} Münzen</span></div>
+      ${muenze(CFG.tauschKosten, "gross")}<div><b>Kartentausch vor dem Spieltag</b><span>Zwei beliebige Spieler im Raster tauschen die Plätze.</span></div>
       ${gesendet ? "" : tw ? `<button type="button" class="kl-btn sek" data-a="tausch-weg">Aufheben</button>`
         : `<button type="button" class="kl-btn ${tauschModus ? "" : "sek"}" data-a="tausch-modus">${tauschModus ? "Abbrechen" : "Tauschen"}</button>`}
     </div>` : ""}
     <div class="kl-box" style="margin:12px 0 0;background:var(--kl-flaeche2)">
       <div class="kl-rechnung">
         <span>Geld jetzt</span><span>${team.geld}</span>
+        ${verkauftIds.length ? `<span>${verkauftIds.length} Handkarte${verkauftIds.length === 1 ? "" : "n"} verkauft</span><span>+${r.handErloes}</span>` : ""}
         ${kaufZeilen}${verkaufZeilen}
-        <span>${r.rest.length} Handkarte${r.rest.length === 1 ? "" : "n"} verkaufen</span><span>+${r.handErloes}</span>
-        <span class="sum">Danach</span><span class="sum">${r.geldNachVerkauf}</span>
+        <span class="sum">Danach</span><span class="sum">${r.geld}</span>
+        <span>Behältst du für die nächste Runde</span><span style="${r.zuViel ? "color:#ff6b6b;font-weight:800" : ""}">${r.rest.length} / ${CFG.maxBehalten} Karten</span>
       </div>
     </div>
     <p class="kl-muted" style="margin:8px 0 0">Wenn alle fertig sind, kommt der Arena-Ausbau.</p>
@@ -645,7 +682,8 @@ function arenaHtml() {
     ...tr.gekauft.map((g) => `${escapeHtml(karte(g.id).name)} gekauft (−${g.kosten})`),
     ...tr.verkauft.map((v) => `${escapeHtml(karte(v.id).name)} verkauft (+${v.erloes})`),
     tr.tausch ? `Tausch (−${tr.tausch.kosten})` : "",
-    tr.handErloes ? `${tr.rest.length} Handkarte${tr.rest.length === 1 ? "" : "n"} verkauft (+${tr.handErloes})` : ""
+    tr.handErloes ? `${tr.handVerkauf?.length || 0} Handkarte${tr.handVerkauf?.length === 1 ? "" : "n"} verkauft (+${tr.handErloes})` : "",
+    tr.behalten?.length ? `${tr.behalten.length} behalten` : ""
   ].filter(Boolean).join(" · ") : "";
   const kosten = wahl ? ausbauKosten(team, wahl) : 0;
   const knopf = wahl ? `${wahl === "T" ? "Tribüne" : "Hexenkessel"} ausbauen (−${kosten})` : "Ohne Ausbau weiter";
@@ -681,13 +719,16 @@ function arenaPanel(team, { auswahl = false, plan: p = null, r = null } = {}) {
 
 // ---- Raster ---------------------------------------------------------------------------------
 function rasterHtml(grid, { ziel = false, neu = [], klickbar = false, markiert = [] } = {}) {
-  const { werte } = feldWerte(grid);
+  const { werte, details } = feldWerte(grid);
+  // Boni/Abzüge pro Karte (Verein, Nation, Kapitän, Position) direkt auf der Karte zeigen
+  const boni = (i) => (details[i] || []).length ? `<div class="kl-boni">${details[i].map(([n, w]) =>
+    `<span class="${w > 0 ? "plus" : "minus"}">${escapeHtml(n)} ${w > 0 ? "+" : "−"}${Math.abs(w)}</span>`).join("")}</div>` : "";
   const art = CFG.spieltage[naechsterSpieltag()] || "reihe";
   const reihen = LINIEN.reihe.map((L) => L.reduce((s, i) => s + werte[i], 0));
   const spalten = LINIEN.spalte.map((L) => L.reduce((s, i) => s + werte[i], 0));
   const wuerfel = (L) => ["kleiner_wuerfel", "grosser_wuerfel"].filter((b) => L.some((i) => grid[i] && karte(grid[i].id)?.bonus === b));
   const zellen = grid.map((zz, i) => {
-    const inhalt = zz ? karteHtml(zz.id, { mini: true, wert: zz.w, neu: neu.includes(i) }) : "";
+    const inhalt = zz ? karteHtml(zz.id, { mini: true, wert: zz.w, neu: neu.includes(i) }) + boni(i) : "";
     const kl = ["kl-zelle", ziel ? "ziel" : "", zz ? "belegt" : "", markiert.includes(i) ? "markiert" : ""].join(" ");
     const aktion = klickbar ? `data-a="feld" data-v="${i}"` : (zz ? `data-a="zoom" data-v="${zz.id}" data-w="${zz.w}"` : "");
     return `<button type="button" class="${kl}" ${aktion}>${inhalt}</button>`;
@@ -889,7 +930,9 @@ function tabsHtml() {
   if (tab === "team") {
     const team = z.teams[ich()];
     const zeigeRaster = z.phase !== "transfer";
-    inhalt = `<div class="kl-box">${zeigeRaster ? `<h3>Dein Team</h3>${rasterHtml(team.grid)}` : `<p class="kl-muted" style="margin:0 0 6px">Dein Raster siehst du oben bei den Transfers.</p>`}
+    const behalten = z.phase !== "transfer" && z.phase !== "draft" && team.hand?.length
+      ? `<div class="kl-schon" style="margin-top:12px"><span class="kl-muted">Behaltene Handkarten für die nächste Runde:</span><div class="kl-schon-karten">${team.hand.map((id) => `<button type="button" data-a="zoom" data-v="${id}">${karteHtml(id, { mini: true })}</button>`).join("")}</div></div>` : "";
+    inhalt = `<div class="kl-box">${zeigeRaster ? `<h3>Dein Team</h3>${rasterHtml(team.grid)}${behalten}` : `<p class="kl-muted" style="margin:0 0 6px">Dein Raster siehst du oben bei den Transfers.</p>`}
       ${z.phase !== "arena" ? arenaPanel(team) : ""}</div>`;
   } else if (tab === "liga") {
     const tab0 = animStand() && z.spieltag?.tabelleVorher ? z.spieltag.tabelleVorher : tabelle(z.teams, z.reihenfolge);
@@ -914,7 +957,8 @@ function regelnHtml() {
   ${liste([
     ["Einnahmen", `${CFG.einkommen} Münzen, dazu Tribüne, Fanlieblinge und die Aufholhilfe für den Tabellenletzten (+${CFG.aufhol} pro Runde bis zum nächsten Spieltag).`],
     ["Draft", `Jeder bekommt ${CFG.handGroesse} Karten, nimmt eine und gibt den Rest weiter, bis jeder ${CFG.picks} Karten hat.`],
-    ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen und ins Raster legen. Ein belegtes Feld wird überbaut, der alte Spieler bringt die halben Kosten. Nicht gekaufte Handkarten bringen je ${CFG.verkaufHand} Münze.`],
+    ["Transfers", `Bis zu ${CFG.maxKauf} Spieler kaufen und ins Raster legen. Ein belegtes Feld wird überbaut, der alte Spieler bringt die halben Kosten.`],
+    ["Handkarten", `Jede Handkarte kannst du für ${CFG.verkaufHand} Münze verkaufen – das Geld kannst du sofort für Käufe nutzen. Bis zu ${CFG.maxBehalten} Karten darfst du für die nächste Runde behalten (also höchstens ${CFG.maxBehalten + CFG.picks} Karten auf der Hand). Wer mehr behalten will, muss vor dem Abschließen verkaufen; läuft die Zeit ab, werden die billigsten automatisch verkauft.`],
     ["Kartentausch", `Nur in den Runden direkt vor einem Spieltag (2, 4, 6, 8): Für ${CFG.tauschKosten} Münzen dürfen zwei beliebige Spieler im Raster die Plätze tauschen, einmal pro Runde.`],
     ["Arena-Ausbau", "Wenn alle ihre Transfers gemacht haben, darf jeder Tribüne oder Hexenkessel um eine Stufe ausbauen oder das Geld sparen."],
     ["Spieltag", "Nach Runde 2, 4, 6 und 8 spielt jeder gegen jeden."],

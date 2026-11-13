@@ -6,7 +6,7 @@
 //  der Ablauf ohne Datenbank testen.
 // ============================================================================
 import {
-  CFG, neuesSpiel, ziehen, zurueckLegen, einnahmen, planRechnen, botDraftWahl, botTransferPlan, botAusbauWahl,
+  CFG, karte, neuesSpiel, ziehen, zurueckLegen, einnahmen, planRechnen, botDraftWahl, botTransferPlan, botAusbauWahl,
   ausbauKosten, spieltagBerechnen, spieltagAnwenden, tabelle
 } from "./logik.js";
 
@@ -44,7 +44,7 @@ export function rundeStarten(z, zufall = Math.random) {
     const e = einnahmen(t);
     t.geld += e.summe;
     z.einnahmen[id] = e;
-    t.hand = [];
+    t.hand = (t.hand || []).filter((k) => !karte(k)?.start);   // behaltene Karten bleiben
   });
   z.draftHaende = {};
   z.reihenfolge.forEach((id) => { z.draftHaende[id] = ziehen(z, nr, CFG.handGroesse, zufall); });
@@ -97,13 +97,18 @@ export function transferAnwenden(z, plaene) {
   z.reihenfolge.forEach((id) => {
     const t = z.teams[id];
     const roh = istBot(id) ? botTransferPlan(t, t.hand, z.runde, { ...(z.botStrat[id] || {}), lust: 0 }) : (plaene[id] || { kaeufe: [] });
-    const r = planRechnen(t, t.hand, { kaeufe: roh.kaeufe || [], tausch: roh.tausch || null, ausbau: null }, z.runde);
+    const r = planRechnen(t, t.hand, { kaeufe: roh.kaeufe || [], verkauf: roh.verkauf || [], tausch: roh.tausch || null, ausbau: null }, z.runde);
     t.grid = r.grid;
-    t.geld = r.geldNachVerkauf;
+    t.geld = r.geld;
+    // Zu viele Karten behalten (z. B. Zeit abgelaufen): die billigsten werden automatisch verkauft
+    const behalten = [...r.rest].sort((x, y) => karte(y).kosten - karte(x).kosten);
+    const zwang = behalten.splice(CFG.maxBehalten);
+    t.geld += zwang.length * CFG.verkaufHand;
     r.verkauft.forEach((v) => zurueckLegen(z, v.id, z.runde));
-    r.rest.forEach((k) => zurueckLegen(z, k, z.runde));
-    z.transfers[id] = { gekauft: r.gekauft, verkauft: r.verkauft, tausch: r.tausch, handErloes: r.handErloes, rest: r.rest };
-    t.hand = [];
+    [...r.handVerkauf, ...zwang].forEach((k) => zurueckLegen(z, k, z.runde));
+    z.transfers[id] = { gekauft: r.gekauft, verkauft: r.verkauft, tausch: r.tausch, handVerkauf: [...r.handVerkauf, ...zwang],
+      handErloes: r.handErloes + zwang.length * CFG.verkaufHand, behalten };
+    t.hand = behalten;
   });
   z.phase = "arena";
   z.phaseStart = Date.now();

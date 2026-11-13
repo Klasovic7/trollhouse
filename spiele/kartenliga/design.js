@@ -332,6 +332,16 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl .kl-tempo button.an { background:var(--club-orange,#ff5b36); color:#fff; border-color:transparent; }
 .kl .kl-tempo button:disabled { opacity:1; }
 .kl .kl-tempo button:disabled:not(.an) { opacity:.45; }
+.kl-muenze-zahl { display:inline-grid; place-items:center; width:1.5em; height:1.5em; border-radius:50%; vertical-align:middle; flex:none;
+  background:radial-gradient(circle at 35% 30%, #ffe58a, #f2c230 55%, #b8860b); border:1px solid #8a6400; color:#3e2c00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.85em; line-height:1; }
+.kl-muenze-zahl.gross { font-size:1.25rem; width:1.7em; height:1.7em; box-shadow:0 2px 6px rgba(0,0,0,.4); }
+.kl-hand > button.verkauft { opacity:.45; }
+.kl-hand > button.waehlbar { border-color:#ffd54a; animation:klWackel 1.2s ease-in-out infinite; }
+@keyframes klWackel { 0%,100% { transform:none; } 50% { transform:translateY(-3px); } }
+.kl-zelle { position:relative; }
+.kl-boni { position:absolute; left:4%; right:4%; bottom:30%; display:flex; flex-wrap:wrap; justify-content:center; gap:2px; pointer-events:none; z-index:9; }
+.kl-boni span { font-size:clamp(8px, 2.3vw, 11px); font-weight:800; line-height:1; padding:2px 4px; border-radius:999px; white-space:nowrap; box-shadow:0 1px 4px rgba(0,0,0,.5); }
+.kl-boni .plus { background:#22c55e; color:#04230f; } .kl-boni .minus { background:#ef4444; color:#fff; }
 @keyframes klKarteRein { from { opacity:0; transform:translateY(14px) scale(.85) rotateY(70deg); } to { opacity:1; transform:none; } }
 .kl-wurf { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
 .kl-wurf-roll { grid-area:1/1; position:relative; width:56%; aspect-ratio:1; opacity:0; animation:klWurf var(--wd,.9s) var(--d) ease-out forwards; }
