@@ -101,6 +101,7 @@ export const FARBEN_LISTE = FARBEN;
 
 // ---- Stil (wird beim Start einmal in den <head> gehängt) --------------------------------
 export const STIL = `
+@font-face { font-family:"Teko"; font-style:normal; font-weight:700; font-display:swap; src:url("schriften/teko-700.woff2") format("woff2"); }
 .kl { --kl-st:#c62828; --kl-st-d:#7f1616; --kl-mf:#2e7d32; --kl-mf-d:#1b5e20; --kl-abw:#1565c0; --kl-abw-d:#0d3f7a;
   --kl-gold:#f2c230; --kl-flaeche:var(--club-ink-2,#24152a); --kl-flaeche2:var(--club-ink-3,#352039);
   --kl-text:var(--club-text,#fffaf3); --kl-muted:var(--club-muted,#bdb3c0); --kl-linie:rgba(255,255,255,.12);
@@ -162,8 +163,8 @@ export const STIL = `
 .kl-k-text b { display:block; font-size:1.1em; line-height:1; font-weight:800; letter-spacing:.04em; text-transform:uppercase; margin-bottom:.15em; }
 .kl-k-text span { display:block; font-family:-apple-system,"Segoe UI",sans-serif; font-weight:500; font-size:.74em; line-height:1.2; opacity:.95; }
 .kl-k-ohne { opacity:.6; }
-.kl-k-kosten { flex:none; width:2.25em; height:2.25em; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:1.5em; color:#5a3d00; line-height:1;
-  background:radial-gradient(circle at 35% 30%,#fff0b8,#ecb928 58%,#b98a0c); box-shadow:inset 0 0 0 .1em #a67a06,0 .1em .3em rgba(0,0,0,.45); }
+.kl-k-kosten { flex:none; width:1.875em; height:1.875em; border-radius:50%; display:grid; place-items:center; font-size:1.8em; font-family:"Teko","Barlow Condensed",sans-serif; font-weight:700; line-height:1; box-sizing:border-box; padding-top:.16em;
+  background:radial-gradient(circle at 35% 30%,#ffeaa0,#e8b420 60%,#a87905); color:#5a3d00; box-shadow:inset 0 0 0 .06em #8a6400, inset 0 0 0 .13em #f7d461, inset 0 0 0 .17em #8a6400, 0 .1em .3em rgba(0,0,0,.5); text-shadow:0 1px 0 rgba(255,240,190,.8),0 -1px 0 rgba(90,60,0,.35); }
 .kl-k-pos { position:absolute; right:0; top:0; bottom:0; width:2em; z-index:2; display:grid; place-items:center;
   background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.4)); border-left:.1em solid #e4b726; }
 .kl-k-pos b { writing-mode:vertical-rl; transform:rotate(180deg); font-weight:800; font-size:1.05em; letter-spacing:.14em; }
@@ -332,11 +333,10 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl .kl-tempo button.an { background:var(--club-orange,#ff5b36); color:#fff; border-color:transparent; }
 .kl .kl-tempo button:disabled { opacity:1; }
 .kl .kl-tempo button:disabled:not(.an) { opacity:.45; }
-.kl .kl-muenze-zahl { display:inline-grid; place-items:center; width:1.6em; height:1.6em; border-radius:50%; vertical-align:middle; flex:none;
-  background:radial-gradient(circle at 35% 30%,#fff0b8,#ecb928 58%,#b98a0c); box-shadow:inset 0 0 0 .1em #a67a06,0 .1em .3em rgba(0,0,0,.45);
-  color:#5a3d00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.9em; line-height:1; font-style:normal; }
-.kl .kl-muenze-zahl.gross { font-size:1.35rem; width:1.75em; height:1.75em; }
-.kl .kl-muenze-zahl.kopf { font-size:1.35rem; width:1.85em; height:1.85em; }
+.kl .kl-muenze-zahl { display:inline-grid; place-items:center; width:1.34em; height:1.34em; border-radius:50%; vertical-align:middle; flex:none; font-size:1.08em; font-style:normal; font-family:"Teko","Barlow Condensed",sans-serif; font-weight:700; line-height:1; box-sizing:border-box; padding-top:.16em;
+  background:radial-gradient(circle at 35% 30%,#ffeaa0,#e8b420 60%,#a87905); color:#5a3d00; box-shadow:inset 0 0 0 .06em #8a6400, inset 0 0 0 .13em #f7d461, inset 0 0 0 .17em #8a6400, 0 .1em .3em rgba(0,0,0,.5); text-shadow:0 1px 0 rgba(255,240,190,.8),0 -1px 0 rgba(90,60,0,.35); }
+.kl .kl-muenze-zahl.gross { font-size:1.62rem; width:1.46em; height:1.46em; }
+.kl .kl-muenze-zahl.kopf { font-size:1.62rem; width:1.54em; height:1.54em; }
 .kl-hand > button.verkauft { opacity:.45; }
 .kl-hand > button.waehlbar { border-color:#ffd54a; animation:klWackel 1.2s ease-in-out infinite; }
 @keyframes klWackel { 0%,100% { transform:none; } 50% { transform:translateY(-3px); } }
