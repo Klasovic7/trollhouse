@@ -101,7 +101,7 @@ export const FARBEN_LISTE = FARBEN;
 
 // ---- Stil (wird beim Start einmal in den <head> gehängt) --------------------------------
 export const STIL = `
-.kl { --kl-st:#2e7d32; --kl-st-d:#1b5e20; --kl-mf:#1565c0; --kl-mf-d:#0d3f7a; --kl-abw:#c62828; --kl-abw-d:#7f1616;
+.kl { --kl-st:#c62828; --kl-st-d:#7f1616; --kl-mf:#2e7d32; --kl-mf-d:#1b5e20; --kl-abw:#1565c0; --kl-abw-d:#0d3f7a;
   --kl-gold:#f2c230; --kl-flaeche:var(--club-ink-2,#24152a); --kl-flaeche2:var(--club-ink-3,#352039);
   --kl-text:var(--club-text,#fffaf3); --kl-muted:var(--club-muted,#bdb3c0); --kl-linie:rgba(255,255,255,.12);
   color:var(--kl-text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
@@ -205,6 +205,10 @@ export const STIL = `
 
 /* Handkarten */
 .kl-hand { display:flex; gap:10px; overflow-x:auto; padding:4px 2px 10px; scroll-snap-type:x mandatory; }
+.kl-hand, .kl-draft { color-scheme:dark; scrollbar-color:rgba(255,255,255,.85) rgba(255,255,255,.12); }
+.kl-hand::-webkit-scrollbar, .kl-draft::-webkit-scrollbar { height:8px; }
+.kl-hand::-webkit-scrollbar-track, .kl-draft::-webkit-scrollbar-track { background:rgba(255,255,255,.12); border-radius:4px; }
+.kl-hand::-webkit-scrollbar-thumb, .kl-draft::-webkit-scrollbar-thumb { background:rgba(255,255,255,.85); border-radius:4px; }
 .kl-hand > button { padding:0; margin:0; background:none; border:3px solid transparent; border-radius:14px; scroll-snap-align:start; flex:none; }
 .kl-hand > button.gewaehlt { border-color:#fff; box-shadow:0 0 0 3px var(--club-orange,#ff5b36); }
 .kl-hand > button.platziert { opacity:.55; }
