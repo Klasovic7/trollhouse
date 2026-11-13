@@ -85,7 +85,7 @@ let arenaWahl = null;
 let letztesHtml = "";
 let tauschModus = false, tauschErste = null;
 // Spieltag-Animation: alle sehen gleichzeitig Spielrunde k; der Spielleiter schaltet weiter
-const ANIM = { intro: 1600, duell: 3000, ende: 3000, wurfAb: 500, wurfDauer: 900, summeAb: 1500, toreAb: 1900 };
+const ANIM = { intro: 1600, duell: 3900, ende: 3000, karteAb: 300, karteSchritt: 450, wurfAb: 250, wurfDauer: 850, summeAb: 2300, toreAb: 2600 };
 const SPIEL_MS = ANIM.intro + 3 * ANIM.duell + ANIM.ende;
 let animLokal = { key: "", start: 0 };
 let animGesendet = "";
@@ -752,27 +752,6 @@ function liveHtml(sp, st) {
     return { grid, werte, wurf, typ };
   };
   const A = daten(s.a, s.wuerfeA), B = daten(s.b, s.wuerfeB);
-  // Eine Reihe: 3 Karten, Würfel rollen, Summe zählt hoch
-  const reihe = (S, L, heim, gesamt, t0, seiteKl) => {
-    const felder = LINIEN[art][L];
-    const basis = felder.reduce((x, f) => x + S.werte[f], 0);
-    const wuerfe = felder.reduce((x, f) => x + (S.wurf[f] || 0), 0);
-    const karten = felder.map((f) => {
-      const c = S.grid[f];
-      if (!c) return `<div class="kl-bd-karte"><div class="kl-sp-leer">leer</div><div class="kl-bd-wert">0</div></div>`;
-      const w = S.wurf[f];
-      return `<div class="kl-bd-karte">${karteHtml(c.id, { mini: true, wert: c.w })}
-        ${w ? wurfHtml(S.typ[f], w, t0 + T.wurfAb) : ""}
-        <div class="kl-bd-wert">${S.werte[f]}</div></div>`;
-    }).join("");
-    const extra = [wuerfe ? `🎲 +${wuerfe}` : "", heim ? `🏟️ +${heim}` : ""].filter(Boolean).join(" ");
-    return `<div class="kl-bd-reihe ${seiteKl}">
-      <div class="kl-bd-karten">${karten}</div>
-      <div class="kl-bd-summe">${extra
-        ? `<b class="basis" style="--e:${t0 + T.summeAb}ms">${basis}</b><b class="end" style="${ms(t0 + T.summeAb)}">${gesamt}</b><small class="kl-live-auf" style="${ms(t0 + T.summeAb)}">${extra}</small>`
-        : `<b>${gesamt}</b>`}</div>
-    </div>`;
-  };
   // Würfel rollt (wechselnde Augen) und bleibt mit der echten Zahl liegen
   const wurfHtml = (typ, w, start) => {
     const [lo, hi] = typ === "grosser_wuerfel" ? [2, 4] : [1, 3];
@@ -780,15 +759,45 @@ function liveHtml(sp, st) {
     return `<div class="kl-wurf" style="--d:${start}ms"><div class="kl-wurf-roll">${flacker}${wuerfelFlaeche(typ, w, "fin", `--f:${start + T.wurfDauer - 180}ms`)}</div>
       <b style="${ms(start + T.wurfDauer)}">+${w}</b></div>`;
   };
+  // Karten erscheinen paarweise (Karte 1 bei beiden Teams, dann 2, dann 3), Würfel rollen, dann die Summe
+  const karteAb = (t0, k) => t0 + T.karteAb + k * T.karteSchritt;
+  const kartenListe = (S, L, t0) => LINIEN[art][L].map((f, k) => {
+    const c = S.grid[f], ab = karteAb(t0, k);
+    const inhalt = c ? `${karteHtml(c.id, { mini: true, wert: c.w })}${S.wurf[f] ? wurfHtml(S.typ[f], S.wurf[f], ab + T.wurfAb) : ""}<div class="kl-bd-wert">${S.werte[f]}</div>`
+      : `<div class="kl-sp-leer">leer</div><div class="kl-bd-wert">0</div>`;
+    return `<div class="kl-bd-karte" style="${ms(ab)}">${inhalt}</div>`;
+  }).join("");
+  const summeHtml = (S, L, heim, gesamt, t0, seiteKl) => {
+    const felder = LINIEN[art][L];
+    const basis = felder.reduce((x, f) => x + S.werte[f], 0);
+    const wuerfe = felder.reduce((x, f) => x + (S.wurf[f] || 0), 0);
+    const extra = [wuerfe ? `🎲+${wuerfe}` : "", heim ? `🏟️+${heim}` : ""].filter(Boolean).join(" ");
+    const ab = t0 + T.summeAb;
+    return `<div class="kl-bd-summe ${seiteKl}"><b class="basis kl-live-auf" style="${ms(karteAb(t0, 2) + 200)};--e:${ab}ms">${basis}</b><b class="end" style="${ms(ab)}">${gesamt}</b>${extra ? `<small class="kl-live-auf" style="${ms(ab)}">${extra}</small>` : ""}</div>`;
+  };
+  const wappenKlein = (id) => `<div class="kl-bd-wappen">${teamWappen(z.farben?.[id] ?? 0, 40)}</div>`;
+  const toreHtml = (d, t0) => `<div class="kl-bd-tore kl-live-auf" style="${ms(t0 + T.toreAb)}">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>`;
   const buehne = s.duelle.map((d, i) => {
     const t0 = T.intro + i * D;
     const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
     const raus = i < 2 ? `--e:${t0 + D}ms` : "--e:999s";
-    return `<div class="kl-bd-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" style="--d:${t0}ms;${raus}">
-      <div class="kl-sp-titel">${LINIEN_NAME[art][d.la]} gegen ${LINIEN_NAME[art][d.lb]}</div>
-      ${reihe(A, d.la, ha, d.sa, t0, "a")}
-      <div class="kl-bd-tore kl-live-auf" style="${ms(t0 + T.toreAb)}">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>
-      ${reihe(B, d.lb, hb, d.sb, t0, "b")}
+    const sieg = d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : "";
+    const titel = `<div class="kl-sp-titel">${LINIEN_NAME[art][d.la]} gegen ${LINIEN_NAME[art][d.lb]}</div>`;
+    if (art === "reihe") {
+      // Reihen-Spieltag: Wappen vor der Kartenreihe, beide Reihen untereinander
+      return `<div class="kl-bd-duell ${sieg}" style="--d:${t0}ms;${raus}">${titel}
+        <div class="kl-bd-reihe a">${wappenKlein(s.a)}<div class="kl-bd-karten">${kartenListe(A, d.la, t0)}</div>${summeHtml(A, d.la, ha, d.sa, t0, "a")}</div>
+        ${toreHtml(d, t0)}
+        <div class="kl-bd-reihe b">${wappenKlein(s.b)}<div class="kl-bd-karten">${kartenListe(B, d.lb, t0)}</div>${summeHtml(B, d.lb, hb, d.sb, t0, "b")}</div>
+      </div>`;
+    }
+    // Flügel-Spieltag: Spalten senkrecht wie auf dem Feld (Sturm oben, Abwehr unten), Heimteam links
+    return `<div class="kl-bd-duell ${sieg}" style="--d:${t0}ms;${raus}">${titel}
+      <div class="kl-bd-spalten">
+        <div class="kl-bd-spalte a">${wappenKlein(s.a)}${kartenListe(A, d.la, t0)}${summeHtml(A, d.la, ha, d.sa, t0, "a")}</div>
+        <div class="kl-bd-mitte"><span class="kl-bd-gegen">gegen</span>${toreHtml(d, t0)}</div>
+        <div class="kl-bd-spalte b">${wappenKlein(s.b)}${kartenListe(B, d.lb, t0)}${summeHtml(B, d.lb, hb, d.sb, t0, "b")}</div>
+      </div>
     </div>`;
   }).join("");
   const kurz = s.duelle.map((d, i) => `<div class="kl-live-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" style="${ms(T.intro + i * D + T.toreAb + 300)}">

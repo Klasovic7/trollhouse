@@ -292,21 +292,29 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-bd { display:grid; margin-top:10px; }
 .kl-bd-duell { grid-area:1/1; padding:10px; border-radius:16px; background:var(--kl-flaeche2); border:1px solid rgba(255,255,255,.16); box-shadow:0 6px 18px rgba(0,0,0,.35);
   opacity:0; animation:klRein .35s var(--d) ease both, klRaus .3s var(--e) ease forwards; }
-.kl-bd-reihe { display:grid; grid-template-columns:1fr 64px; gap:8px; align-items:center; }
+.kl-bd-reihe { display:grid; grid-template-columns:34px 1fr 50px; gap:5px; align-items:center; }
+.kl-bd-wappen { display:grid; place-items:center; }
+.kl-bd-wappen img { width:34px; height:34px; object-fit:contain; filter:drop-shadow(0 3px 6px rgba(0,0,0,.5)); }
 .kl-bd-karten { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
-.kl-bd-karte { position:relative; container-type:inline-size; min-width:0; }
+.kl-bd-karte { position:relative; container-type:inline-size; min-width:0; opacity:0; animation:klKarteRein .45s var(--d) cubic-bezier(.2,.9,.3,1.2) forwards; }
 .kl-bd-karte .kl-sp-leer { aspect-ratio:18/25.2; }
 .kl-bd-karte .kl-karte { width:100%; height:auto; aspect-ratio:18/25.2; font-size:calc(100cqw / 18); box-shadow:0 .3em .6em rgba(0,0,0,.4); }
 .kl-bd-wert { position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); min-width:26px; padding:1px 6px; border-radius:999px; background:#111; border:1px solid rgba(255,255,255,.35);
   font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.9rem; text-align:center; }
-.kl-bd-summe { position:relative; height:64px; display:grid; place-items:center; border-radius:12px; background:rgba(0,0,0,.3); }
-.kl-bd-summe b { grid-area:1/1; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:2rem; line-height:1; }
-.kl-bd-summe b.basis { animation:klRaus .25s var(--e) forwards; }
+.kl-bd-summe { position:relative; height:60px; display:grid; place-items:center; border-radius:12px; background:rgba(0,0,0,.3); }
+.kl-bd-summe b { grid-area:1/1; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.9rem; line-height:1; }
+.kl-bd-summe b.basis { animation:klPop .4s var(--d) forwards, klRaus .25s var(--e) forwards; }
 .kl-bd-summe b.end { opacity:0; animation:klPop .45s cubic-bezier(.2,.9,.3,1.4) forwards; color:#ffd54a; }
-.kl-bd-summe small { position:absolute; bottom:3px; left:0; right:0; text-align:center; font-size:.62rem; color:var(--kl-muted); }
-.kl-bd-duell.sieg-a .a .kl-bd-summe b.end, .kl-bd-duell.sieg-a .a .kl-bd-summe b:only-child,
-.kl-bd-duell.sieg-b .b .kl-bd-summe b.end, .kl-bd-duell.sieg-b .b .kl-bd-summe b:only-child { color:#7dff9a; }
-.kl-bd-tore { display:flex; justify-content:center; gap:6px; font-size:1.2rem; margin:12px 64px 10px 0; }
+.kl-bd-summe small { position:absolute; bottom:3px; left:0; right:0; text-align:center; font-size:.6rem; color:var(--kl-muted); white-space:nowrap; }
+.kl-bd-duell.sieg-a .kl-bd-summe.a b.end, .kl-bd-duell.sieg-b .kl-bd-summe.b b.end { color:#7dff9a; }
+.kl-bd-tore { display:flex; justify-content:center; gap:6px; font-size:1.2rem; margin:12px 0 10px; }
+.kl-bd-spalten { display:grid; grid-template-columns:1fr 64px 1fr; gap:8px; align-items:start; }
+.kl-bd-spalte { display:flex; flex-direction:column; gap:12px; max-width:112px; justify-self:center; width:100%; }
+.kl-bd-spalte .kl-bd-wappen img { width:44px; height:44px; }
+.kl-bd-mitte { display:flex; flex-direction:column; align-items:center; gap:6px; align-self:center; }
+.kl-bd-gegen { font-size:.72rem; color:var(--kl-muted); text-transform:uppercase; letter-spacing:.08em; }
+.kl-bd-mitte .kl-bd-tore { margin:0; font-size:1rem; flex-direction:column; align-items:center; gap:2px; }
+@keyframes klKarteRein { from { opacity:0; transform:translateY(14px) scale(.85) rotateY(70deg); } to { opacity:1; transform:none; } }
 .kl-wurf { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
 .kl-wurf-roll { grid-area:1/1; position:relative; width:56%; aspect-ratio:1; opacity:0; animation:klWurf .9s var(--d) ease-out forwards; }
 .kl-wurf-roll svg { position:absolute; inset:0; width:100%; height:100%; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
