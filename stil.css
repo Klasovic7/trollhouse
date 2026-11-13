@@ -3459,6 +3459,8 @@ body.tt-aktiv:has(#tt-spiel-screen:not([hidden])) #spiel-kopf-titel { display: n
   border: 3px solid rgba(255, 255, 255, 0.15); background: rgba(120, 120, 130, 0.35); color: rgba(255, 255, 255, 0.4);
   box-shadow: none; transition: background 0.12s, box-shadow 0.12s, color 0.12s;
 }
+.mm-aktion { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.mm-aktion[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
 .mm-aktion.bereit {
   background: #22c55e; color: #052e16; border-color: #22c55e;
   box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5);

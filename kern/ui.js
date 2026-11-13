@@ -155,6 +155,25 @@ function mischeSpielerFarbe(hex, zielwert, anteil) {
 // optionen.punkteRechts - zweite große Zahl ganz rechts (z. B. Gesamtpunktstand)
 // optionen.punkteLinks  - false blendet die linke Zahl aus (z. B. in der Lobby)
 // optionen.rang         - Platzierung für Endstände, wenn es keine Rundenpunkte gibt
+// Aktions-Knopf neben dem Joystick (Memory, Revier, Kartentausch): reagiert schon beim
+// Aufsetzen des Fingers (pointerdown). Ein normaler "click" geht auf Android verloren,
+// solange der andere Daumen noch den Joystick hält (Multi-Touch) - dann musste man
+// zweimal tippen. Der nachfolgende click wird ignoriert (kein Doppelauslösen);
+// click bleibt nur für Tastatur/Screenreader.
+export function bindeAktionsKnopf(knopf, aktion, optionen) {
+  let zuletzt = -1e9;
+  knopf.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    zuletzt = performance.now();
+    e.preventDefault();
+    aktion();
+  }, optionen);
+  knopf.addEventListener("click", () => {
+    if (performance.now() - zuletzt < 800) return;
+    aktion();
+  }, optionen);
+}
+
 // Platzierung bei Punktgleichheit: gleiche Punkte = gleicher Platz (1., 1., 3., ...).
 // liste = nach Punkten absteigend sortiert, i = Index, wert = Punkte eines Eintrags.
 export function gleichRang(liste, i, wert = (s) => s.punkte ?? 0) {

@@ -24,7 +24,7 @@ import {
 } from "../../kern/firebase.js";
 import {
   spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, teamEndstandHtml, teamGruppeHtml,
-  avatarBild, gleichRang
+  avatarBild, gleichRang, bindeAktionsKnopf
 } from "../../kern/ui.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import { erstelleTeams, ergaenzeFehlendeTeams } from "../../kern/teams.js";
@@ -190,7 +190,7 @@ const VORLAGE = `
       <div class="mm-joy" id="mm-kreuz" aria-label="Joystick">
         <div class="mm-joy-knopf" id="mm-joy-knopf"></div>
       </div>
-      <button type="button" id="mm-aktion" class="mm-aktion" disabled>Aufdecken</button>
+      <button type="button" id="mm-aktion" class="mm-aktion" aria-disabled="true">Aufdecken</button>
     </div>
     <p id="mm-hinweis" class="hinweis-text pg-hinweis"></p>
     <div id="mm-status" class="warten-block"></div>
@@ -1106,7 +1106,7 @@ function baueSpielfeld(anordnung) {
     kreuz.addEventListener(ev, (e) => { if (e.pointerId === joyId) joyLos(); }, sig);
   });
   kreuz.addEventListener("contextmenu", (e) => e.preventDefault(), sig);
-  knopf.addEventListener("click", aktion, sig);
+  bindeAktionsKnopf(knopf, aktion, sig);
 
   // ---- Positions-Sync (nur Teammodus)
   function sendePosition(erzwingen) {
@@ -1311,7 +1311,7 @@ function baueSpielfeld(anordnung) {
     const key = [lage.modus, lage.grund, geblockt, gesperrt, z.offen.size, z.gefunden.size].join("|");
     if (key === letzterKnopfKey) return;
     letzterKnopfKey = key;
-    knopf.disabled = !lage.modus;
+    knopf.setAttribute("aria-disabled", String(!lage.modus));
     knopf.classList.toggle("bereit", Boolean(lage.modus));
     knopf.classList.toggle("zu", lage.modus === "zu");
     knopf.textContent = lage.modus === "zu" ? "Umdrehen" : "Aufdecken";

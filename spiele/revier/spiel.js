@@ -16,7 +16,7 @@ import {
   increment, writeBatch, runTransaction
 } from "../../kern/firebase.js";
 import {
-  spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild, gleichRang
+  spielerKarte, zeigeDebug, initBereitSystem, renderWarteAvatare, avatarBild, gleichRang, bindeAktionsKnopf
 } from "../../kern/ui.js";
 import { speichereWertung, punkteFuerRang } from "../../kern/wertung.js";
 import { erzeugeFeld } from "./feld.js";
@@ -96,7 +96,7 @@ const VORLAGE = `
       <div class="mm-joy" id="rv-kreuz" aria-label="Joystick">
         <div class="mm-joy-knopf" id="rv-joy-knopf"></div>
       </div>
-      <button type="button" id="rv-aktion" class="mm-aktion" disabled>Gebiet sichern</button>
+      <button type="button" id="rv-aktion" class="mm-aktion" aria-disabled="true">Gebiet sichern</button>
     </div>
     <p id="rv-hinweis" class="hinweis-text pg-hinweis"></p>
     <div id="rv-status" class="warten-block"></div>
@@ -753,7 +753,7 @@ function baueSpielfeld(layout) {
     kreuz.addEventListener(ev, (e) => { if (e.pointerId === joyId) joyLos(); }, sig);
   });
   kreuz.addEventListener("contextmenu", (e) => e.preventDefault(), sig);
-  knopf.addEventListener("click", aktion, sig);
+  bindeAktionsKnopf(knopf, aktion, sig);
 
   // ---- Positions-Sync
   function sendePosition(erzwingen) {
@@ -1028,7 +1028,7 @@ function baueSpielfeld(layout) {
     const key = [l.modus, l.grund, fest, meldung, st.phase, st.schritt, bm.size].join("|");
     if (key === letzterKnopfKey) return;
     letzterKnopfKey = key;
-    knopf.disabled = !l.modus;
+    knopf.setAttribute("aria-disabled", String(!l.modus));
     knopf.classList.toggle("bereit", Boolean(l.modus));
     kreuz.classList.toggle("gesperrt", fest);
     if (fest) stoppeHalten();
