@@ -18,8 +18,8 @@ export const CFG = {
   handGroesse: 4,
   picks: 3,
   deckWechselRunde: 5,
-  trib: { kosten: [3, 5], einnahmen: [1, 3] },
-  hex: { kosten: [3, 5], heim: [1, 2] },
+  trib: { kosten: [3, 4], einnahmen: [1, 2] },
+  hex: { kosten: [3, 4], heim: [1, 2], auswaerts: [0, 1] },
   fanEinkommen: 1,
   tauschKosten: 2,
   maxBehalten: 2
@@ -175,7 +175,7 @@ export function spieltagBerechnen(teams, reihenfolge, runde, zufall = Math.rando
         });
         let linien = LINIEN[art].map((L) => L.reduce((s, i) => s + w[i], 0));
         let heimBonus = 0;
-        if (p === heim && teams[p].hex) { heimBonus = CFG.hex.heim[teams[p].hex - 1]; linien = linien.map((x) => x + heimBonus); }
+        if (teams[p].hex) { heimBonus = p === heim ? CFG.hex.heim[teams[p].hex - 1] : (CFG.hex.auswaerts?.[teams[p].hex - 1] || 0); if (heimBonus) linien = linien.map((x) => x + heimBonus); }
         seite[p] = { linien, wuerfe, heimBonus };
       });
       let ta = 0, tb = 0;
@@ -192,7 +192,7 @@ export function spieltagBerechnen(teams, reihenfolge, runde, zufall = Math.rando
       if (ta > tb) { bilanz[a].s++; bilanz[b].n++; }
       else if (tb > ta) { bilanz[b].s++; bilanz[a].n++; }
       else { bilanz[a].u++; bilanz[b].u++; }
-      spiele.push({ a, b, heim, ta, tb, duelle, wuerfeA: seite[a].wuerfe, wuerfeB: seite[b].wuerfe, heimBonus: Math.max(seite[a].heimBonus, seite[b].heimBonus) });
+      spiele.push({ a, b, heim, ta, tb, duelle, wuerfeA: seite[a].wuerfe, wuerfeB: seite[b].wuerfe, heimBonus: Math.max(seite[a].heimBonus, seite[b].heimBonus), bonusA: seite[a].heimBonus, bonusB: seite[b].heimBonus });
     }
   }
   const { plan, runden } = spielplan(reihenfolge);
@@ -377,7 +377,8 @@ function ausbauNutzen(team, pfad, runde, k) {
     nutzen = kk * d * zukunftMuenzwert(runde);
   } else {
     const d = CFG.hex.heim[team.hex] - (team.hex ? CFG.hex.heim[team.hex - 1] : 0);
-    nutzen = d * 3 * 0.5 * rs;
+    const dA = (CFG.hex.auswaerts?.[team.hex] || 0) - (team.hex ? CFG.hex.auswaerts?.[team.hex - 1] || 0 : 0);
+    nutzen = (d + dA) * 3 * 0.5 * rs;
   }
   return nutzen - kk * rs * kosten;
 }

@@ -712,8 +712,8 @@ function arenaPanel(team, { auswahl = false, plan: p = null, r = null } = {}) {
   const h = team.hex + (p?.ausbau === "H" && r?.ausbau ? 1 : 0);
   return `<div style="margin-top:12px"><h3>Arena</h3><div class="kl-arena">${arenaSvg(fi, t, h)}</div>
     <div class="kl-pfade">
-      ${pfad("T", "Tribüne", team.trib, ["+1 Münze pro Runde", "+3 Münzen pro Runde"])}
-      ${pfad("H", "Hexenkessel", team.hex, ["+1 in allen Heimduellen", "+2 in allen Heimduellen"])}
+      ${pfad("T", "Tribüne", team.trib, [`+${CFG.trib.einnahmen[0]} Münze pro Runde`, `+${CFG.trib.einnahmen[1]} Münzen pro Runde`])}
+      ${pfad("H", "Hexenkessel", team.hex, [`+${CFG.hex.heim[0]} in allen Heimduellen`, `+${CFG.hex.heim[1]} zu Hause, +${CFG.hex.auswaerts[1]} auswärts`])}
     </div>${auswahl ? `<p class="kl-muted" style="margin:6px 0 0">Tippe einen Pfad an. Höchstens ein Ausbau pro Runde.</p>` : ""}</div>`;
 }
 
@@ -750,7 +750,7 @@ function rasterHtml(grid, { ziel = false, neu = [], klickbar = false, markiert =
 function heimZuerst(s) {
   if (s.heim === s.a) return s;
   return {
-    a: s.b, b: s.a, heim: s.heim, ta: s.tb, tb: s.ta, heimBonus: s.heimBonus, wuerfeA: s.wuerfeB, wuerfeB: s.wuerfeA,
+    a: s.b, b: s.a, heim: s.heim, ta: s.tb, tb: s.ta, heimBonus: s.heimBonus, bonusA: s.bonusB, bonusB: s.bonusA, wuerfeA: s.wuerfeB, wuerfeB: s.wuerfeA,
     duelle: s.duelle.map((d) => ({ la: d.lb, lb: d.la, sa: d.sb, sb: d.sa, ta: d.tb, tb: d.ta })).sort((x, y) => x.la - y.la)
   };
 }
@@ -796,7 +796,7 @@ function buehneHtml(sp, s, statisch = false) {
   const toreHtml = (d, t0) => `<div class="kl-bd-tore kl-live-auf" style="${ms(t0 + T.toreAb)}">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>`;
   const buehne = s.duelle.map((d, i) => {
     const t0 = T.intro + i * D;
-    const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
+    const ha = s.bonusA ?? (s.heim === s.a ? s.heimBonus || 0 : 0), hb = s.bonusB ?? (s.heim === s.b ? s.heimBonus || 0 : 0);
     const raus = i < 2 ? `--e:${t0 + D}ms` : "--e:999s";
     const sieg = d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : "";
     const titel = `<div class="kl-sp-titel">${LINIEN_NAME[art][d.la]} gegen ${LINIEN_NAME[art][d.lb]}</div>`;
@@ -880,7 +880,7 @@ function spieltagHtml() {
     const duelle = s.duelle.map((d) => {
       const wa = wuerfelSumme(s.wuerfeA, d.la), wb = wuerfelSumme(s.wuerfeB, d.lb);
       const style = erstes ? `style="animation-delay:${(delay += 0.35).toFixed(2)}s"` : `style="animation:none"`;
-      const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
+      const ha = s.bonusA ?? (s.heim === s.a ? s.heimBonus || 0 : 0), hb = s.bonusB ?? (s.heim === s.b ? s.heimBonus || 0 : 0);
       return `<div class="kl-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" ${style}>
         <div class="l"><b>${LINIEN_NAME[art][d.la]} ${d.sa}</b><div class="w">${wa ? `🎲+${wa} ` : ""}${ha ? `🏟️+${ha}` : ""}</div></div>
         <div class="mitte"><span class="tore">${"⚽".repeat(d.ta) || "–"} : ${"⚽".repeat(d.tb) || "–"}</span></div>
@@ -986,7 +986,7 @@ function regelnHtml() {
   <h3 style="margin-top:10px">Arena</h3>
   ${liste([
     ["Tribüne", `Stufe 1 für ${CFG.trib.kosten[0]} Münzen: +${CFG.trib.einnahmen[0]} pro Runde. Stufe 2 für ${CFG.trib.kosten[1]}: +${CFG.trib.einnahmen[1]} pro Runde.`],
-    ["Hexenkessel", `Stufe 1 für ${CFG.hex.kosten[0]} Münzen: +${CFG.hex.heim[0]} in allen Heimduellen. Stufe 2 für ${CFG.hex.kosten[1]}: +${CFG.hex.heim[1]}.`]
+    ["Hexenkessel", `Stufe 1 für ${CFG.hex.kosten[0]} Münzen: +${CFG.hex.heim[0]} in allen Heimduellen. Stufe 2 für ${CFG.hex.kosten[1]}: +${CFG.hex.heim[1]} in allen Heimduellen und +${CFG.hex.auswaerts[1]} in allen Auswärtsduellen (die Fans reisen mit).`]
   ])}`;
 }
 
