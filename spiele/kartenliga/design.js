@@ -325,11 +325,18 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-statisch .kl-wurf-roll, .kl-statisch .kl-wurf-roll .fin { animation:none !important; opacity:1 !important; visibility:visible !important; }
 .kl-statisch .kl-wurf-roll { transform:translateY(-12%) scale(.9); }
 .kl-statisch .kl-wurf-roll .zw, .kl-statisch .kl-bd-summe b.basis { display:none; }
+.kl-tempo { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px; }
+.kl-tempo span { font-size:.75rem; color:var(--kl-muted); text-transform:uppercase; letter-spacing:.08em; margin-right:4px; }
+.kl .kl-tempo button { width:auto; margin:0; padding:5px 12px; border-radius:999px; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.95rem;
+  background:var(--kl-flaeche2); color:var(--kl-text); border:1px solid var(--kl-linie); }
+.kl .kl-tempo button.an { background:var(--club-orange,#ff5b36); color:#fff; border-color:transparent; }
+.kl .kl-tempo button:disabled { opacity:1; }
+.kl .kl-tempo button:disabled:not(.an) { opacity:.45; }
 @keyframes klKarteRein { from { opacity:0; transform:translateY(14px) scale(.85) rotateY(70deg); } to { opacity:1; transform:none; } }
 .kl-wurf { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
-.kl-wurf-roll { grid-area:1/1; position:relative; width:56%; aspect-ratio:1; opacity:0; animation:klWurf .9s var(--d) ease-out forwards; }
+.kl-wurf-roll { grid-area:1/1; position:relative; width:56%; aspect-ratio:1; opacity:0; animation:klWurf var(--wd,.9s) var(--d) ease-out forwards; }
 .kl-wurf-roll svg { position:absolute; inset:0; width:100%; height:100%; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
-.kl-wurf-roll .zw { opacity:0; animation:klFlacker .14s var(--z) linear; }
+.kl-wurf-roll .zw { opacity:0; animation:klFlacker var(--zd,.14s) var(--z) linear; }
 .kl-wurf-roll .fin { opacity:0; animation:klDa .01s var(--f) forwards; }
 .kl-wurf b { position:absolute; bottom:22%; opacity:0; padding:1px 8px; border-radius:999px; background:#f2c230; color:#2a1d00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.1rem;
   box-shadow:0 3px 10px rgba(0,0,0,.5); animation:klPop .4s cubic-bezier(.2,.9,.3,1.4) forwards; }

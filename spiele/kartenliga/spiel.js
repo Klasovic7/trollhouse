@@ -85,8 +85,11 @@ let arenaWahl = null;
 let letztesHtml = "";
 let tauschModus = false, tauschErste = null;
 // Spieltag-Animation: alle sehen gleichzeitig Spielrunde k; der Spielleiter schaltet weiter
-const ANIM = { intro: 1600, duell: 3900, ende: 3000, karteAb: 300, karteSchritt: 450, wurfAb: 250, wurfDauer: 850, summeAb: 2300, toreAb: 2600 };
-const SPIEL_MS = ANIM.intro + 3 * ANIM.duell + ANIM.ende;
+// Grundtempo = x2; x1 ist doppelt so langsam, x3 anderthalbmal so schnell
+const ANIM_X2 = { intro: 1600, duell: 3900, ende: 3000, karteAb: 300, karteSchritt: 450, wurfAb: 250, wurfDauer: 850, summeAb: 2300, toreAb: 2600 };
+const tempo = () => ([1, 2, 3].includes(opt.tempo) ? opt.tempo : 1);
+const animT = () => Object.fromEntries(Object.entries(ANIM_X2).map(([k, v]) => [k, Math.round(v * 2 / tempo())]));
+const spielMs = () => { const T = animT(); return T.intro + 3 * T.duell + T.ende; };
 let animLokal = { key: "", start: 0 };
 let animGesendet = "";
 const phasenDauer = (p) => (p === "draft" ? DRAFT_MS : p === "transfer" ? TRANSFER_MS : ARENA_MS);
@@ -293,7 +296,7 @@ function tick() {
 function animStand() {
   const sp = z?.phase === "spieltag" ? z.spieltag : null;
   if (!sp?.anim || !sp.runden || sp.anim.k >= sp.runden) return null;
-  const key = `${sp.nr}_${sp.anim.k}`;
+  const key = `${sp.nr}_${sp.anim.k}_${tempo()}`;
   if (animLokal.key !== key) animLokal = { key, start: Date.now() };
   return { k: sp.anim.k, n: sp.runden, key, t: Date.now() - animLokal.start };
 }
@@ -304,7 +307,7 @@ function animSetzen(k) {
 function animWeiter() {
   if (!api?.istLeiter || status !== "laeuft") return;
   const st = animStand();
-  if (!st || st.t < SPIEL_MS || animGesendet === st.key) return;
+  if (!st || st.t < spielMs() || animGesendet === st.key) return;
   animGesendet = st.key;
   animSetzen(st.k + 1);
 }
@@ -385,6 +388,7 @@ function klick(ev) {
   if (!t || !el.wurzel.contains(t)) return;
   const a = t.dataset.a, v = t.dataset.v;
   if (a === "bots" && api.istLeiter) { updateDoc(api.raumRef(), { "klOpt.bots": Number(v) }); return; }
+  if (a === "tempo" && api.istLeiter) { updateDoc(api.raumRef(), { "klOpt.tempo": Number(v) }); return; }
   if (a === "zeit" && api.istLeiter) { updateDoc(api.raumRef(), { "klOpt.zeitlimit": v === "true" }); return; }
   if (a === "tab") { tab = v; ligaSicht = null; zeichne(); return; }
   if (a === "liga-team") { ligaSicht = ligaSicht === v ? null : v; zeichne(); return; }
@@ -713,7 +717,7 @@ function heimZuerst(s) {
 // statisch = ohne Animation (für die Spielansicht nach dem Spieltag)
 function buehneHtml(sp, s, statisch = false) {
   const art = sp.art;
-  const T = ANIM, D = T.duell;
+  const T = animT(), D = T.duell;
   const ms = (x) => `--d:${x}ms;animation-delay:${x}ms`;
   const daten = (id, wuerfe) => {
     const grid = sp.raster?.[id] || z.teams[id].grid;
@@ -726,8 +730,9 @@ function buehneHtml(sp, s, statisch = false) {
   // Würfel rollt (wechselnde Augen) und bleibt mit der echten Zahl liegen
   const wurfHtml = (typ, w, start) => {
     const [lo, hi] = typ === "grosser_wuerfel" ? [2, 4] : [1, 3];
-    const flacker = [0, 1, 2, 3, 4].map((j) => wuerfelFlaeche(typ, lo + ((w + j) % (hi - lo + 1)), "zw", `--z:${start + 100 + j * 140}ms`)).join("");
-    return `<div class="kl-wurf" style="--d:${start}ms"><div class="kl-wurf-roll">${flacker}${wuerfelFlaeche(typ, w, "fin", `--f:${start + T.wurfDauer - 180}ms`)}</div>
+    const schritt = Math.round((T.wurfDauer - 250) / 5);
+    const flacker = [0, 1, 2, 3, 4].map((j) => wuerfelFlaeche(typ, lo + ((w + j) % (hi - lo + 1)), "zw", `--z:${start + 100 + j * schritt}ms;--zd:${schritt}ms`)).join("");
+    return `<div class="kl-wurf" style="--d:${start}ms;--wd:${T.wurfDauer}ms"><div class="kl-wurf-roll">${flacker}${wuerfelFlaeche(typ, w, "fin", `--f:${start + T.wurfDauer - 180}ms`)}</div>
       <b style="${ms(start + T.wurfDauer)}">+${w}</b></div>`;
   };
   // Karten erscheinen paarweise (Karte 1 bei beiden Teams, dann 2, dann 3), Würfel rollen, dann die Summe
@@ -780,7 +785,7 @@ function liveHtml(sp, st) {
   const mein = runde.find((x) => x.a === ich() || x.b === ich());
   const haupt = mein || runde[0];
   const s = heimZuerst(haupt);
-  const T = ANIM, D = T.duell;
+  const T = animT(), D = T.duell;
   const ergebnisAb = T.intro + 3 * D;
   const ms = (x) => `--d:${x}ms;animation-delay:${x}ms`;
   const seite = (id) => `<div class="kl-live-team">${teamWappen(z.farben?.[id] ?? 0, 84)}<b>${escapeHtml(teamInfo(id).name)}${istBot(id) ? " 🤖" : ""}</b></div>`;
@@ -806,7 +811,8 @@ function liveHtml(sp, st) {
     <div class="kl-bd">${buehne}</div>
     <div class="kl-live-duelle">${kurz}</div>
     ${neben ? `<div class="kl-live-nebenbox"><span class="kl-muted">Gleichzeitig</span>${neben}</div>` : ""}
-    <div class="kl-live-balken"><i style="animation-duration:${SPIEL_MS}ms"></i></div>
+    <div class="kl-live-balken"><i style="animation-duration:${spielMs()}ms"></i></div>
+    <div class="kl-tempo"><span>Tempo</span>${[1, 2, 3].map((x) => `<button type="button" class="${x === tempo() ? "an" : ""}" ${api.istLeiter ? `data-a="tempo" data-v="${x}"` : "disabled"}>x${x}</button>`).join("")}</div>
     ${api.istLeiter ? `<div class="kl-zeile" style="margin-top:12px">
       <button type="button" class="kl-btn sek" style="flex:1" data-a="anim-weiter">${st.k + 1 < st.n ? "Nächstes Spiel" : "Zu den Ergebnissen"}</button>
       ${st.k + 1 < st.n ? `<button type="button" class="kl-btn sek" style="flex:1" data-a="anim-alle">Alle überspringen</button>` : ""}</div>`
