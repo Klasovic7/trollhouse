@@ -24,7 +24,7 @@ import {
 } from "./logik.js";
 import { istBot, spielAnlegen, draftAnwenden, draftBotPicks, transferAnwenden, arenaAnwenden, nachSpieltag } from "./ablauf.js";
 import {
-  STIL, karteHtml, teamWappen, arenaSvg, farbIndex, FARBEN_LISTE, bonusSymbol, wuerfelIcon, VEREIN_NAME
+  STIL, karteHtml, teamWappen, arenaSvg, farbIndex, FARBEN_LISTE, bonusSymbol, wuerfelIcon, wuerfelFlaeche, VEREIN_NAME
 } from "./design.js";
 
 const DRAFT_MS = 30000;
@@ -762,7 +762,7 @@ function liveHtml(sp, st) {
       if (!c) return `<div class="kl-bd-karte"><div class="kl-sp-leer">leer</div><div class="kl-bd-wert">0</div></div>`;
       const w = S.wurf[f];
       return `<div class="kl-bd-karte">${karteHtml(c.id, { mini: true, wert: c.w })}
-        ${w ? `<div class="kl-wurf" style="${ms(t0 + T.wurfAb)}">${wuerfelIcon(S.typ[f])}<b style="${ms(t0 + T.wurfAb + T.wurfDauer)}">+${w}</b></div>` : ""}
+        ${w ? wurfHtml(S.typ[f], w, t0 + T.wurfAb) : ""}
         <div class="kl-bd-wert">${S.werte[f]}</div></div>`;
     }).join("");
     const extra = [wuerfe ? `🎲 +${wuerfe}` : "", heim ? `🏟️ +${heim}` : ""].filter(Boolean).join(" ");
@@ -772,6 +772,13 @@ function liveHtml(sp, st) {
         ? `<b class="basis" style="--e:${t0 + T.summeAb}ms">${basis}</b><b class="end" style="${ms(t0 + T.summeAb)}">${gesamt}</b><small class="kl-live-auf" style="${ms(t0 + T.summeAb)}">${extra}</small>`
         : `<b>${gesamt}</b>`}</div>
     </div>`;
+  };
+  // Würfel rollt (wechselnde Augen) und bleibt mit der echten Zahl liegen
+  const wurfHtml = (typ, w, start) => {
+    const [lo, hi] = typ === "grosser_wuerfel" ? [2, 4] : [1, 3];
+    const flacker = [0, 1, 2, 3, 4].map((j) => wuerfelFlaeche(typ, lo + ((w + j) % (hi - lo + 1)), "zw", `--z:${start + 100 + j * 140}ms`)).join("");
+    return `<div class="kl-wurf" style="--d:${start}ms"><div class="kl-wurf-roll">${flacker}${wuerfelFlaeche(typ, w, "fin", `--f:${start + T.wurfDauer - 180}ms`)}</div>
+      <b style="${ms(start + T.wurfDauer)}">+${w}</b></div>`;
   };
   const buehne = s.duelle.map((d, i) => {
     const t0 = T.intro + i * D;

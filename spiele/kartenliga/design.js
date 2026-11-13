@@ -43,6 +43,14 @@ const GLYPHEN = {
   kapitaen: `<rect x="5" y="13.5" width="38" height="21" rx="4.5" fill="#fbc02d" stroke="#8d6e00" stroke-width="2.4"/><path d="M6.5 17.5 H41.5 M6.5 30.5 H41.5" stroke="#c49000" stroke-width="1.4"/><path d="M29.8 19.6 A7.2 7.2 0 1 0 29.8 28.4" fill="none" stroke="#1d1d1f" stroke-width="4.2" stroke-linecap="round"/>`,
   fanliebling: `<path d="M22 38 C9 29.5 5 22 5 16.5 C5 11.5 9 8 13.5 8 C17.3 8 20 10.3 22 13.5 C24 10.3 26.7 8 30.5 8 C35 8 39 11.5 39 16.5 C39 22 35 29.5 22 38Z" fill="#e53950" stroke="#9e1b32" stroke-width="2.2" stroke-linejoin="round"/><circle cx="35" cy="34" r="8.2" fill="#f2c230" stroke="#a67a06" stroke-width="2.2"/><path d="M35 30 V38 M31 34 H39" stroke="#6b4a00" stroke-width="2.6" stroke-linecap="round"/>`
 };
+// Würfel mit echter Augenzahl (kleiner Würfel silbern, großer golden)
+const AUGEN = { 1: [[24, 24]], 2: [[16, 16], [32, 32]], 3: [[15, 15], [24, 24], [33, 33]], 4: [[16, 16], [32, 16], [16, 32], [32, 32]],
+  5: [[15, 15], [33, 15], [24, 24], [15, 33], [33, 33]], 6: [[16, 14], [32, 14], [16, 24], [32, 24], [16, 34], [32, 34]] };
+export function wuerfelFlaeche(typ, n, klasse = "", stil = "") {
+  const gold = typ === "grosser_wuerfel";
+  const [f, r, p] = gold ? ["#f2c230", "#7a5600", "#3e2c00"] : ["#eceff1", "#37474f", "#263238"];
+  return `<svg class="${klasse}" style="${stil}" viewBox="4 4 40 40"><rect x="7" y="7" width="34" height="34" rx="7" fill="${f}" stroke="${r}" stroke-width="2.6"/>${(AUGEN[n] || []).map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.3" fill="${p}"/>`).join("")}</svg>`;
+}
 export const wuerfelIcon = (b) => GLYPHEN[b] ? `<svg class="kl-wf-icon" viewBox="6 6 36 36">${GLYPHEN[b]}</svg>` : "";
 export const bonusSymbol = (b, klasse = "kl-bsym") => b && GLYPHEN[b]
   ? `<svg class="${klasse}" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22.6" fill="#fff" stroke="#d4a017" stroke-width="2.6"/><g transform="translate(24 24) scale(.72) translate(-24 -24)">${GLYPHEN[b]}</g></svg>` : "";
@@ -300,11 +308,16 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-bd-duell.sieg-b .b .kl-bd-summe b.end, .kl-bd-duell.sieg-b .b .kl-bd-summe b:only-child { color:#7dff9a; }
 .kl-bd-tore { display:flex; justify-content:center; gap:6px; font-size:1.2rem; margin:12px 64px 10px 0; }
 .kl-wurf { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
-.kl-wurf svg { width:58%; height:auto; opacity:0; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); animation:klWurf .9s var(--d) ease-out forwards; }
-.kl-wurf b { position:absolute; opacity:0; padding:2px 8px; border-radius:999px; background:#f2c230; color:#2a1d00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.2rem;
+.kl-wurf-roll { grid-area:1/1; position:relative; width:56%; aspect-ratio:1; opacity:0; animation:klWurf .9s var(--d) ease-out forwards; }
+.kl-wurf-roll svg { position:absolute; inset:0; width:100%; height:100%; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
+.kl-wurf-roll .zw { opacity:0; animation:klFlacker .14s var(--z) linear; }
+.kl-wurf-roll .fin { opacity:0; animation:klDa .01s var(--f) forwards; }
+.kl-wurf b { position:absolute; bottom:22%; opacity:0; padding:1px 8px; border-radius:999px; background:#f2c230; color:#2a1d00; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.1rem;
   box-shadow:0 3px 10px rgba(0,0,0,.5); animation:klPop .4s cubic-bezier(.2,.9,.3,1.4) forwards; }
-@keyframes klWurf { 0% { opacity:0; transform:translate(-60%,-80%) rotate(-200deg) scale(.6); } 15% { opacity:1; }
-  55% { transform:translate(8%,10%) rotate(160deg) scale(1.05); } 75% { transform:translate(-4%,0) rotate(250deg) scale(1); } 90% { opacity:1; transform:rotate(360deg); } 100% { opacity:0; transform:rotate(360deg) scale(.7); } }
+@keyframes klWurf { 0% { opacity:0; transform:translate(-70%,-90%) rotate(-220deg) scale(.6); } 15% { opacity:1; }
+  60% { transform:translate(8%,8%) rotate(150deg) scale(1.08); } 80% { transform:translate(-3%,0) rotate(345deg) scale(1); } 100% { opacity:1; transform:translateY(-12%) rotate(360deg) scale(.9); } }
+@keyframes klFlacker { from, to { opacity:1; } }
+@keyframes klDa { to { opacity:1; } }
 @keyframes klRein { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 @keyframes klRaus { to { opacity:0; visibility:hidden; } }
 @keyframes klVonLinks { from { opacity:0; transform:translateX(-40px) scale(.8); } to { opacity:1; transform:none; } }
@@ -549,7 +562,7 @@ function stadion(ci,t,h){
 
 
 // ---- Öffentliche Helfer -------------------------------------------------------------------
-export const WAPPEN_VERSION = 1;
+export const WAPPEN_VERSION = 2;
 export const teamBild = (farbIdx) => `bilder/kartenliga/teams/t${(farbIdx >= 0 && farbIdx < 10) ? farbIdx : 0}.webp?v=${WAPPEN_VERSION}`;
 export const teamWappen = (farbIdx, groesse) =>
   `<img class="kl-twappen" src="${teamBild(farbIdx)}" alt="" draggable="false"${groesse ? ` width="${groesse}" height="${groesse}"` : ""}>`;

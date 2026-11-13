@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "492";
+const SPIEL_VERSION = "493";
 
 export const SPIELE = [
   {
