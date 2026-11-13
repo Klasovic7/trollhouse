@@ -318,6 +318,13 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-bd-mitte { display:flex; flex-direction:column; align-items:center; gap:6px; align-self:center; }
 .kl-bd-gegen { font-size:.72rem; color:var(--kl-muted); text-transform:uppercase; letter-spacing:.08em; }
 .kl-bd-mitte .kl-bd-tore { margin:0; font-size:1rem; flex-direction:column; align-items:center; gap:2px; }
+/* Spielansicht nach dem Spieltag: gleiche Bühne, ohne Animation, Duelle untereinander */
+.kl-bd.kl-statisch { display:flex; flex-direction:column; gap:12px; margin-top:12px; }
+.kl-overlay .kl-bd-karte .kl-karte { font-size:calc(100cqw / 18); }
+.kl-statisch .kl-bd-duell, .kl-statisch .kl-bd-karte, .kl-statisch .kl-live-auf, .kl-statisch .kl-bd-summe b.end, .kl-statisch .kl-wurf b,
+.kl-statisch .kl-wurf-roll, .kl-statisch .kl-wurf-roll .fin { animation:none !important; opacity:1 !important; visibility:visible !important; }
+.kl-statisch .kl-wurf-roll { transform:translateY(-12%) scale(.9); }
+.kl-statisch .kl-wurf-roll .zw, .kl-statisch .kl-bd-summe b.basis { display:none; }
 @keyframes klKarteRein { from { opacity:0; transform:translateY(14px) scale(.85) rotateY(70deg); } to { opacity:1; transform:none; } }
 .kl-wurf { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
 .kl-wurf-roll { grid-area:1/1; position:relative; width:56%; aspect-ratio:1; opacity:0; animation:klWurf .9s var(--d) ease-out forwards; }

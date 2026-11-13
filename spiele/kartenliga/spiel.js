@@ -466,36 +466,11 @@ function zeigeSpiel(i) {
   if (!sp?.spiele?.[i]) return;
   const s = heimZuerst(sp.spiele[i]);
   document.querySelector(".kl-overlay")?.remove();
-  const raster = sp.raster || {};
-  const seite = (id, wuerfe) => {
-    const grid = raster[id] || z.teams[id].grid;
-    const { werte, details } = feldWerte(grid);
-    const wurf = {};
-    (wuerfe || []).forEach((w) => { wurf[w.feld] = w.wurf; });
-    return { grid, werte, details, wurf };
-  };
-  const A = seite(s.a, s.wuerfeA), B = seite(s.b, s.wuerfeB);
-  const kartenReihe = (S, L) => `<div class="kl-sp-karten">${LINIEN[sp.art][L].map((f) => {
-    const c = S.grid[f];
-    if (!c) return `<div class="kl-sp-karte"><div class="kl-sp-leer">leer</div><div class="kl-sp-wert"><b>0</b></div></div>`;
-    const teile = [`Basis ${c.w}`, ...S.details[f].map(([n, w]) => `${n} ${w > 0 ? "+" : "−"}${Math.abs(w)}`)];
-    if (S.wurf[f]) teile.push(`🎲 +${S.wurf[f]}`);
-    return `<div class="kl-sp-karte">${karteHtml(c.id, { mini: true, wert: c.w })}<div class="kl-sp-wert"><b>${S.werte[f] + (S.wurf[f] || 0)}</b><small>${teile.join(" · ")}</small></div></div>`;
-  }).join("")}</div>`;
-  const duelle = s.duelle.map((d) => {
-    const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
-    return `<div class="kl-sp-duell">
-      <div class="kl-sp-titel">${LINIEN_NAME[sp.art][d.la]} gegen ${LINIEN_NAME[sp.art][d.lb]}</div>
-      <div class="kl-sp-kopf"><span>${LINIEN_NAME[sp.art][d.la]} ${teamName(s.a, false)}</span><b>${d.sa} : ${d.sb}</b><span>${teamName(s.b, false)} ${LINIEN_NAME[sp.art][d.lb]}</span></div>
-      <div class="kl-sp-tore">${"⚽".repeat(d.ta) || "–"} : ${"⚽".repeat(d.tb) || "–"}${ha || hb ? ` · Heimbonus 🏟️ +${ha || hb} (${teamInfo(ha ? s.a : s.b).name})` : ""}</div>
-      ${kartenReihe(A, d.la)}<div class="kl-sp-gegen">gegen</div>${kartenReihe(B, d.lb)}
-    </div>`;
-  }).join("");
   const ov = document.createElement("div");
   ov.className = "kl kl-overlay kl-overlay-scroll";
   ov.innerHTML = `<div class="kl-sp-panel">
     <div class="kl-spiel-kopf"><div>${teamName(s.a)}</div><div class="kl-ergebnis">${s.ta} : ${s.tb}</div><div class="r">${teamName(s.b)}</div></div>
-    ${duelle}
+    <div class="kl-bd kl-statisch">${buehneHtml(sp, s, true)}</div>
     <button type="button" class="btn-primaer" style="margin-top:10px">Schließen</button></div>`;
   const zu = () => { ov.remove(); document.body.style.overflow = ""; };
   ov.addEventListener("click", (e) => { if (e.target === ov || e.target.closest("button.btn-primaer")) zu(); });
@@ -734,16 +709,12 @@ function heimZuerst(s) {
     duelle: s.duelle.map((d) => ({ la: d.lb, lb: d.la, sa: d.sb, sb: d.sa, ta: d.tb, tb: d.ta })).sort((x, y) => x.la - y.la)
   };
 }
-function liveHtml(sp, st) {
+// Duell-Bühne: Karten jeder Linie mit Wappen, Würfeln und Summen.
+// statisch = ohne Animation (für die Spielansicht nach dem Spieltag)
+function buehneHtml(sp, s, statisch = false) {
   const art = sp.art;
-  const runde = sp.spiele.filter((x) => x.sr === st.k);
-  const mein = runde.find((x) => x.a === ich() || x.b === ich());
-  const haupt = mein || runde[0];
-  const s = heimZuerst(haupt);
   const T = ANIM, D = T.duell;
-  const ergebnisAb = T.intro + 3 * D;
   const ms = (x) => `--d:${x}ms;animation-delay:${x}ms`;
-  const seite = (id) => `<div class="kl-live-team">${teamWappen(z.farben?.[id] ?? 0, 84)}<b>${escapeHtml(teamInfo(id).name)}${istBot(id) ? " 🤖" : ""}</b></div>`;
   const daten = (id, wuerfe) => {
     const grid = sp.raster?.[id] || z.teams[id].grid;
     const { werte } = feldWerte(grid);
@@ -800,6 +771,20 @@ function liveHtml(sp, st) {
       </div>
     </div>`;
   }).join("");
+  return buehne;
+}
+
+function liveHtml(sp, st) {
+  const art = sp.art;
+  const runde = sp.spiele.filter((x) => x.sr === st.k);
+  const mein = runde.find((x) => x.a === ich() || x.b === ich());
+  const haupt = mein || runde[0];
+  const s = heimZuerst(haupt);
+  const T = ANIM, D = T.duell;
+  const ergebnisAb = T.intro + 3 * D;
+  const ms = (x) => `--d:${x}ms;animation-delay:${x}ms`;
+  const seite = (id) => `<div class="kl-live-team">${teamWappen(z.farben?.[id] ?? 0, 84)}<b>${escapeHtml(teamInfo(id).name)}${istBot(id) ? " 🤖" : ""}</b></div>`;
+  const buehne = buehneHtml(sp, s);
   const kurz = s.duelle.map((d, i) => `<div class="kl-live-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" style="${ms(T.intro + i * D + T.toreAb + 300)}">
       <div class="l"><span>${LINIEN_NAME[art][d.la]}</span><b>${d.sa}</b></div>
       <div class="mitte">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>
