@@ -7,6 +7,7 @@ import {
 import {
   FARBEN, AVATARE, FREUNDE, escapeHtml, avatarHtml, textFarbeFuer, zeigeDebug, erzeugeZufallsId
 } from "./kern/ui.js";
+import { startEffekte } from "./kern/effekte.js";
 // v202-Fix: mit Versions-Query wie bei allen anderen Dateien - sonst kann der
 // Browser/GitHub-Pages-Cache hier eine alte Fassung ausliefern, obwohl
 // index.html/app.js schon aktuell sind (siehe auch spiele/register.js).
@@ -15,9 +16,10 @@ import {
 // Spiel-Fixes (spiele/<id>/spiel.js) verzoegert oder gar nicht mit.
 import { SPIELE, spielInfo } from "./spiele/register.js?v=335";
 
-export const APP_VERSION = "v504";
+export const APP_VERSION = "v505";
 const appVersion = document.getElementById("app-version");
 appVersion.textContent = "Version " + APP_VERSION;
+startEffekte();
 
 // Startseite: "Spiele" öffnet die Anleitungen (wird erst beim Klick geladen)
 document.getElementById("btn-spiele-anleitung")?.addEventListener("click", async () => {

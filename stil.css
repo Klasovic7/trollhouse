@@ -3717,3 +3717,18 @@ body.im-spiel #btn-chat-oeffnen, body.im-spiel #chat-dialog { display: none !imp
 .pd-tauschkarte { cursor: default; }
 /* Hochformat-Avatare (z. B. Sumo Paul): im runden Ausschnitt nicht die Körpermitte, sondern oben (Gesicht) zeigen */
 img[src*="/freund-"] { object-position: 50% 22%; }
+
+/* Effekte-Baukasten (kern/effekte.js) */
+@keyframes fxPop { 0% { transform: scale(.6); } 55% { transform: scale(1.18); } 100% { transform: none; } }
+@keyframes fxWackel { 0%, 100% { transform: none; } 20% { transform: translateX(-5px) rotate(-3deg); } 40% { transform: translateX(5px) rotate(3deg); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+@keyframes fxRein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.fx-pop { animation: fxPop .4s cubic-bezier(.2, .9, .3, 1.4); }
+.fx-wackel { animation: fxWackel .45s ease-in-out; }
+.fx-rein { animation: fxRein .26s ease-out; }
+.btn-primaer { transition: transform .08s ease; }
+.btn-primaer:not(:disabled):active { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) {
+  .fx-pop, .fx-wackel, .fx-rein { animation: none; }
+  .btn-primaer { transition: none; }
+  .btn-primaer:not(:disabled):active { transform: none; }
+}
