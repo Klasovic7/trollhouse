@@ -128,10 +128,11 @@ export function arenaAnwenden(z, wahlen, zufall = Math.random) {
     z.reihenfolge.forEach((id) => { raster[id] = z.teams[id].grid.map((c) => (c ? { ...c } : null)); });
     const hex = {};
     z.reihenfolge.forEach((id) => { hex[id] = z.teams[id].hex; });
+    const tabelleVorher = tabelle(z.teams, z.reihenfolge);
     const erg = spieltagBerechnen(z.teams, z.reihenfolge, z.runde, zufall);
     const entwicklung = spieltagAnwenden(z.teams, z.reihenfolge, erg);
     delete erg.linieStat;
-    z.spieltag = { ...erg, entwicklung, raster, tabelle: tabelle(z.teams, z.reihenfolge) };
+    z.spieltag = { ...erg, entwicklung, raster, tabelleVorher, tabelle: tabelle(z.teams, z.reihenfolge), anim: { k: 0 } };
     z.historie.push({ nr: erg.nr, art: erg.art, spiele: erg.spiele.map((s) => ({ a: s.a, b: s.b, ta: s.ta, tb: s.tb, heim: s.heim })) });
     z.phase = "spieltag";
     z.phaseStart = Date.now();

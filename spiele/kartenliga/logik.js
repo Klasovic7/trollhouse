@@ -128,6 +128,22 @@ export function wuerfelInLinie(grid, art) {
 }
 
 // ---- Spieltag ----------------------------------------------------------------------
+// Spielplan nach dem Kreisverfahren: jedes Team spielt pro Spielrunde genau einmal
+// (bei ungerader Teamzahl hat pro Runde ein Team spielfrei). Liefert "a|b" -> Runde.
+export function spielplan(reihenfolge) {
+  const liste = [...reihenfolge];
+  if (liste.length % 2) liste.push(null);
+  const m = liste.length, plan = {};
+  for (let r = 0; r < m - 1; r++) {
+    for (let i = 0; i < m / 2; i++) {
+      const x = liste[i], y = liste[m - 1 - i];
+      if (x && y) { plan[`${x}|${y}`] = r; plan[`${y}|${x}`] = r; }
+    }
+    liste.splice(1, 0, liste.pop());
+  }
+  return { plan, runden: m - 1 };
+}
+
 export const toreFuerDifferenz = (d) => (d <= 0 ? 0 : d <= 3 ? 1 : d <= 6 ? 2 : 3);
 
 export function spieltagBerechnen(teams, reihenfolge, runde, zufall = Math.random) {
@@ -178,7 +194,10 @@ export function spieltagBerechnen(teams, reihenfolge, runde, zufall = Math.rando
       spiele.push({ a, b, heim, ta, tb, duelle, wuerfeA: seite[a].wuerfe, wuerfeB: seite[b].wuerfe, heimBonus: Math.max(seite[a].heimBonus, seite[b].heimBonus) });
     }
   }
-  return { art, nr: md + 1, runde, spiele, linieStat, bilanz };
+  const { plan, runden } = spielplan(reihenfolge);
+  spiele.forEach((s) => { s.sr = plan[`${s.a}|${s.b}`]; });
+  spiele.sort((x, y) => x.sr - y.sr);
+  return { art, nr: md + 1, runde, spiele, linieStat, bilanz, runden };
 }
 
 // Ergebnis in die Teams übernehmen: Tabelle, Talente, Veteranen, Aufholhilfe.

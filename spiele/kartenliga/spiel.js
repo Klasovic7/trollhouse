@@ -84,6 +84,11 @@ let sendet = false;
 let arenaWahl = null;
 let letztesHtml = "";
 let tauschModus = false, tauschErste = null;
+// Spieltag-Animation: alle sehen gleichzeitig Spielrunde k; der Spielleiter schaltet weiter
+const ANIM = { intro: 1600, duell: 1500, ende: 2800 };
+const SPIEL_MS = ANIM.intro + 3 * ANIM.duell + ANIM.ende;
+let animLokal = { key: "", start: 0 };
+let animGesendet = "";
 const phasenDauer = (p) => (p === "draft" ? DRAFT_MS : p === "transfer" ? TRANSFER_MS : ARENA_MS);
 const mitZeit = (p) => p === "draft" || p === "transfer" || p === "arena";
 
@@ -281,6 +286,27 @@ function tick() {
     balken.style.width = Math.max(0, 1 - (Date.now() - z.phaseStart) / dauer) * 100 + "%";
   }
   leiterPruefen();
+  animWeiter();
+}
+
+// Laufende Spielrunde der Spieltag-Animation (null = alle Spiele gezeigt)
+function animStand() {
+  const sp = z?.phase === "spieltag" ? z.spieltag : null;
+  if (!sp?.anim || !sp.runden || sp.anim.k >= sp.runden) return null;
+  const key = `${sp.nr}_${sp.anim.k}`;
+  if (animLokal.key !== key) animLokal = { key, start: Date.now() };
+  return { k: sp.anim.k, n: sp.runden, key, t: Date.now() - animLokal.start };
+}
+function animSetzen(k) {
+  if (!api?.istLeiter || !z?.spieltag) return;
+  updateDoc(api.raumRef(), { "kl.spieltag.anim": { k } }).catch((e) => zeigeDebug("Fehler bei der Animation: " + e.message));
+}
+function animWeiter() {
+  if (!api?.istLeiter || status !== "laeuft") return;
+  const st = animStand();
+  if (!st || st.t < SPIEL_MS || animGesendet === st.key) return;
+  animGesendet = st.key;
+  animSetzen(st.k + 1);
 }
 
 async function leiterPruefen() {
@@ -366,6 +392,11 @@ function klick(ev) {
   if (a === "weiter") { weiterNachSpieltag(); return; }
   if (a === "gesamt") { api.zeigeGesamtwertung(); return; }
   if (a === "spiel") { zeigeSpiel(Number(v)); return; }
+  if (a === "anim-weiter" || a === "anim-alle") {
+    const st = animStand();
+    if (st && api.istLeiter && animGesendet !== st.key + a) { animGesendet = st.key + a; animSetzen(a === "anim-alle" ? st.n : st.k + 1); }
+    return;
+  }
   if (!z || !istDabei() || meineAktion() || sendet) return;
   if (a === "draft-wahl" && z.phase === "draft") { draftAuswahl = v; zeichne(); return; }
   if (a === "draft-ok" && z.phase === "draft" && draftAuswahl) { sende({ karte: draftAuswahl }); return; }
@@ -703,9 +734,54 @@ function heimZuerst(s) {
     duelle: s.duelle.map((d) => ({ la: d.lb, lb: d.la, sa: d.sb, sb: d.sa, ta: d.tb, tb: d.ta })).sort((x, y) => x.la - y.la)
   };
 }
+function liveHtml(sp, st) {
+  const art = sp.art;
+  const runde = sp.spiele.filter((s) => s.sr === st.k);
+  const mein = runde.find((s) => s.a === ich() || s.b === ich());
+  const haupt = mein || runde[0];
+  const s = heimZuerst(haupt);
+  const ergebnisAb = ANIM.intro + 3 * ANIM.duell;
+  const ms = (x) => `--d:${x}ms;animation-delay:${x}ms`;
+  const seite = (id) => `<div class="kl-live-team">${teamWappen(z.farben?.[id] ?? 0, 72)}<b>${escapeHtml(teamInfo(id).name)}${istBot(id) ? " 🤖" : ""}</b></div>`;
+  const wuerfelSumme = (liste, L) => (liste || []).filter((w) => LINIEN[art][L].includes(w.feld)).reduce((x, w) => x + w.wurf, 0);
+  const duelle = s.duelle.map((d, i) => {
+    const wa = wuerfelSumme(s.wuerfeA, d.la), wb = wuerfelSumme(s.wuerfeB, d.lb);
+    const ha = s.heim === s.a && s.heimBonus ? s.heimBonus : 0, hb = s.heim === s.b && s.heimBonus ? s.heimBonus : 0;
+    return `<div class="kl-live-duell ${d.sa > d.sb ? "sieg-a" : d.sb > d.sa ? "sieg-b" : ""}" style="${ms(ANIM.intro + i * ANIM.duell)}">
+      <div class="l"><span>${LINIEN_NAME[art][d.la]}</span><b>${d.sa}</b><i>${wa ? `🎲+${wa} ` : ""}${ha ? `🏟️+${ha}` : ""}</i></div>
+      <div class="mitte">${"⚽".repeat(d.ta) || "–"}<span>:</span>${"⚽".repeat(d.tb) || "–"}</div>
+      <div class="r"><span>${LINIEN_NAME[art][d.lb]}</span><b>${d.sb}</b><i>${wb ? `🎲+${wb} ` : ""}${hb ? `🏟️+${hb}` : ""}</i></div>
+    </div>`;
+  }).join("");
+  const neben = runde.filter((x) => x !== haupt).map((o) => { const n = heimZuerst(o); return `<div class="kl-live-neben">${teamName(n.a)}<b class="kl-live-auf" style="${ms(ergebnisAb)}">${n.ta} : ${n.tb}</b>${teamName(n.b)}</div>`; }).join("");
+  const spielfrei = istDabei() && !mein ? `<p class="kl-live-frei">Du hast in dieser Runde spielfrei und schaust zu.</p>` : "";
+  const fazit = mein ? (() => { const ich_a = s.a === ich(); const eig = ich_a ? s.ta : s.tb, geg = ich_a ? s.tb : s.ta;
+    return eig > geg ? "Sieg! +3 Punkte" : eig === geg ? "Unentschieden · +1 Punkt" : "Niederlage"; })() : "";
+  return `<div class="kl-box kl-live" data-k="${st.key}">
+    <div class="kl-live-kopf"><span>${sp.nr}. Spieltag · ${art === "reihe" ? "Reihen-Duelle" : "Flügel-Duelle"}</span><b>Spiel ${st.k + 1} von ${st.n}</b></div>
+    ${spielfrei}
+    <div class="kl-live-paar">
+      ${seite(s.a)}
+      <div class="kl-live-mitte"><div class="kl-live-vs" style="--d:${ergebnisAb}ms">VS</div><div class="kl-live-ergebnis" style="${ms(ergebnisAb)}">${s.ta} : ${s.tb}</div></div>
+      ${seite(s.b)}
+    </div>
+    <div class="kl-live-duelle">${duelle}</div>
+    ${fazit ? `<div class="kl-live-fazit kl-live-auf" style="${ms(ergebnisAb + 300)}">${fazit}</div>` : ""}
+    ${neben ? `<div class="kl-live-nebenbox"><span class="kl-muted">Gleichzeitig</span>${neben}</div>` : ""}
+    <div class="kl-live-balken"><i style="animation-duration:${SPIEL_MS}ms"></i></div>
+    ${api.istLeiter ? `<div class="kl-zeile" style="margin-top:12px">
+      <button type="button" class="kl-btn sek" style="flex:1" data-a="anim-weiter">${st.k + 1 < st.n ? "Nächstes Spiel" : "Zu den Ergebnissen"}</button>
+      ${st.k + 1 < st.n ? `<button type="button" class="kl-btn sek" style="flex:1" data-a="anim-alle">Alle überspringen</button>` : ""}</div>`
+      : `<p class="kl-muted" style="margin:10px 0 0;text-align:center">Der Spielleiter kann die Spiele überspringen.</p>`}
+  </div>`;
+}
+
 function spieltagHtml() {
   const sp = z.spieltag;
   if (!sp) return "";
+  const st = animStand();
+  if (st) return liveHtml(sp, st);
+  if (sp.anim) animiert.add(sp.nr);
   const art = sp.art;
   const meine = sp.spiele.filter((s) => s.a === ich() || s.b === ich());
   const andere = sp.spiele.filter((s) => !(s.a === ich() || s.b === ich()));
@@ -726,7 +802,7 @@ function spieltagHtml() {
         <div class="r"><b>${d.sb} ${LINIEN_NAME[art][d.lb]}</b><div class="w">${wb ? `🎲+${wb} ` : ""}${hb ? `🏟️+${hb}` : ""}</div></div>
       </div>`;
     }).join("");
-    return `<div class="kl-spiel" data-a="spiel" data-v="${idx}" role="button"><div class="kl-spiel-kopf">
+    return `<div class="kl-spiel" data-a="spiel" data-v="${idx}" role="button">${orig.sr != null && sp.runden > 1 ? `<div class="kl-spiel-nr">Spiel ${orig.sr + 1}</div>` : ""}<div class="kl-spiel-kopf">
       <div>${teamName(s.a)}</div>
       <div class="kl-ergebnis">${s.ta} : ${s.tb}</div>
       <div class="r">${teamName(s.b)}</div></div>${duelle}</div>`;
@@ -772,7 +848,7 @@ function tabsHtml() {
     inhalt = `<div class="kl-box">${zeigeRaster ? `<h3>Dein Team</h3>${rasterHtml(team.grid)}` : `<p class="kl-muted" style="margin:0 0 6px">Dein Raster siehst du oben bei den Transfers.</p>`}
       ${z.phase !== "arena" ? arenaPanel(team) : ""}</div>`;
   } else if (tab === "liga") {
-    const tab0 = tabelle(z.teams, z.reihenfolge);
+    const tab0 = animStand() && z.spieltag?.tabelleVorher ? z.spieltag.tabelleVorher : tabelle(z.teams, z.reihenfolge);
     let detail = "";
     if (ligaSicht && z.teams[ligaSicht]) {
       const t = z.teams[ligaSicht];

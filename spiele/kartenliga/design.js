@@ -246,6 +246,47 @@ button.kl-pfad:disabled { opacity:.5; }
 .kl-duell .tore { font-size:.95rem; }
 .kl-duell .w { color:var(--kl-muted); font-size:.72rem; }
 .kl-duell.sieg-a .l b, .kl-duell.sieg-b .r b { color:#7dff9a; }
+.kl-spiel-nr { font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--kl-muted); margin-bottom:2px; }
+/* Spieltag live */
+.kl-live { overflow:hidden; }
+.kl-live-kopf { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:10px; }
+.kl-live-kopf span { color:var(--kl-muted); font-size:.85rem; }
+.kl-live-kopf b { font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.15rem; letter-spacing:.04em; text-transform:uppercase; color:var(--club-orange,#ff5b36); }
+.kl-live-frei { margin:0 0 10px; padding:8px 10px; border-radius:10px; background:var(--kl-flaeche2); color:var(--kl-muted); font-size:.85rem; text-align:center; }
+.kl-live-paar { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; padding:6px 0 12px; }
+.kl-live-team { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; min-width:0; }
+.kl-live-team svg, .kl-live-team img { width:72px; height:72px; filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
+.kl-live-team b { font-size:.95rem; line-height:1.15; overflow-wrap:anywhere; }
+.kl-live-paar > .kl-live-team:first-child { animation:klVonLinks .6s cubic-bezier(.2,.9,.3,1.2) both; }
+.kl-live-paar > .kl-live-team:last-child { animation:klVonRechts .6s cubic-bezier(.2,.9,.3,1.2) both; }
+.kl-live-mitte { position:relative; min-width:92px; height:56px; display:grid; place-items:center; }
+.kl-live-vs { font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:2rem; color:var(--club-orange,#ff5b36); animation:klVsRein .5s .3s ease both, klAus .3s var(--d,0s) ease forwards; }
+.kl-live-ergebnis { position:absolute; inset:0; display:grid; place-items:center; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:2.6rem; letter-spacing:.04em; opacity:0; animation:klPop .6s cubic-bezier(.2,.9,.3,1.4) forwards; }
+.kl-live-duell { display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center; padding:10px 10px; margin-top:8px; border-radius:12px; background:var(--kl-flaeche2);
+  border:1px solid rgba(255,255,255,.12); opacity:0; animation:klDuell .55s ease forwards; }
+.kl-live-duell .l, .kl-live-duell .r { display:flex; flex-direction:column; gap:1px; }
+.kl-live-duell .r { text-align:right; align-items:flex-end; }
+.kl-live-duell span { font-size:.78rem; color:var(--kl-muted); font-weight:700; }
+.kl-live-duell b { font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.5rem; line-height:1; }
+.kl-live-duell i { font-style:normal; font-size:.7rem; color:var(--kl-muted); min-height:.8rem; }
+.kl-live-duell .mitte { font-size:1.05rem; text-align:center; min-width:76px; display:flex; justify-content:center; gap:4px; }
+.kl-live-duell.sieg-a .l b, .kl-live-duell.sieg-b .r b { color:#7dff9a; }
+.kl-live-duell.sieg-a { box-shadow:inset 4px 0 0 #7dff9a; } .kl-live-duell.sieg-b { box-shadow:inset -4px 0 0 #7dff9a; }
+.kl-live-auf { opacity:0; animation:klPop .5s ease forwards; }
+.kl-live-fazit { margin-top:12px; text-align:center; font-family:"Barlow Condensed",sans-serif; font-weight:800; font-size:1.25rem; letter-spacing:.05em; text-transform:uppercase; }
+.kl-live-nebenbox { margin-top:12px; padding:8px 10px; border-radius:12px; border:1px dashed rgba(255,255,255,.2); display:flex; flex-direction:column; gap:6px; }
+.kl-live-nebenbox > span { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; }
+.kl-live-neben { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; font-size:.85rem; }
+.kl-live-neben > :last-child { justify-self:end; }
+.kl-live-balken { margin-top:12px; height:4px; border-radius:2px; background:var(--kl-flaeche2); overflow:hidden; }
+.kl-live-balken i { display:block; height:100%; background:var(--club-orange,#ff5b36); animation:klBalken linear forwards; }
+@keyframes klVonLinks { from { opacity:0; transform:translateX(-40px) scale(.8); } to { opacity:1; transform:none; } }
+@keyframes klVonRechts { from { opacity:0; transform:translateX(40px) scale(.8); } to { opacity:1; transform:none; } }
+@keyframes klVsRein { from { opacity:0; transform:scale(2.2); } to { opacity:1; transform:none; } }
+@keyframes klAus { to { opacity:0; transform:scale(.6); } }
+@keyframes klPop { 0% { opacity:0; transform:scale(.5); } 100% { opacity:1; transform:none; } }
+@keyframes klDuell { from { opacity:0; transform:translateY(10px) scale(.97); } to { opacity:1; transform:none; } }
+@keyframes klBalken { from { width:0; } to { width:100%; } }
 @keyframes klAuf { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion:reduce) { .kl-duell { animation:none; } }
 .kl-entw { display:flex; align-items:center; gap:8px; font-size:.85rem; padding:4px 0; }
