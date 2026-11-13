@@ -38,7 +38,7 @@ const POS_FARBE = { ST: "var(--kl-st)", MF: "var(--kl-mf)", ABW: "var(--kl-abw)"
 const VORLAGE = `
   <div class="kl">
     <div id="kl-setup" class="bildschirm-karte" hidden>
-      <h2>Kartenliga</h2>
+      <h2>Kartenmanager</h2>
       <p class="hinweis-text">Baue im 3x3-Raster dein Team aus Sturm, Mittelfeld und Abwehr. In 8 Runden draftest
         du Spieler, kaufst sie mit Münzen und baust deine Arena aus. Nach jeder zweiten Runde ist Spieltag: Jeder spielt
         gegen jeden, abwechselnd Reihen-Duelle (Sturm gegen Abwehr) und Flügel-Duelle. Wer am Ende die meisten

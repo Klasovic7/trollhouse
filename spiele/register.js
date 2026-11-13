@@ -18,7 +18,7 @@
 // in der Olympiade trotz Fix in v201/v202 teils noch bestehen lassen.
 // WICHTIG: bei jedem Versionssprung hier UND in app.js (Import von
 // register.js) mit hochzaehlen.
-const SPIEL_VERSION = "501";
+const SPIEL_VERSION = "502";
 
 export const SPIELE = [
   {
@@ -183,7 +183,7 @@ export const SPIELE = [
   },
   {
     id: "kartenliga",
-    name: "Kartenliga",
+    name: "Kartenmanager",
     emoji: "🏟️",
     farbe: "#16a34a",
     bild: "bilder/kartenliga-kachel.webp",
